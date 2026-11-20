@@ -1,0 +1,439 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "observedPermissionAccessLevel": {
+      "enum": ["UNKNOWN", "STANDARD_ACCESS", "ADVANCED_ACCESS"]
+    }
+  },
+  "required": [
+    "schema",
+    "mode",
+    "assets",
+    "page_identity_type",
+    "account_context",
+    "requested_work",
+    "existing_live_id",
+    "review",
+    "real_connection_enabled",
+    "real_write_enabled",
+    "authority"
+  ],
+  "properties": {
+    "schema": {
+      "const": "blank-customer-preparation-v1"
+    },
+    "mode": {
+      "const": "MOCK"
+    },
+    "assets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "business_portfolio",
+        "app",
+        "ad_account",
+        "facebook_page"
+      ],
+      "properties": {
+        "business_portfolio": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "ownership_evidence_ref"
+          ],
+          "properties": {
+            "id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "ownership_evidence_ref": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^EV_[A-Z0-9_]{1,80}$"
+            }
+          }
+        },
+        "app": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "ownership_evidence_ref"
+          ],
+          "properties": {
+            "id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "ownership_evidence_ref": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^EV_[A-Z0-9_]{1,80}$"
+            }
+          }
+        },
+        "ad_account": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "ownership_evidence_ref"
+          ],
+          "properties": {
+            "id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "ownership_evidence_ref": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^EV_[A-Z0-9_]{1,80}$"
+            }
+          }
+        },
+        "facebook_page": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "ownership_evidence_ref"
+          ],
+          "properties": {
+            "id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "ownership_evidence_ref": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^EV_[A-Z0-9_]{1,80}$"
+            }
+          }
+        }
+      }
+    },
+    "page_identity_type": {
+      "enum": [
+        "FACEBOOK_PAGE",
+        "PERSONAL_PROFILE",
+        "PROFESSIONAL_PROFILE",
+        "INSTAGRAM_LIVE",
+        "UNKNOWN"
+      ]
+    },
+    "account_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency",
+        "timezone"
+      ],
+      "properties": {
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Z]{3}$"
+        },
+        "timezone": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*$"
+        }
+      }
+    },
+    "requested_work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ads_read",
+        "page_live_read"
+      ],
+      "properties": {
+        "ads_read": {
+          "type": "boolean"
+        },
+        "page_live_read": {
+          "type": "boolean"
+        }
+      }
+    },
+    "existing_live_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{1,40}$"
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope_approved",
+        "identity_and_asset_binding_verified",
+        "actual_grants_verified",
+        "reviewed_at",
+        "expires_at"
+      ],
+      "properties": {
+        "scope_approved": {
+          "type": "boolean"
+        },
+        "identity_and_asset_binding_verified": {
+          "type": "boolean"
+        },
+        "actual_grants_verified": {
+          "type": "boolean"
+        },
+        "reviewed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "real_connection_enabled": {
+      "const": false
+    },
+    "real_write_enabled": {
+      "const": false
+    },
+    "authority": {
+      "const": "PREPARATION_ONLY_NOT_AUTHORIZATION"
+    },
+    "platform_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "app_id",
+        "business_portfolio_id",
+        "observed_at",
+        "items"
+      ],
+      "properties": {
+        "app_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{1,40}$"
+        },
+        "business_portfolio_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{1,40}$"
+        },
+        "observed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "app_publication",
+            "business_verification",
+            "ads_read",
+            "pages_read_engagement",
+            "read_insights"
+          ],
+          "properties": {
+            "app_publication": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "evidence_ref"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "UNKNOWN",
+                    "NOT_PUBLISHED",
+                    "PUBLISHED",
+                    "NO_PUBLICATION_STEP_FOR_APP_TYPE"
+                  ]
+                },
+                "evidence_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^EV_[A-Z0-9_]{1,80}$"
+                }
+              }
+            },
+            "business_verification": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "evidence_ref"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "UNKNOWN",
+                    "NOT_REQUIRED",
+                    "NOT_STARTED",
+                    "DRAFT",
+                    "SUBMITTED",
+                    "NEEDS_INFORMATION",
+                    "REJECTED",
+                    "VERIFIED"
+                  ]
+                },
+                "evidence_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^EV_[A-Z0-9_]{1,80}$"
+                }
+              }
+            },
+            "ads_read": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "evidence_ref"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "UNKNOWN",
+                    "NOT_REQUIRED",
+                    "NOT_STARTED",
+                    "DRAFT",
+                    "SUBMITTED",
+                    "NEEDS_INFORMATION",
+                    "REJECTED",
+                    "APPROVED"
+                  ]
+                },
+                "current_access_level": {
+                  "$ref": "#/$defs/observedPermissionAccessLevel"
+                },
+                "evidence_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^EV_[A-Z0-9_]{1,80}$"
+                }
+              }
+            },
+            "pages_read_engagement": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "evidence_ref"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "UNKNOWN",
+                    "NOT_REQUIRED",
+                    "NOT_STARTED",
+                    "DRAFT",
+                    "SUBMITTED",
+                    "NEEDS_INFORMATION",
+                    "REJECTED",
+                    "APPROVED"
+                  ]
+                },
+                "current_access_level": {
+                  "$ref": "#/$defs/observedPermissionAccessLevel"
+                },
+                "evidence_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^EV_[A-Z0-9_]{1,80}$"
+                }
+              }
+            },
+            "read_insights": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "evidence_ref"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "UNKNOWN",
+                    "NOT_REQUIRED",
+                    "NOT_STARTED",
+                    "DRAFT",
+                    "SUBMITTED",
+                    "NEEDS_INFORMATION",
+                    "REJECTED",
+                    "APPROVED"
+                  ]
+                },
+                "current_access_level": {
+                  "$ref": "#/$defs/observedPermissionAccessLevel"
+                },
+                "evidence_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^EV_[A-Z0-9_]{1,80}$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Existing non-secret customer preparation form; declarations do not authorize actions",
+  "$comment": "Runtime rejects duplicate JSON keys/nonfinite numbers, enforces <=16000 canonical UTF-8 bytes and aware ordered review timestamps. Incomplete null values are valid preparation, not connection readiness. Evidence refs are opaque aliases and never opened. Actual App review, permissions, ownership and grants are not verified here. Account context required only for requested ads; absent Live fixture affects only Live. This form never enables connections or writes."
+}

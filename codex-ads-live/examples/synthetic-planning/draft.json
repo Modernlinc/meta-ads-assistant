@@ -1,0 +1,91 @@
+{
+  "schema": "LOCAL_DISCUSSION_NOT_META_API",
+  "runtime_status": "DRAFT",
+  "version": 1,
+  "independent_intent_source": "INPUT.md 独立的初始归属意图",
+  "objects": [
+    {
+      "draft_id": "SIM_C_TRAY",
+      "type": "CAMPAIGN",
+      "parent_draft_id": null,
+      "namespace": "SIM_TRAY_V1",
+      "status": "PAUSED",
+      "exists_in_meta": false,
+      "published": false,
+      "actual_delivery": "UNKNOWN"
+    },
+    {
+      "draft_id": "SIM_S_US_EN",
+      "type": "ADSET",
+      "parent_draft_id": "SIM_C_TRAY",
+      "namespace": "SIM_TRAY_V1",
+      "status": "PAUSED",
+      "exists_in_meta": false,
+      "published": false,
+      "actual_delivery": "UNKNOWN"
+    },
+    {
+      "draft_id": "SIM_A_LAYOUT",
+      "type": "AD",
+      "parent_draft_id": "SIM_S_US_EN",
+      "creative_ref": "SIM_CREATIVE_A_V1",
+      "copy_ref": {
+        "file": "PLAN.md",
+        "section_label": "广告A｜SIM_A_LAYOUT"
+      },
+      "destination_url": "https://example.invalid/desk-tray?utm_source=facebook&utm_medium=paid_social&utm_campaign=sim_tray_v1&utm_content=sim_a_layout_v1",
+      "namespace": "SIM_TRAY_V1",
+      "status": "PAUSED",
+      "exists_in_meta": false,
+      "published": false,
+      "actual_delivery": "UNKNOWN"
+    },
+    {
+      "draft_id": "SIM_A_SIZE",
+      "type": "AD",
+      "parent_draft_id": "SIM_S_US_EN",
+      "creative_ref": "SIM_CREATIVE_B_V1",
+      "copy_ref": {
+        "file": "PLAN.md",
+        "section_label": "广告B｜SIM_A_SIZE"
+      },
+      "destination_url": "https://example.invalid/desk-tray?utm_source=facebook&utm_medium=paid_social&utm_campaign=sim_tray_v1&utm_content=sim_a_size_v1",
+      "namespace": "SIM_TRAY_V1",
+      "status": "PAUSED",
+      "exists_in_meta": false,
+      "published": false,
+      "actual_delivery": "UNKNOWN"
+    }
+  ],
+  "proposal": {
+    "budget_owner_level": "ADSET",
+    "currency": "USD",
+    "period": "ONE_PREPARATION_BATCH_NOT_DAILY",
+    "ad_pool": "80",
+    "initial_ads": "50",
+    "later_uncommitted_ads": "30",
+    "extra_preparation_cost": "20",
+    "risk_buffer": "20",
+    "total_resource_cap": "120",
+    "maximum_loss_scenario_cap": "120",
+    "authorized_spend_cap": "0",
+    "platform_budget_type": "UNKNOWN",
+    "timezone_candidate": "America/Los_Angeles",
+    "actual_spend": "UNKNOWN"
+  },
+  "platform_implementation": {
+    "objective": "UNKNOWN",
+    "optimization_event": "UNKNOWN",
+    "placements": "UNKNOWN",
+    "bidding": "UNKNOWN",
+    "schedule": "UNKNOWN",
+    "identity_reference": "UNKNOWN",
+    "actual_budget_owner_level": "UNKNOWN",
+    "creative_transform_contract": "No claim, product, count, or dimension changes in draft; actual controls UNKNOWN"
+  },
+  "live_action_authorized": false,
+  "causal_claim_allowed": false,
+  "url_network_validation": "NOT_RUN_RESERVED_INVALID_DOMAIN",
+  "upstream_utm_script": "NOT_EXECUTED",
+  "tracking_dictionary": "Manual local text; no real click/session/attribution evidence"
+}

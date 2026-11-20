@@ -1,0 +1,1354 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "meta-write-snapshots-v1"
+    },
+    "draft_intent_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "allowlist": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "CAMPAIGN": {
+          "type": "array",
+          "maxItems": 25,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        },
+        "ADSET": {
+          "type": "array",
+          "maxItems": 25,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        },
+        "AD": {
+          "type": "array",
+          "maxItems": 25,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        },
+        "CREATIVE": {
+          "type": "array",
+          "maxItems": 25,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        },
+        "PAGE": {
+          "type": "array",
+          "maxItems": 25,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        }
+      },
+      "required": [
+        "account_id",
+        "CAMPAIGN",
+        "ADSET",
+        "AD",
+        "CREATIVE",
+        "PAGE"
+      ]
+    },
+    "source_mode": {
+      "enum": [
+        "SYNTHETIC",
+        "GRAPH_READ"
+      ]
+    },
+    "read_identity": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "principal_id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,39}$"
+        }
+      },
+      "required": [
+        "app_id",
+        "principal_id"
+      ]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "request_count": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 10
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "plan": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "level": {
+                    "const": "ACCOUNT"
+                  },
+                  "object_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "page_id": {
+                    "type": "null"
+                  },
+                  "version": {
+                    "const": "v27.0"
+                  }
+                },
+                "required": [
+                  "level",
+                  "object_id",
+                  "account_id",
+                  "page_id",
+                  "version"
+                ]
+              },
+              "request": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "path": {
+                    "type": "string",
+                    "pattern": "^/v27[.]0/act_[1-9][0-9]{0,39}$"
+                  },
+                  "params": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "fields": {
+                        "const": "id,account_id,currency,timezone_name,account_status"
+                      }
+                    },
+                    "required": [
+                      "fields"
+                    ]
+                  }
+                },
+                "required": [
+                  "method",
+                  "path",
+                  "params"
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^act_[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "timezone_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "pattern": "^[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*$"
+                  },
+                  "account_status": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  }
+                },
+                "required": [
+                  "id",
+                  "account_id",
+                  "currency",
+                  "timezone_name",
+                  "account_status"
+                ]
+              },
+              "data_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "first_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "last_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "read_binding": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "plan_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "app_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "principal_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "review_expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "granted_scopes": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    }
+                  },
+                  "app_binding_verified": {
+                    "const": true
+                  },
+                  "asset_ownership_verified": {
+                    "const": true
+                  },
+                  "read_authorized": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "plan_hash",
+                  "app_id",
+                  "principal_id",
+                  "observed_at",
+                  "expires_at",
+                  "review_expires_at",
+                  "granted_scopes",
+                  "app_binding_verified",
+                  "asset_ownership_verified",
+                  "read_authorized"
+                ]
+              }
+            },
+            "required": [
+              "plan",
+              "request",
+              "data",
+              "data_sha256",
+              "first_observed_at",
+              "last_observed_at",
+              "read_binding"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "plan": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "level": {
+                    "const": "CAMPAIGN"
+                  },
+                  "object_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "page_id": {
+                    "type": "null"
+                  },
+                  "version": {
+                    "const": "v27.0"
+                  }
+                },
+                "required": [
+                  "level",
+                  "object_id",
+                  "account_id",
+                  "page_id",
+                  "version"
+                ]
+              },
+              "request": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "path": {
+                    "type": "string",
+                    "pattern": "^/v27[.]0/[1-9][0-9]{0,39}$"
+                  },
+                  "params": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "fields": {
+                        "const": "id,account_id,status,effective_status,objective,buying_type,special_ad_categories,daily_budget,lifetime_budget"
+                      }
+                    },
+                    "required": [
+                      "fields"
+                    ]
+                  }
+                },
+                "required": [
+                  "method",
+                  "path",
+                  "params"
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "status": {
+                    "enum": [
+                      "ACTIVE",
+                      "ADSET_PAUSED",
+                      "ARCHIVED",
+                      "CAMPAIGN_PAUSED",
+                      "DELETED",
+                      "DISAPPROVED",
+                      "IN_PROCESS",
+                      "PAUSED",
+                      "PENDING_BILLING_INFO",
+                      "PENDING_REVIEW",
+                      "PREAPPROVED",
+                      "WITH_ISSUES"
+                    ]
+                  },
+                  "effective_status": {
+                    "enum": [
+                      "ACTIVE",
+                      "ADSET_PAUSED",
+                      "ARCHIVED",
+                      "CAMPAIGN_PAUSED",
+                      "DELETED",
+                      "DISAPPROVED",
+                      "IN_PROCESS",
+                      "PAUSED",
+                      "PENDING_BILLING_INFO",
+                      "PENDING_REVIEW",
+                      "PREAPPROVED",
+                      "WITH_ISSUES"
+                    ]
+                  },
+                  "objective": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_]{1,80}$"
+                  },
+                  "buying_type": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_]{1,80}$"
+                  },
+                  "special_ad_categories": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Z_]{1,60}$"
+                    }
+                  },
+                  "daily_budget": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})$"
+                  },
+                  "lifetime_budget": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})$"
+                  }
+                },
+                "required": [
+                  "id",
+                  "account_id",
+                  "status",
+                  "effective_status",
+                  "objective",
+                  "buying_type",
+                  "special_ad_categories"
+                ]
+              },
+              "data_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "first_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "last_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "read_binding": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "plan_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "app_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "principal_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "review_expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "granted_scopes": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    }
+                  },
+                  "app_binding_verified": {
+                    "const": true
+                  },
+                  "asset_ownership_verified": {
+                    "const": true
+                  },
+                  "read_authorized": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "plan_hash",
+                  "app_id",
+                  "principal_id",
+                  "observed_at",
+                  "expires_at",
+                  "review_expires_at",
+                  "granted_scopes",
+                  "app_binding_verified",
+                  "asset_ownership_verified",
+                  "read_authorized"
+                ]
+              }
+            },
+            "required": [
+              "plan",
+              "request",
+              "data",
+              "data_sha256",
+              "first_observed_at",
+              "last_observed_at",
+              "read_binding"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "plan": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "level": {
+                    "const": "ADSET"
+                  },
+                  "object_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "page_id": {
+                    "type": "null"
+                  },
+                  "version": {
+                    "const": "v27.0"
+                  }
+                },
+                "required": [
+                  "level",
+                  "object_id",
+                  "account_id",
+                  "page_id",
+                  "version"
+                ]
+              },
+              "request": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "path": {
+                    "type": "string",
+                    "pattern": "^/v27[.]0/[1-9][0-9]{0,39}$"
+                  },
+                  "params": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "fields": {
+                        "const": "id,account_id,campaign_id,status,effective_status,daily_budget,lifetime_budget,billing_event,optimization_goal,bid_strategy,destination_type"
+                      }
+                    },
+                    "required": [
+                      "fields"
+                    ]
+                  }
+                },
+                "required": [
+                  "method",
+                  "path",
+                  "params"
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "campaign_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "status": {
+                    "enum": [
+                      "ACTIVE",
+                      "ADSET_PAUSED",
+                      "ARCHIVED",
+                      "CAMPAIGN_PAUSED",
+                      "DELETED",
+                      "DISAPPROVED",
+                      "IN_PROCESS",
+                      "PAUSED",
+                      "PENDING_BILLING_INFO",
+                      "PENDING_REVIEW",
+                      "PREAPPROVED",
+                      "WITH_ISSUES"
+                    ]
+                  },
+                  "effective_status": {
+                    "enum": [
+                      "ACTIVE",
+                      "ADSET_PAUSED",
+                      "ARCHIVED",
+                      "CAMPAIGN_PAUSED",
+                      "DELETED",
+                      "DISAPPROVED",
+                      "IN_PROCESS",
+                      "PAUSED",
+                      "PENDING_BILLING_INFO",
+                      "PENDING_REVIEW",
+                      "PREAPPROVED",
+                      "WITH_ISSUES"
+                    ]
+                  },
+                  "daily_budget": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})$"
+                  },
+                  "lifetime_budget": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})$"
+                  },
+                  "billing_event": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_]{1,80}$"
+                  },
+                  "optimization_goal": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_]{1,80}$"
+                  },
+                  "bid_strategy": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_]{1,80}$"
+                  },
+                  "destination_type": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_]{1,80}$"
+                  }
+                },
+                "required": [
+                  "id",
+                  "account_id",
+                  "campaign_id",
+                  "status",
+                  "effective_status"
+                ]
+              },
+              "data_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "first_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "last_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "read_binding": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "plan_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "app_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "principal_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "review_expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "granted_scopes": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    }
+                  },
+                  "app_binding_verified": {
+                    "const": true
+                  },
+                  "asset_ownership_verified": {
+                    "const": true
+                  },
+                  "read_authorized": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "plan_hash",
+                  "app_id",
+                  "principal_id",
+                  "observed_at",
+                  "expires_at",
+                  "review_expires_at",
+                  "granted_scopes",
+                  "app_binding_verified",
+                  "asset_ownership_verified",
+                  "read_authorized"
+                ]
+              }
+            },
+            "required": [
+              "plan",
+              "request",
+              "data",
+              "data_sha256",
+              "first_observed_at",
+              "last_observed_at",
+              "read_binding"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "plan": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "level": {
+                    "const": "AD"
+                  },
+                  "object_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "page_id": {
+                    "type": "null"
+                  },
+                  "version": {
+                    "const": "v27.0"
+                  }
+                },
+                "required": [
+                  "level",
+                  "object_id",
+                  "account_id",
+                  "page_id",
+                  "version"
+                ]
+              },
+              "request": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "path": {
+                    "type": "string",
+                    "pattern": "^/v27[.]0/[1-9][0-9]{0,39}$"
+                  },
+                  "params": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "fields": {
+                        "const": "id,account_id,campaign_id,adset_id,status,effective_status,creative{id}"
+                      }
+                    },
+                    "required": [
+                      "fields"
+                    ]
+                  }
+                },
+                "required": [
+                  "method",
+                  "path",
+                  "params"
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "campaign_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "adset_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "status": {
+                    "enum": [
+                      "ACTIVE",
+                      "ADSET_PAUSED",
+                      "ARCHIVED",
+                      "CAMPAIGN_PAUSED",
+                      "DELETED",
+                      "DISAPPROVED",
+                      "IN_PROCESS",
+                      "PAUSED",
+                      "PENDING_BILLING_INFO",
+                      "PENDING_REVIEW",
+                      "PREAPPROVED",
+                      "WITH_ISSUES"
+                    ]
+                  },
+                  "effective_status": {
+                    "enum": [
+                      "ACTIVE",
+                      "ADSET_PAUSED",
+                      "ARCHIVED",
+                      "CAMPAIGN_PAUSED",
+                      "DELETED",
+                      "DISAPPROVED",
+                      "IN_PROCESS",
+                      "PAUSED",
+                      "PENDING_BILLING_INFO",
+                      "PENDING_REVIEW",
+                      "PREAPPROVED",
+                      "WITH_ISSUES"
+                    ]
+                  },
+                  "creative": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,39}$"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "account_id",
+                  "campaign_id",
+                  "adset_id",
+                  "status",
+                  "effective_status",
+                  "creative"
+                ]
+              },
+              "data_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "first_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "last_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "read_binding": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "plan_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "app_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "principal_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "review_expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "granted_scopes": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    }
+                  },
+                  "app_binding_verified": {
+                    "const": true
+                  },
+                  "asset_ownership_verified": {
+                    "const": true
+                  },
+                  "read_authorized": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "plan_hash",
+                  "app_id",
+                  "principal_id",
+                  "observed_at",
+                  "expires_at",
+                  "review_expires_at",
+                  "granted_scopes",
+                  "app_binding_verified",
+                  "asset_ownership_verified",
+                  "read_authorized"
+                ]
+              }
+            },
+            "required": [
+              "plan",
+              "request",
+              "data",
+              "data_sha256",
+              "first_observed_at",
+              "last_observed_at",
+              "read_binding"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "plan": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "level": {
+                    "const": "CREATIVE"
+                  },
+                  "object_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "page_id": {
+                    "type": "null"
+                  },
+                  "version": {
+                    "const": "v27.0"
+                  }
+                },
+                "required": [
+                  "level",
+                  "object_id",
+                  "account_id",
+                  "page_id",
+                  "version"
+                ]
+              },
+              "request": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "path": {
+                    "type": "string",
+                    "pattern": "^/v27[.]0/[1-9][0-9]{0,39}$"
+                  },
+                  "params": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "fields": {
+                        "const": "id,account_id,actor_id"
+                      }
+                    },
+                    "required": [
+                      "fields"
+                    ]
+                  }
+                },
+                "required": [
+                  "method",
+                  "path",
+                  "params"
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "actor_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  }
+                },
+                "required": [
+                  "id",
+                  "account_id",
+                  "actor_id"
+                ]
+              },
+              "data_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "first_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "last_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "read_binding": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "plan_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "app_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "principal_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "review_expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "granted_scopes": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    }
+                  },
+                  "app_binding_verified": {
+                    "const": true
+                  },
+                  "asset_ownership_verified": {
+                    "const": true
+                  },
+                  "read_authorized": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "plan_hash",
+                  "app_id",
+                  "principal_id",
+                  "observed_at",
+                  "expires_at",
+                  "review_expires_at",
+                  "granted_scopes",
+                  "app_binding_verified",
+                  "asset_ownership_verified",
+                  "read_authorized"
+                ]
+              }
+            },
+            "required": [
+              "plan",
+              "request",
+              "data",
+              "data_sha256",
+              "first_observed_at",
+              "last_observed_at",
+              "read_binding"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "plan": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "level": {
+                    "const": "PAGE"
+                  },
+                  "object_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "account_id": {
+                    "type": "null"
+                  },
+                  "page_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "version": {
+                    "const": "v27.0"
+                  }
+                },
+                "required": [
+                  "level",
+                  "object_id",
+                  "account_id",
+                  "page_id",
+                  "version"
+                ]
+              },
+              "request": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "path": {
+                    "type": "string",
+                    "pattern": "^/v27[.]0/[1-9][0-9]{0,39}$"
+                  },
+                  "params": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "fields": {
+                        "const": "id"
+                      }
+                    },
+                    "required": [
+                      "fields"
+                    ]
+                  }
+                },
+                "required": [
+                  "method",
+                  "path",
+                  "params"
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              },
+              "data_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "first_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "last_observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "read_binding": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "plan_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "app_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "principal_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,39}$"
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "review_expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "granted_scopes": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    }
+                  },
+                  "app_binding_verified": {
+                    "const": true
+                  },
+                  "asset_ownership_verified": {
+                    "const": true
+                  },
+                  "read_authorized": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "plan_hash",
+                  "app_id",
+                  "principal_id",
+                  "observed_at",
+                  "expires_at",
+                  "review_expires_at",
+                  "granted_scopes",
+                  "app_binding_verified",
+                  "asset_ownership_verified",
+                  "read_authorized"
+                ]
+              }
+            },
+            "required": [
+              "plan",
+              "request",
+              "data",
+              "data_sha256",
+              "first_observed_at",
+              "last_observed_at",
+              "read_binding"
+            ]
+          }
+        ]
+      }
+    },
+    "coverage": {
+      "const": "FIXED_FIELDS_TWO_SWEEPS_NOT_ATOMIC_OR_COMPLETE_MATERIAL"
+    },
+    "write_enabled": {
+      "const": false
+    },
+    "bundle_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema",
+    "draft_intent_sha256",
+    "allowlist",
+    "source_mode",
+    "read_identity",
+    "started_at",
+    "ended_at",
+    "request_count",
+    "entries",
+    "coverage",
+    "write_enabled",
+    "bundle_sha256"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bounded read-before-write snapshot evidence; file imports are unattested",
+  "$comment": "Runtime checks <=64000 UTF-8 bytes, duplicate keys, field hashes, exact plan/path/ID/account/allowlist binding, relationship closure, no extra or duplicate objects, request count twice object count, time ordering and freshness, draft intent binding. Hashes are integrity checks, never source authentication or write authority. No writes are dispatched."
+}

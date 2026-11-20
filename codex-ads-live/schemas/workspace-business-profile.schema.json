@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Declared business inputs for one account",
+  "type": "object",
+  "required": [
+    "schema",
+    "client_id",
+    "account_id",
+    "currency",
+    "result_type",
+    "baseline_evidence_ref",
+    "offer_summary",
+    "goal",
+    "result_definition",
+    "observation_days",
+    "minimum_results",
+    "target_cost_per_result",
+    "maximum_test_spend",
+    "protected_daily_spend"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "workspace-business-profile-v1"
+    },
+    "client_id": {
+      "type": "string",
+      "pattern": "^client_[0-9a-f]{32}$"
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,39}$"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "result_type": {
+      "enum": [
+        "PURCHASE",
+        "LEAD",
+        "QUALIFIED_LEAD",
+        "OTHER"
+      ]
+    },
+    "baseline_evidence_ref": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^EV_[A-Z0-9_]{1,80}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "offer_summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "result_definition": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "observation_days": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "minimum_results": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "target_cost_per_result": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9]{1,9}(?:\\.[0-9]{1,3})?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "maximum_test_spend": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9]{1,9}(?:\\.[0-9]{1,3})?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "protected_daily_spend": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9]{1,9}(?:\\.[0-9]{1,3})?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$comment": "Major currency units. Runtime also checks text safety, positive declared result cost, and exact client/account mapping. Evidence reference is an opaque alias. Blank preparation is intentionally incomplete."
+}

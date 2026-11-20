@@ -1,0 +1,35 @@
+{
+  "runtime_status": "DRAFT",
+  "decision": "准备一个系列一个组和两项英文表达；不创建账户对象，详见PLAN.md。",
+  "evidence_observed": [
+    "INPUT.md SIM-P01/O01/G01/R01/B01/L01：制作方锁定的虚构条件，不是客户或市场事实。"
+  ],
+  "evidence_labels": [
+    "商品、资源、预算与三层意图→project_hypothesis→INPUT.md；真实本地开发许可→user_decision→当前用户V1.5连续执行要求；真实动作边界→redline→当前用户AGENTS及V1.5。"
+  ],
+  "unknowns": [
+    "真实规格/素材权利/履约/页面/账户设置/测量与实际投放均UNKNOWN；对应实施核查NEEDS_RESEARCH。",
+    "缺订单与完整成本，不算CPA、ROAS或CAC；不从28 USD售价推利润。"
+  ],
+  "earliest_credible_breakpoint": "尚无已证经营异常；当前首先缺真实商品与承接一致性证据。",
+  "one_minimum_validation_action": "商品负责人核同规格分区、外尺寸、价格及拟议页面；当前仅提出核对，不联系客户。",
+  "check_result_fields": [
+    "spec_version",
+    "compartment_count",
+    "outer_dimensions",
+    "unit_price_currency",
+    "landing_copy",
+    "rights_scope",
+    "parent_intent"
+  ],
+  "maximum_loss": "合成单批120 USD讨论上限；首批50+准备20=70零回收情景，另审储备用完100，余量20；本轮真实花费授权0。",
+  "stop_conditions": [
+    "尺寸/规格证据撤回则撤相关主张",
+    "素材权利或承接缺证不得上线",
+    "真实身份/权限/预算另批前停止账户操作"
+  ],
+  "rollback": "保留原版本并更新受影响稿；没有线上对象，不能声称线上回滚已经执行。",
+  "safe_stop": "保持未创建未发布；仅继续不依赖缺证的本地文字工作。",
+  "causal_claim_allowed": false,
+  "live_action_authorized": false
+}

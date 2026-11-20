@@ -1,0 +1,85 @@
+{
+  "skill": "meta-facebook-ads",
+  "version": "1.0.0",
+  "repository": "Modernlinc/ecommerce-skills",
+  "commit": "1fc556b3a8b900180b63af9ec8966bcc52489dd9",
+  "entry": "entry.md",
+  "method": "method.md",
+  "license": "MIT; bundled attribution and third-party notices retained",
+  "mode": "TEXT_METHODS_ONLY_NO_UPSTREAM_SCRIPT_EXECUTION",
+  "analytics_engine_bundled": false,
+  "files": [
+    {
+      "path": "LICENSE.txt",
+      "bytes": 1067,
+      "sha256": "c31f9e7f5cc4271853d7a2c0ed9717f49119073eefc900c046a107799ab564ce",
+      "upstream_path": "LICENSE",
+      "upstream_sha256": "c31f9e7f5cc4271853d7a2c0ed9717f49119073eefc900c046a107799ab564ce",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/meta-facebook-ads/LICENSE",
+      "adaptation": "PORTABLE_FILENAMES_NAVIGATION_AND_EXPLICIT_TEXT_ONLY_SCOPE_NOTICE"
+    },
+    {
+      "path": "NOTICE.md",
+      "bytes": 541,
+      "sha256": "38e24edad48f05aa80148346eb1c6af37f1d01656c2f92940582ced35f37a45d",
+      "upstream_path": "NOTICE.md",
+      "upstream_sha256": "b11051d77c987556a6fb5b58e93751f7b02b9bb286060ce976473f926e7be838",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/meta-facebook-ads/NOTICE.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "business-math-and-unit-economics-880b2704.md",
+      "bytes": 10503,
+      "sha256": "7b6b4134ec0635debb6d0871eb8dd2eb778778946018d3030cba0bd01ec8cdec",
+      "upstream_path": "references/library/references/payload__候选正文__Facebook广告运营Skill__meta-facebook-ads-operations__references__business-math-and-unit-economics.md",
+      "upstream_sha256": "8fbf8758d9c25aa3275422f4dc9f0819d6dbb253ff5c5cc7fb84fd858d7e57cf",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/meta-facebook-ads/references/library/references/payload__%E5%80%99%E9%80%89%E6%AD%A3%E6%96%87__Facebook%E5%B9%BF%E5%91%8A%E8%BF%90%E8%90%A5Skill__meta-facebook-ads-operations__references__business-math-and-unit-economics.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "commerce-completion-workflows-c39f4cd0.md",
+      "bytes": 6552,
+      "sha256": "15c2672c149375dbfa79b4341ed431e13326aa13a2d2705d2b79a41662903202",
+      "upstream_path": "references/library/references/payload__候选正文__Facebook广告运营Skill__meta-facebook-ads-operations__references__commerce-completion-workflows.md",
+      "upstream_sha256": "c9777c98d8ec7f5ea8a837296a5595a00c3ff5ac489573450bf8bf22e894bef0",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/meta-facebook-ads/references/library/references/payload__%E5%80%99%E9%80%89%E6%AD%A3%E6%96%87__Facebook%E5%B9%BF%E5%91%8A%E8%BF%90%E8%90%A5Skill__meta-facebook-ads-operations__references__commerce-completion-workflows.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "entry.md",
+      "bytes": 312,
+      "sha256": "ec18e6bf449fc465fa78e49248e0254d320da1c31474010c1577904b28221368",
+      "upstream_path": "SKILL.md",
+      "upstream_sha256": "503fe2c3acebf4795b52cd32a3d882ad71f8e0758a9663ba3385f37939d3f401",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/meta-facebook-ads/SKILL.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "method.md",
+      "bytes": 951,
+      "sha256": "841e481320cb027572bb040f402521644d474f0a0b3bbb53674456fbd3d9b1e2",
+      "upstream_path": "references/library/references/payload__候选正文__Facebook广告运营Skill__meta-facebook-ads-operations__METHOD.md",
+      "upstream_sha256": "1c446dfccf932c0348315e3cc0d3830c68b8c1af6af899a5901b79b7a130cfb0",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/meta-facebook-ads/references/library/references/payload__%E5%80%99%E9%80%89%E6%AD%A3%E6%96%87__Facebook%E5%B9%BF%E5%91%8A%E8%BF%90%E8%90%A5Skill__meta-facebook-ads-operations__METHOD.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "stage-audience-resource-playbook-b8af4368.md",
+      "bytes": 16226,
+      "sha256": "6c1d1b6ec11f7eef0077ba5fd5752ed78cf1ce6cb513b64949f5050477219809",
+      "upstream_path": "references/library/references/payload__候选正文__Facebook广告运营Skill__meta-facebook-ads-operations__references__stage-audience-resource-playbook.md",
+      "upstream_sha256": "cc1337e5a58d6121d35461cf8325e02c88225f8b2be653cceaac31eb36fa2bac",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/meta-facebook-ads/references/library/references/payload__%E5%80%99%E9%80%89%E6%AD%A3%E6%96%87__Facebook%E5%B9%BF%E5%91%8A%E8%BF%90%E8%90%A5Skill__meta-facebook-ads-operations__references__stage-audience-resource-playbook.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "tracking-parameters-and-url-chec-a8da3084.md",
+      "bytes": 9223,
+      "sha256": "1b5d5bf8464e28744455cce43d0900972285eebfcbdb26e01300bbfb4ad8b09a",
+      "upstream_path": "references/library/references/payload__候选正文__Facebook广告运营Skill__meta-facebook-ads-operations__references__tracking-parameters-and-url-checks.md",
+      "upstream_sha256": "4a4b95660967a813db8bc4f656c1c6aaf012f64b58a75f8bec28832de49144b6",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/meta-facebook-ads/references/library/references/payload__%E5%80%99%E9%80%89%E6%AD%A3%E6%96%87__Facebook%E5%B9%BF%E5%91%8A%E8%BF%90%E8%90%A5Skill__meta-facebook-ads-operations__references__tracking-parameters-and-url-checks.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    }
+  ]
+}

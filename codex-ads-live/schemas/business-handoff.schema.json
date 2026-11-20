@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Preserved 14-field offline handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "runtime_status",
+    "decision",
+    "earliest_credible_breakpoint",
+    "one_minimum_validation_action",
+    "maximum_loss",
+    "rollback",
+    "safe_stop",
+    "evidence_observed",
+    "evidence_labels",
+    "unknowns",
+    "check_result_fields",
+    "stop_conditions",
+    "causal_claim_allowed",
+    "live_action_authorized"
+  ],
+  "properties": {
+    "runtime_status": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "decision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "earliest_credible_breakpoint": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "one_minimum_validation_action": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "maximum_loss": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "rollback": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "safe_stop": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "evidence_observed": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "evidence_labels": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "unknowns": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    },
+    "check_result_fields": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "minItems": 1
+    },
+    "stop_conditions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      },
+      "minItems": 1
+    },
+    "causal_claim_allowed": {
+      "const": false
+    },
+    "live_action_authorized": {
+      "const": false
+    }
+  }
+}

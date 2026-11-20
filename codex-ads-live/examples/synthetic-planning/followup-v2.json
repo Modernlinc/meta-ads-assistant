@@ -1,0 +1,154 @@
+{
+  "schema": "LOCAL_DISCUSSION_NOT_META_API",
+  "version": 2,
+  "draft": {
+    "schema": "LOCAL_DISCUSSION_NOT_META_API",
+    "runtime_status": "DRAFT",
+    "version": 2,
+    "independent_intent_source": "INPUT.md 独立的初始归属意图",
+    "objects": [
+      {
+        "draft_id": "SIM_C_TRAY",
+        "type": "CAMPAIGN",
+        "parent_draft_id": null,
+        "namespace": "SIM_TRAY_V2",
+        "status": "PAUSED",
+        "exists_in_meta": false,
+        "published": false,
+        "actual_delivery": "UNKNOWN"
+      },
+      {
+        "draft_id": "SIM_S_US_EN",
+        "type": "ADSET",
+        "parent_draft_id": "SIM_C_TRAY",
+        "namespace": "SIM_TRAY_V2",
+        "status": "PAUSED",
+        "exists_in_meta": false,
+        "published": false,
+        "actual_delivery": "UNKNOWN"
+      },
+      {
+        "draft_id": "SIM_A_LAYOUT",
+        "type": "AD",
+        "parent_draft_id": "SIM_S_US_EN",
+        "creative_ref": "SIM_CREATIVE_A_V2",
+        "copy_ref": {
+          "file": "FOLLOWUP.md",
+          "section_label": "完整广告A-V2"
+        },
+        "destination_url": "https://example.invalid/desk-tray?utm_source=facebook&utm_medium=paid_social&utm_campaign=sim_tray_v2&utm_content=sim_a_layout_v2",
+        "namespace": "SIM_TRAY_V2",
+        "status": "PAUSED",
+        "exists_in_meta": false,
+        "published": false,
+        "actual_delivery": "UNKNOWN",
+        "current_copy": {
+          "primary_text": "Fictional training ad. Three compartments in one light-gray desktop tray. Take a closer look at the layout before deciding whether it suits your setup. Dimensions have not yet been confirmed.",
+          "headline": "Three compartments. One simple layout.",
+          "cta_text": "View details."
+        },
+        "creative_brief": "Layout only, three compartments/light gray; no size annotations or fit claims. No image exists or has been reviewed.",
+        "readiness": "DRAFT_PENDING_RIGHTS_AND_LANDING"
+      },
+      {
+        "draft_id": "SIM_A_SIZE",
+        "type": "AD",
+        "parent_draft_id": "SIM_S_US_EN",
+        "creative_ref": null,
+        "copy_ref": null,
+        "destination_url": null,
+        "namespace": "SIM_TRAY_V2",
+        "status": "PAUSED",
+        "exists_in_meta": false,
+        "published": false,
+        "actual_delivery": "UNKNOWN",
+        "current_copy": null,
+        "readiness": "ON_HOLD_EVIDENCE_WITHDRAWN",
+        "blocked_reason": "OUTER_DIMENSIONS_WITHDRAWN",
+        "prior_version_reference": "draft.json SIM_A_SIZE; historical only, do not build"
+      }
+    ],
+    "proposal": {
+      "budget_owner_level": "ADSET",
+      "currency": "USD",
+      "period": "ONE_PREPARATION_BATCH_NOT_DAILY",
+      "ad_pool": "80",
+      "initial_ads": "30",
+      "later_uncommitted_ads": "50",
+      "extra_preparation_cost": "20",
+      "risk_buffer": "20",
+      "total_resource_cap": "120",
+      "maximum_loss_scenario_cap": "120",
+      "authorized_spend_cap": "0",
+      "platform_budget_type": "UNKNOWN",
+      "timezone_candidate": "America/Los_Angeles",
+      "actual_spend": "UNKNOWN",
+      "initial_allocation_rationale": "Illustrative provisional choice: defer 20 USD from initial candidate allocation into uncommitted reserve after the size concept is held. 30 is not an optimal budget, platform minimum, sample-size calculation, performance inference or customer approval.",
+      "allocation_recheck_conditions": [
+        "Reassess when the validation goal or actual fees require a different amount",
+        "Re-propose if dimensions are evidenced and concept B is restored",
+        "No automatic reserve release; actual authorized spend remains zero"
+      ],
+      "full_loss_upper_bound_verified": false
+    },
+    "platform_implementation": {
+      "objective": "UNKNOWN",
+      "optimization_event": "UNKNOWN",
+      "placements": "UNKNOWN",
+      "bidding": "UNKNOWN",
+      "schedule": "UNKNOWN",
+      "identity_reference": "UNKNOWN",
+      "actual_budget_owner_level": "UNKNOWN",
+      "creative_transform_contract": "No claim, product, count, or dimension changes in draft; actual controls UNKNOWN"
+    },
+    "live_action_authorized": false,
+    "causal_claim_allowed": false,
+    "url_network_validation": "NOT_RUN_RESERVED_INVALID_DOMAIN",
+    "upstream_utm_script": "NOT_EXECUTED",
+    "tracking_dictionary": "Manual local text; no real click/session/attribution evidence",
+    "withdrawn_evidence": [
+      "SIM-P01 outer dimensions only"
+    ],
+    "supersedes": "SIM_TRAY_V1 proposal only; no real object exists",
+    "current_outer_dimensions": "UNKNOWN"
+  },
+  "handoff": {
+    "runtime_status": "DRAFT",
+    "decision": "SIM-TRAY-V2先交布局A完整新稿；尺寸B停留撤证待补，不使用V1机器稿，详见FOLLOWUP.md和followup-v2.json。",
+    "evidence_observed": [
+      "INPUT.md SIM-P01/O01/G01/R01/B01/L01：制作方锁定的虚构条件，不是客户或市场事实。",
+      "FOLLOWUP.md：模拟撤回SIM-P01外尺寸，分区与颜色仍有效。"
+    ],
+    "evidence_labels": [
+      "商品、资源、预算与三层意图→project_hypothesis→INPUT.md；真实本地开发许可→user_decision→当前用户V1.5连续执行要求；真实动作边界→redline→当前用户AGENTS及V1.5。"
+    ],
+    "unknowns": [
+      "外尺寸已撤回；内外尺寸、真实权利、履约、页面、平台/测量均UNKNOWN，对应实施NEEDS_RESEARCH。",
+      "尺寸B及旧尺寸标注不得交付；不算CPA/ROAS/CAC。"
+    ],
+    "earliest_credible_breakpoint": "准备稿的外尺寸来源被模拟撤回；不是经营表现异常。",
+    "one_minimum_validation_action": "商品负责人先确认同规格外尺寸；补证前只审A布局新稿，不恢复B。",
+    "check_result_fields": [
+      "spec_version",
+      "compartment_count",
+      "outer_dimensions",
+      "unit_price_currency",
+      "landing_copy",
+      "rights_scope",
+      "parent_intent"
+    ],
+    "maximum_loss": "合成120 USD承受上限：暂定首批30+已列准备20=50零回收情景；另审广告储备50后累计已列100，余量20。不是完整贡献损失上界，未知费用和承诺未核清；真实花费授权0。取值理由和改判条件见FOLLOWUP.md。",
+    "stop_conditions": [
+      "尺寸/规格证据撤回则撤相关主张",
+      "素材权利或承接缺证不得上线",
+      "真实身份/权限/预算另批前停止账户操作"
+    ],
+    "rollback": "V1保留作历史；V2完整交接在followup-v2.json，不把旧尺寸或旧URL合并回来。",
+    "safe_stop": "保持未创建未发布；仅继续不依赖缺证的本地文字工作。",
+    "causal_claim_allowed": false,
+    "live_action_authorized": false
+  },
+  "real_execution_authorized": false,
+  "human_approval": "NOT_REQUESTED_NOT_GRANTED",
+  "source": "FOLLOWUP.md"
+}

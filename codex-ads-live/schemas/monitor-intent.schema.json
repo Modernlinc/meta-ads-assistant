@@ -1,0 +1,1110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bounded foreground read monitor intent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "connection",
+    "page_id",
+    "sources",
+    "interval_seconds",
+    "duration_seconds",
+    "request_budget",
+    "cycles",
+    "pages_per_source"
+  ],
+  "properties": {
+    "schema": {
+      "enum": [
+        "monitor-intent-v1",
+        "workspace-monitor-intent-v1",
+        "workspace-page-live-monitor-intent-v1"
+      ]
+    },
+    "connection": {
+      "type": "object"
+    },
+    "page_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{1,40}$"
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 15,
+      "properties": {
+        "ads": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "insights",
+                "insights_website_conversions",
+                "insights_hierarchy",
+                "insights_website_hierarchy"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "live": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "live"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "expected_live_video_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            }
+          }
+        },
+        "comments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "comments",
+                "recent_live_comments"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "live_post": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,39}_[1-9][0-9]{0,39}$"
+            },
+            "operation": {
+              "enum": [
+                "live_post"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "account": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "account"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "ad_links": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "ad_videos"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "placements": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": "null"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "placement_insights"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "campaigns": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "campaigns"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "adsets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "adsets"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "ad_inventory": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "ads"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "page": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "page_id",
+            "object_id",
+            "operation",
+            "version",
+            "limit",
+            "reviewed_live_contract",
+            "since",
+            "until"
+          ],
+          "properties": {
+            "account_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "object_id": {
+              "type": "string",
+              "pattern": "^[0-9]{1,40}$"
+            },
+            "operation": {
+              "enum": [
+                "page"
+              ]
+            },
+            "version": {
+              "const": "v27.0"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "reviewed_live_contract": {
+              "type": "boolean"
+            },
+            "since": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "until": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        },
+        "live_current_viewers": {
+          "allOf": [
+            {
+              "$ref": "metric-read-plan.schema.json"
+            },
+            {
+              "properties": {
+                "metric": {
+                  "const": "post_video_live_current_viewers"
+                }
+              }
+            }
+          ]
+        },
+        "live_views": {
+          "allOf": [
+            {
+              "$ref": "metric-read-plan.schema.json"
+            },
+            {
+              "properties": {
+                "metric": {
+                  "const": "post_video_views_live"
+                }
+              }
+            }
+          ]
+        },
+        "live_social_actions": {
+          "allOf": [
+            {
+              "$ref": "metric-read-plan.schema.json"
+            },
+            {
+              "properties": {
+                "metric": {
+                  "const": "post_video_social_actions_count_unique"
+                }
+              }
+            }
+          ]
+        },
+        "live_views_by_status": {
+          "allOf": [
+            {
+              "$ref": "metric-read-plan.schema.json"
+            },
+            {
+              "properties": {
+                "metric": {
+                  "const": "post_video_views_by_live_status"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "interval_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600
+    },
+    "duration_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600
+    },
+    "request_budget": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 1000
+    },
+    "cycles": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "pages_per_source": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "workspace_scope_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "verify_page_insights_role": {
+      "type": "boolean"
+    },
+    "expected_live_video_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{1,40}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "workspace-page-live-monitor-intent-v1"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "workspace_scope_sha256",
+          "expected_live_video_id"
+        ],
+        "properties": {
+          "page_id": {
+            "type": "string"
+          },
+          "request_budget": {
+            "minimum": 4
+          },
+          "connection": {
+            "type": "object",
+            "required": [
+              "app_id",
+              "principal_id",
+              "schema",
+              "credential_source",
+              "credential_reference",
+              "app_developer_confirmed",
+              "asset_owner_confirmed",
+              "appsecret_proof_requirement",
+              "page_id"
+            ],
+            "properties": {
+              "app_id": {
+                "type": "string",
+                "pattern": "^[0-9]{1,40}$"
+              },
+              "principal_id": {
+                "type": "string",
+                "pattern": "^[0-9]{1,40}$"
+              },
+              "schema": {
+                "const": "page-connection-intent-v1"
+              },
+              "credential_source": {
+                "enum": [
+                  "SESSION_INPUT",
+                  "OS_REFERENCE"
+                ]
+              },
+              "credential_reference": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^conn_[0-9a-f]{32}$"
+              },
+              "app_developer_confirmed": {
+                "type": "boolean"
+              },
+              "asset_owner_confirmed": {
+                "type": "boolean"
+              },
+              "appsecret_proof_requirement": {
+                "enum": [
+                  "UNKNOWN",
+                  "REQUIRED",
+                  "NOT_REQUIRED_CONFIRMED"
+                ]
+              },
+              "page_id": {
+                "type": "string",
+                "pattern": "^[0-9]{1,40}$"
+              }
+            },
+            "additionalProperties": false
+          },
+          "sources": {
+            "required": [
+              "page",
+              "live"
+            ],
+            "propertyNames": {
+              "enum": [
+                "page",
+                "live",
+                "comments",
+                "live_post",
+                "live_current_viewers",
+                "live_views",
+                "live_social_actions",
+                "live_views_by_status"
+              ]
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "verify_page_insights_role"
+              ],
+              "properties": {
+                "verify_page_insights_role": {
+                  "const": true
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "request_budget": {
+                  "minimum": 6
+                },
+                "sources": {
+                  "required": [
+                    "live_post",
+                    "live_current_viewers",
+                    "live_views",
+                    "live_social_actions",
+                    "live_views_by_status"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "cycles": {
+                  "minimum": 2
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "pages_per_source": {
+                  "const": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "expected_live_video_id"
+          ]
+        },
+        "properties": {
+          "verify_page_insights_role": false,
+          "connection": {
+            "$ref": "connection-intent.schema.json"
+          },
+          "sources": {
+            "required": [
+              "account"
+            ],
+            "properties": {
+              "live": {
+                "not": {
+                  "required": [
+                    "expected_live_video_id"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "schema": {
+              "const": "workspace-monitor-intent-v1"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "workspace_scope_sha256"
+          ],
+          "properties": {
+            "page_id": {
+              "type": "null"
+            },
+            "sources": {
+              "oneOf": [
+                {
+                  "required": [
+                    "account",
+                    "ads"
+                  ],
+                  "maxProperties": 2
+                },
+                {
+                  "required": [
+                    "account",
+                    "ad_links",
+                    "ads"
+                  ],
+                  "maxProperties": 3
+                },
+                {
+                  "required": [
+                    "account",
+                    "ad_inventory",
+                    "adsets",
+                    "campaigns"
+                  ],
+                  "maxProperties": 4
+                },
+                {
+                  "required": [
+                    "account",
+                    "placements"
+                  ],
+                  "maxProperties": 2
+                }
+              ]
+            }
+          }
+        },
+        "else": {
+          "not": {
+            "required": [
+              "workspace_scope_sha256"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sources": {
+            "required": [
+              "placements"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "schema": {
+            "const": "workspace-monitor-intent-v1"
+          },
+          "cycles": {
+            "const": 1
+          },
+          "request_budget": {
+            "maximum": 6
+          },
+          "pages_per_source": {
+            "maximum": 3
+          }
+        }
+      }
+    }
+  ],
+  "$comment": "Runtime binds all account/Page IDs to one explicit whitelist and validates date ranges and Live/metric relationships. A nested Live Video pin must match the top-level Page Live pin; legacy plans may omit the nested pin. Page Live reserves three credential checks and optionally up to two named role-lookup pages. Configured periodic intervals must fit inside the duration. Real start/resume remain gated. Resume requires identical intent and new terminal confirmation/metadata; neither flags nor schema grant authorization. OS_REFERENCE requires a matching active local record via CLI argument."
+}

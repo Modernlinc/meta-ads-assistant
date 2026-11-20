@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Settings observed for a local Ads Manager export",
+  "$comment": "Runtime checks valid days, unique mapped header names, scope parity and conversion-column consistency. A placement label rule maps exactly one export platform-position pair into explicit API codes. Runtime rejects repeated export pairs and duplicate normalized day-platform-position rows.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "scope", "format", "columns"],
+  "properties": {
+    "schema": {"const": "ads-manager-export-settings-v1"},
+    "api_run_receipt_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "api_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot", "payload_sha256", "phase_observed_at"],
+      "properties": {
+        "snapshot": {"type": "string", "pattern": "^snapshot-[0-9]{10}\\.json$"},
+        "payload_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "phase_observed_at": {"type": "string", "format": "date-time", "maxLength": 40}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account_id", "currency", "timezone", "date_start", "date_stop", "level", "time_increment", "breakdowns", "clicks_kind", "observed_at"],
+      "properties": {
+        "account_id": {"type": "string", "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"},
+        "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "timezone": {"type": "string", "pattern": "^[A-Za-z0-9_+/-]{1,80}$"},
+        "date_start": {"type": "string", "format": "date"},
+        "date_stop": {"type": "string", "format": "date"},
+        "level": {"enum": ["ad", "adset", "campaign", "account"]},
+        "time_increment": {"type": "integer", "minimum": 1, "maximum": 31},
+        "breakdowns": {"type": "array", "maxItems": 16, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"}},
+        "clicks_kind": {"enum": ["ALL_CLICKS", "LINK_CLICKS", "OTHER_OR_UNKNOWN"]},
+        "observed_at": {"type": "string", "format": "date-time", "maxLength": 40}
+      }
+    },
+    "format": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["delimiter", "decimal_mark", "group_separator", "date_format"],
+      "properties": {
+        "delimiter": {"enum": ["COMMA", "SEMICOLON", "TAB"]},
+        "decimal_mark": {"enum": [".", ","]},
+        "group_separator": {"enum": [null, ".", ",", " "]},
+        "date_format": {"enum": ["ISO", "YMD_SLASH", "DMY_SLASH", "MDY_SLASH"]}
+      }
+    },
+    "columns": {
+      "type": "object",
+      "required": ["day", "spend", "impressions", "clicks"],
+      "oneOf": [
+        {"required": ["ad_id"], "not": {"anyOf": [{"required": ["publisher_platform"]}, {"required": ["platform_position"]}]}},
+        {"required": ["publisher_platform", "platform_position"], "not": {"anyOf": [{"required": ["ad_id"]}, {"required": ["website_purchases"]}, {"required": ["website_purchase_value"]}, {"required": ["website_leads"]}]}}
+      ],
+      "propertyNames": {"enum": ["ad_id", "publisher_platform", "platform_position", "day", "spend", "impressions", "clicks", "account_id", "currency", "date_stop", "website_purchases", "website_purchase_value", "website_leads"]},
+      "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 160}
+    },
+    "placement_labels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 150,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["export", "api"],
+        "properties": {
+          "export": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string", "minLength": 1, "maxLength": 160}},
+          "api": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string", "pattern": "^[a-z0-9_]{1,40}$"}}
+        }
+      }
+    },
+    "conversions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attribution", "action_report_time"],
+      "properties": {
+        "attribution": {"enum": ["EXPLICIT_7D_CLICK", "UNIFIED_ADSET", "OTHER_OR_UNKNOWN"]},
+        "action_report_time": {"enum": ["impression", "conversion", "mixed", "UNKNOWN"]}
+      }
+    }
+  },
+  "allOf": [
+    {"not": {"required": ["api_run_receipt_sha256", "api_snapshot"]}},
+    {"if": {"required": ["placement_labels"]}, "then": {"properties": {"columns": {"required": ["publisher_platform", "platform_position"]}}}},
+    {"if": {"properties": {"columns": {"required": ["publisher_platform"]}}}, "then": {"not": {"required": ["conversions"]}}}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "bundled-tzif-data-v1",
+  "iana_release": "2026f",
+  "python_tzdata_version": "2026.6",
+  "source_url": "https://pypi.org/project/tzdata/2026.6/",
+  "source_commit": "0d4342c29e1f64211181cf8ad2276cfa59c094ce",
+  "upstream_wheel_sha256": "0a10eec6e13ef16b627fabed9a5f2ba61a62b1c67f327305f4e7e412a70b4aec",
+  "archive_sha256": "b8a62627b1f41dbadc767e3248a36d10168890d4696735b22bcb91f390b71497",
+  "archive_bytes": 409113,
+  "timezone_keys": 598,
+  "license": "Apache-2.0",
+  "packaging": "TZIF_DATA_ONLY",
+  "license_files": {
+    "LICENSE.txt": "df58f69ea88683035d720b5375bcef0cf5aeaa98a1d098d572e0992c378deb46",
+    "LICENSE_APACHE.txt": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  }
+}

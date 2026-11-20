@@ -1,0 +1,316 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ad-material-review-v1"
+    },
+    "source_mode": {
+      "enum": [
+        "DECLARED",
+        "SYNTHETIC"
+      ]
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,39}$"
+    },
+    "creative_id": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,39}$"
+    },
+    "page_id": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,39}$"
+    },
+    "observed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "creative": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            "account_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            "actor_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            "object_story_spec": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "asset_feed_spec": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "degrees_of_freedom_spec": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "platform_customizations": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "url_tags": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "account_id",
+            "actor_id",
+            "object_story_spec",
+            "asset_feed_spec",
+            "degrees_of_freedom_spec",
+            "platform_customizations",
+            "url_tags"
+          ]
+        }
+      ]
+    },
+    "media": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "asset_ref": {
+            "type": "string",
+            "pattern": "^MEDIA_[A-Z0-9_]{1,60}$"
+          },
+          "kind": {
+            "enum": [
+              "IMAGE",
+              "VIDEO"
+            ]
+          },
+          "platform_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 180
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000000
+          },
+          "visual_review": {
+            "enum": [
+              "NOT_RUN",
+              "DECLARED_COMPLETE"
+            ]
+          },
+          "evidence_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^EV_[A-Z0-9_]{1,80}$"
+          }
+        },
+        "required": [
+          "asset_ref",
+          "kind",
+          "platform_id",
+          "path",
+          "sha256",
+          "bytes",
+          "visual_review",
+          "evidence_ref"
+        ]
+      }
+    },
+    "rights": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "asset_ref": {
+            "type": "string",
+            "pattern": "^MEDIA_[A-Z0-9_]{1,60}$"
+          },
+          "state": {
+            "enum": [
+              "UNKNOWN",
+              "DECLARED_PAID_ADS"
+            ]
+          },
+          "owner_statement": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "evidence_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^EV_[A-Z0-9_]{1,80}$"
+          },
+          "territories": {
+            "type": "array",
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            }
+          },
+          "valid_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "valid_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "asset_ref",
+          "state",
+          "owner_statement",
+          "evidence_ref",
+          "territories",
+          "valid_from",
+          "valid_until"
+        ]
+      }
+    },
+    "copy_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "NOT_RUN",
+            "DECLARED_REVIEWED"
+          ]
+        },
+        "claims_evidence_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^EV_[A-Z0-9_]{1,80}$"
+        },
+        "offer_evidence_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^EV_[A-Z0-9_]{1,80}$"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      },
+      "required": [
+        "state",
+        "claims_evidence_ref",
+        "offer_evidence_ref",
+        "notes"
+      ]
+    },
+    "intended_use": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "countries": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        },
+        "starts_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "ends_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "placement_review_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^EV_[A-Z0-9_]{1,80}$"
+        }
+      },
+      "required": [
+        "countries",
+        "starts_at",
+        "ends_at",
+        "placement_review_ref"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "source_mode",
+    "account_id",
+    "creative_id",
+    "page_id",
+    "observed_at",
+    "creative",
+    "media",
+    "rights",
+    "copy_review",
+    "intended_use"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Visible creative and declared media/rights evidence; never approval",
+  "$comment": "Runtime also checks <=64000 UTF-8 bytes, bounded full content tree, source/account/Page/Creative binding, secret-like URLs, all media references, relative non-hidden paths and file hashes, time/territory coverage. Empty preparation is valid but incomplete. No schema or declarations verify rights, decoding, actual Meta media mapping or human approval. Dynamic/customized content stays blocked. Only explicitly synthetic packets enter the local simulator."
+}

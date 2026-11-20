@@ -1,0 +1,401 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "mode",
+    "synthetic",
+    "account_id",
+    "currency",
+    "source",
+    "budget_object",
+    "actions"
+  ],
+  "properties": {
+    "schema": {
+      "const": "proposal-case-v1"
+    },
+    "mode": {
+      "const": "MOCK"
+    },
+    "synthetic": {
+      "const": true
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+    },
+    "currency": {
+      "enum": [
+        "USD",
+        "EUR",
+        "JPY"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "scope"
+      ],
+      "properties": {
+        "path": {
+          "const": "examples/synthetic-planning/followup-v2.json"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "scope": {
+          "const": "COPY_REFERENCE_ONLY_NOT_BUDGET_OR_META_MAPPING"
+        }
+      }
+    },
+    "budget_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "budget_major"
+      ],
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+        },
+        "budget_major": {
+          "type": "string",
+          "pattern": "^[0-9]{1,24}(?:\\.[0-9]{1,12})?$"
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action_id",
+              "evidence_id",
+              "rationale",
+              "kind",
+              "object",
+              "material"
+            ],
+            "properties": {
+              "action_id": {
+                "type": "string",
+                "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+              },
+              "evidence_id": {
+                "type": "string",
+                "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "kind": {
+                "const": "CREATE_PAUSED"
+              },
+              "object": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "account_id",
+                  "object_id",
+                  "level",
+                  "parent_id",
+                  "currency",
+                  "status",
+                  "daily_budget_minor",
+                  "creative_hash"
+                ],
+                "properties": {
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+                  },
+                  "object_id": {
+                    "type": "string",
+                    "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+                  },
+                  "level": {
+                    "const": "CAMPAIGN"
+                  },
+                  "parent_id": {
+                    "type": "null"
+                  },
+                  "currency": {
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "JPY"
+                    ]
+                  },
+                  "status": {
+                    "const": "PAUSED"
+                  },
+                  "daily_budget_minor": {
+                    "type": "null"
+                  },
+                  "creative_hash": {
+                    "type": "null"
+                  }
+                }
+              },
+              "material": {
+                "type": "null"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action_id",
+              "evidence_id",
+              "rationale",
+              "kind",
+              "object",
+              "material"
+            ],
+            "properties": {
+              "action_id": {
+                "type": "string",
+                "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+              },
+              "evidence_id": {
+                "type": "string",
+                "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "kind": {
+                "const": "CREATE_PAUSED"
+              },
+              "object": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "account_id",
+                  "object_id",
+                  "level",
+                  "parent_id",
+                  "currency",
+                  "status",
+                  "daily_budget_minor",
+                  "creative_hash"
+                ],
+                "properties": {
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+                  },
+                  "object_id": {
+                    "type": "string",
+                    "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+                  },
+                  "level": {
+                    "const": "ADSET"
+                  },
+                  "parent_id": {
+                    "type": "string",
+                    "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+                  },
+                  "currency": {
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "JPY"
+                    ]
+                  },
+                  "status": {
+                    "const": "PAUSED"
+                  },
+                  "daily_budget_minor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  },
+                  "creative_hash": {
+                    "type": "null"
+                  }
+                }
+              },
+              "material": {
+                "type": "null"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action_id",
+              "evidence_id",
+              "rationale",
+              "kind",
+              "object",
+              "material"
+            ],
+            "properties": {
+              "action_id": {
+                "type": "string",
+                "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+              },
+              "evidence_id": {
+                "type": "string",
+                "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "kind": {
+                "const": "CREATE_PAUSED"
+              },
+              "object": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "account_id",
+                  "object_id",
+                  "level",
+                  "parent_id",
+                  "currency",
+                  "status",
+                  "daily_budget_minor",
+                  "creative_hash"
+                ],
+                "properties": {
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+                  },
+                  "object_id": {
+                    "type": "string",
+                    "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+                  },
+                  "level": {
+                    "const": "AD"
+                  },
+                  "parent_id": {
+                    "type": "string",
+                    "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+                  },
+                  "currency": {
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "JPY"
+                    ]
+                  },
+                  "status": {
+                    "const": "PAUSED"
+                  },
+                  "daily_budget_minor": {
+                    "type": "null"
+                  },
+                  "creative_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              },
+              "material": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "primary_text",
+                  "headline",
+                  "cta_text",
+                  "destination_url",
+                  "media_state"
+                ],
+                "properties": {
+                  "primary_text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000
+                  },
+                  "headline": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000
+                  },
+                  "cta_text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000
+                  },
+                  "destination_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000,
+                    "format": "uri"
+                  },
+                  "media_state": {
+                    "const": "TEXT_ONLY_NO_MEDIA_NOT_READY_FOR_REAL_USE"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action_id",
+              "evidence_id",
+              "rationale",
+              "kind",
+              "object_id",
+              "after_major"
+            ],
+            "properties": {
+              "action_id": {
+                "type": "string",
+                "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+              },
+              "evidence_id": {
+                "type": "string",
+                "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "kind": {
+                "const": "SET_BUDGET"
+              },
+              "object_id": {
+                "type": "string",
+                "pattern": "^SIM_[A-Z0-9_]{1,80}$"
+              },
+              "after_major": {
+                "type": "string",
+                "pattern": "^[0-9]{1,24}(?:\\.[0-9]{1,12})?$"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Local synthetic proposal review case, never a Meta request",
+  "$comment": "Runtime additionally checks exact bundled source hash, <=64000 canonical UTF-8 bytes, unique actions and objects, one account/currency, parent levels, creative hash over full material, https://example.invalid only without credentials/port/fragment, nonblank text and known secret patterns. Existing independent budget object cannot be a created object. Schema or terminal confirmation does not grant authority, verify a human identity, or validate real media, business budgets or Meta fields."
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "write-recheck-approval-reference-v1"
+    },
+    "review_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "approval_reference": {
+      "type": "string",
+      "pattern": "^APPROVAL_[A-Z0-9_]{1,64}$"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "schema",
+    "review_sha256",
+    "approval_reference",
+    "approved_at",
+    "expires_at"
+  ],
+  "title": "Non-secret external approval reference; not a grant",
+  "$comment": "Runtime binds the exact reviewed request/Diff/snapshot hash, evidence <=5 minutes at approval, approval <=15 minutes and current time. A trusted ApprovalVerifier must consult its actual identity, revocation and one-time action ledger at every checkpoint. Default verifier always refuses. JSON fields or a matching hash never verify a human or authorize reads/writes. No issuer or durable write executor is provided here."
+}

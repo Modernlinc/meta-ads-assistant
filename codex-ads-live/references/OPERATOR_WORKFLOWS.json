@@ -1,0 +1,841 @@
+{
+  "schema": "operator-workflows-v1",
+  "workflows": {
+    "onboarding": {
+      "title": "首次接入与环境检查",
+      "inputs": "实际项目目录、安装包，以及客户已确认的 App、Business Portfolio 和本次任务所需资产。",
+      "dependencies": [],
+      "steps": [
+        {
+          "state": "LOCAL_PREREQUISITES",
+          "entrypoints": [
+            "preflight"
+          ],
+          "access": "LOCAL",
+          "evidence": "记录 OS、架构、Python、时区库和包完整性。"
+        },
+        {
+          "state": "INTAKE_REVIEW",
+          "entrypoints": [
+            "prepare",
+            "preparation-review"
+          ],
+          "access": "LOCAL",
+          "evidence": "准备表按阶段列出缺项、本人与实施方的待办。"
+        },
+        {
+          "state": "WORKSPACE_RECORDED",
+          "entrypoints": [
+            "workspace-init",
+            "workspace-onboard",
+            "workspace-onboarding-report"
+          ],
+          "access": "LOCAL",
+          "evidence": "新工作区只初始化一次。已存在的档案用 workspace-onboard 补入当前 App 与业务组合资料，再按广告或主页范围汇总接入证据。"
+        }
+      ],
+      "human_gate": "客户确认实际项目路径、任务和资产归属，并在宿主中核对加载的 Skill 路径。",
+      "failure": "环境或安装摘要异常时核对实际包和设备；缺少 App 或资产时按准备表补齐。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "修正缺项后重新预检。输出使用全新目录。"
+      },
+      "stop": "安装包身份、项目位置或资产归属不明时停止相应步骤。",
+      "resume": "已有工作区先查看或补齐资料，再进入具名任务；从另一台设备继续时复查实际宿主。",
+      "audit": "保留预检、准备表版本、接入报告、实机宿主路径和所选范围的回执。",
+      "references": [
+        "references/CUSTOMER_SOP.md"
+      ]
+    },
+    "asset_inventory": {
+      "title": "Meta 具名资产盘点",
+      "inputs": "原工作区，本次广告账户或 Page 的确切编号、归属与角色证据。",
+      "dependencies": [
+        "onboarding"
+      ],
+      "steps": [
+        {
+          "state": "MAPPING_REVIEW",
+          "entrypoints": [
+            "workspace-show",
+            "workspace-route"
+          ],
+          "access": "LOCAL",
+          "evidence": "读取已保存映射与明确默认项。"
+        },
+        {
+          "state": "MAPPING_RECORDED",
+          "entrypoints": [
+            "workspace-add",
+            "workspace-default"
+          ],
+          "access": "LOCAL",
+          "evidence": "只登记被确认的新账户或主页。由客户指定本次目标，或明确将一个已映射目标设为默认。"
+        },
+        {
+          "state": "SCOPED_READ_PLAN",
+          "entrypoints": [
+            "workspace-connection-prepare",
+            "workspace-plan"
+          ],
+          "access": "LOCAL",
+          "evidence": "新资产先准备具名连接。具名访问核对后，可准备该广告账户的层级盘点。"
+        }
+      ],
+      "human_gate": "由客户确认资产归属、访问分配和是否设为默认；映射内部登记完成后按具名读取核实访问。",
+      "failure": "编号、平台角色、已有映射或 Business 不一致时，对应资产待复查。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "客户确认正确编号与角色后重做该资产的预览。"
+      },
+      "stop": "目标不唯一或无归属证据时停止选择。",
+      "resume": "使用原工作区继续局部新增或变更流程。",
+      "audit": "保留所选资产的非秘密证据编号、映射版本和具名读取回执。",
+      "references": [
+        "references/CUSTOMER_SOP.md"
+      ]
+    },
+    "app_setup": {
+      "title": "Meta App 配置与审核",
+      "inputs": "客户确认的一个 App、所属 Business、所选用例以及发布、公司验证和逐权限审核的页面观察。",
+      "dependencies": [
+        "asset_inventory"
+      ],
+      "steps": [
+        {
+          "state": "APP_REVIEW_REQUIREMENTS",
+          "entrypoints": [
+            "preparation-review"
+          ],
+          "access": "LOCAL",
+          "evidence": "按同一 App 列出发布、验证、审核和缺项。"
+        },
+        {
+          "state": "OWNER_HANDLES_PLATFORM_STEPS",
+          "entrypoints": [],
+          "access": "OWNER",
+          "evidence": "本人在官方页面办理用例、身份或审核，记录实际状态。"
+        },
+        {
+          "state": "APP_STATUS_RECORDED",
+          "entrypoints": [
+            "preparation-review"
+          ],
+          "access": "LOCAL",
+          "evidence": "在原准备资料里更新具名 App 的观察，保留旧回执。"
+        }
+      ],
+      "human_gate": "公司资料、App 归属、发布、审核提交和补件由客户确认并操作。",
+      "failure": "提交中、待补件、主体不符或状态未知时记录对应观察和来源。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "收到平台新结果或完成补件后复查对应项。"
+      },
+      "stop": "App 归属或用于当次连接的 App 安全要求仍不清楚时暂停该连接。",
+      "resume": "沿已确认的同一 App 回到相应页面，更新观察时间和状态。",
+      "audit": "留存脱敏页面、观察时间、App 归属证据与逐权限审核状态。",
+      "references": [
+        "references/CUSTOMER_SOP.md"
+      ]
+    },
+    "authorization": {
+      "title": "权限确认与本人授权",
+      "inputs": "具名 App、主体、目标和该任务所需权限，还有 App proof 要求的本次本人核对。",
+      "dependencies": [
+        "app_setup"
+      ],
+      "steps": [
+        {
+          "state": "PERMISSION_SCOPE_REVIEW",
+          "entrypoints": [
+            "preparation-review",
+            "credential-status"
+          ],
+          "access": "LOCAL",
+          "evidence": "对照权限、具名范围和本次 App 的 proof 要求。有本地登记时先核对其声明状态。"
+        },
+        {
+          "state": "OWNER_GRANT_DECISION",
+          "entrypoints": [],
+          "access": "OWNER",
+          "evidence": "本人在官方入口完成必要授权与系统凭据存放。"
+        },
+        {
+          "state": "LOCAL_REFERENCE_RECORDED",
+          "entrypoints": [
+            "credential-prepare",
+            "credential-status"
+          ],
+          "access": "LOCAL",
+          "evidence": "系统凭据用非秘密引用登记。实际 grant 留待具名端点检查。"
+        }
+      ],
+      "human_gate": "本人核对并决定实际授权、秘密录入与是否继续。新权限与新范围分别确认。",
+      "failure": "App proof 未知或要求开启、授权缺失、授权对象不符时转入对应接续。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "客户确认原 App 与新授权状态后重做预览。"
+      },
+      "stop": "当次权限或凭据访问尚未获本人批准时停在准备阶段。",
+      "resume": "按同一任务检查当前权限和有效期，再进入连接验证。",
+      "audit": "留存权限名称、适用资产、到期观察和非秘密引用登记；用户身份资料由客户保管。",
+      "references": [
+        "references/CUSTOMER_SOP.md"
+      ]
+    },
+    "connection": {
+      "title": "具名连接验证",
+      "inputs": "经过核对的 App、主体、单一目标、非秘密登记或本次交互凭据输入；分别选择广告账户或 Page。",
+      "dependencies": [
+        "authorization"
+      ],
+      "steps": [
+        {
+          "state": "SCOPED_CONNECTION_PREPARED",
+          "entrypoints": [
+            "workspace-connection-prepare"
+          ],
+          "access": "LOCAL",
+          "evidence": "从当前工作区与非秘密登记准备一个具名目标。主页使用 --kind PAGE 并核对角色材料。"
+        },
+        {
+          "state": "NAMED_ASSET_BINDING",
+          "entrypoints": [
+            "workspace-bind",
+            "workspace-page-bind"
+          ],
+          "access": "LOCAL",
+          "evidence": "首次连接或添加具名资产时，按已确认的范围绑定。已有同范围绑定时继续预览与复查。"
+        },
+        {
+          "state": "FIXED_GET_PREVIEW",
+          "entrypoints": [
+            "connection-preview",
+            "workspace-page-preview"
+          ],
+          "access": "LOCAL",
+          "evidence": "绑定后复核同一具名请求、权限、凭据登记与预算。"
+        },
+        {
+          "state": "NAMED_READ_OBSERVED",
+          "entrypoints": [
+            "connection-check",
+            "workspace-refresh",
+            "workspace-page-refresh"
+          ],
+          "access": "AUTHORIZED_READ_CANDIDATE",
+          "evidence": "经当次交互确认，保留具名结果、实际权限观察和有效期；目前产品通过替身合同测试。"
+        },
+        {
+          "state": "EVIDENCE_REVIEWED",
+          "entrypoints": [
+            "connection-review"
+          ],
+          "access": "LOCAL",
+          "evidence": "按同一具名确认核对请求预留、结果和回执摘要，区分保存的失败、中断与冲突。"
+        }
+      ],
+      "human_gate": "本人核对所选 App、资产和至多两次 GET，并在本机终端确认。",
+      "failure": "按认证、期限、权限、对象不符、限流或服务异常输出固定错误码。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "排除当前错误并经过新的具名确认，才复查该目标。"
+      },
+      "stop": "出现绑定、有效期、权限或归属冲突时停止具名读取。",
+      "resume": "核对原 App、登记或该目标权限。仅为受影响资产重新执行，保留旧记录。",
+      "audit": "保留预览、确认、请求记录、结果与回执摘要；真实测试和替身结果分别标明。",
+      "references": [
+        "references/CUSTOMER_SOP.md"
+      ]
+    },
+    "ads_read": {
+      "title": "广告读取、盘点与对账",
+      "inputs": "一个已核对的广告账户、时区、币种、目标报表类型和明确的日期与归因口径。",
+      "dependencies": [
+        "connection"
+      ],
+      "steps": [
+        {
+          "state": "ACCOUNT_REPORT_PLAN",
+          "entrypoints": [
+            "workspace-route",
+            "workspace-plan",
+            "monitor-preview"
+          ],
+          "access": "LOCAL",
+          "evidence": "复用已保存的报表时，路由按本次日期及报表口径核对原运行。按任务准备 Insights、对象盘点或版位拆分，核对具名范围和 GET 上限。单轮广告报告及对象盘点的分页来源默认各三页，可用 --report-pages 选择 1 至 20 页。"
+        },
+        {
+          "state": "BOUNDED_READ_OBSERVED",
+          "entrypoints": [
+            "monitor-start"
+          ],
+          "access": "AUTHORIZED_READ_CANDIDATE",
+          "evidence": "启动时重查账户；记录每来源覆盖、空值、错误和历史成功。产品候选已有替身证据。"
+        },
+        {
+          "state": "REPORT_SCOPE_REVIEWED",
+          "entrypoints": [
+            "monitor-report",
+            "monitor-reconcile-prepare",
+            "monitor-reconcile"
+          ],
+          "access": "LOCAL",
+          "evidence": "复查报告及同口径 Ads Manager 导出，明确无数据、缺字段和无法对账。"
+        }
+      ],
+      "human_gate": "本人确认账户、时间范围、允许来源、请求上限；后台导出由获准操作者准备。",
+      "failure": "授权或账户口径变化时暂停；缺页或字段缺失时保留覆盖和已取得数据。",
+      "retry": {
+        "automatic_limit": 1,
+        "condition": "仅有界前台采集的限流补试，最多等待 30 秒，须满足剩余预算和当前确认时限。"
+      },
+      "stop": "请求、时间或轮数耗尽，或账户访问、币种、时区和状态核验失效时停止。",
+      "resume": "保持同一范围时重新确认并从第一页采集。调整页数或日期时，新建计划与运行目录。具名账户复查后可按原范围重做计划。",
+      "audit": "保留计划、预览、运行回执、范围和局部覆盖。后台导出与真实非空对账独立记录。",
+      "references": [
+        "references/INSTALL_RUN.md"
+      ]
+    },
+    "live_identify": {
+      "title": "Facebook Page Live 对象确认",
+      "inputs": "已映射的具名 Page 和现成 Live ID；只有播放链接时先取 Video ID 线索。",
+      "dependencies": [
+        "connection"
+      ],
+      "steps": [
+        {
+          "state": "LIVE_REFERENCE_CHECK",
+          "entrypoints": [
+            "workspace-live-preview"
+          ],
+          "access": "LOCAL",
+          "evidence": "核对具名对象输入和现有关系证据。只有链接时列出需要补充的 Live ID。"
+        },
+        {
+          "state": "LIVE_SCOPE_READY_FOR_REVIEW",
+          "entrypoints": [
+            "workspace-live-plan",
+            "page-live-contract-preview"
+          ],
+          "access": "LOCAL",
+          "evidence": "固定 Page、Live 和已提供的 Video，分别显示身份核验和单轮请求预算。"
+        },
+        {
+          "state": "LIVE_RELATION_CONTRACT_CHECK",
+          "entrypoints": [
+            "page-live-contract-check"
+          ],
+          "access": "AUTHORIZED_READ_CANDIDATE",
+          "evidence": "在本人当次授权后执行一次具名对象检查，保留独立的 T1 计划与结果。"
+        },
+        {
+          "state": "LIVE_RELATION_OBSERVATION",
+          "entrypoints": [
+            "monitor-start"
+          ],
+          "access": "WAITING_EXTERNAL_TEST",
+          "evidence": "真实入口仍为 REAL_LIVE_CONTRACT_PENDING；替身验收覆盖对象与归属核对。"
+        }
+      ],
+      "human_gate": "本人确认具名 Page、现成直播、允许查询范围和独立 Page 凭据。",
+      "failure": "无现成样本、有视频冲突或归属未核实时标记待取证。主页已有明确权限拒绝时暂停其直播计划。在启动结果区分开发者凭据和专用 Page Token 的权限缺项。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "当前入口仍待验收。通过后按具名前台采集的限流规则处理。"
+      },
+      "stop": "真实合同未通过、没有现成直播、对象不符或凭据失败时停止相应读取。",
+      "resume": "补齐 Live ID 或新证据后重新预览。Page 权限拒绝由本人确认具名授权，复查该 Page 后生成新计划。可独立运行固定合成演练。",
+      "audit": "保留具名预览、Page/Live/Video 关系、缺失分支和来源。用 page-live-contract-review 核对整份单轮回执；用 monitor-status 或工作区路由回读本地权限失败。",
+      "references": [
+        "references/WORKFLOWS.md"
+      ]
+    },
+    "comments_read": {
+      "title": "直播评论有界样本",
+      "inputs": "已核对的 Page、Live、Video 与当次评论权限；明确轮数与每轮覆盖。",
+      "dependencies": [
+        "live_identify"
+      ],
+      "steps": [
+        {
+          "state": "COMMENT_SAMPLE_PLAN",
+          "entrypoints": [
+            "workspace-live-plan",
+            "page-live-contract-preview"
+          ],
+          "access": "LOCAL",
+          "evidence": "具名目标和有界首屏采样进入计划。"
+        },
+        {
+          "state": "COMMENT_SAMPLE_CONTRACT_CHECK",
+          "entrypoints": [
+            "page-live-contract-check"
+          ],
+          "access": "AUTHORIZED_READ_CANDIDATE",
+          "evidence": "在本人当次授权后验证同一直播的首屏有界样本，保留范围和返回类型。"
+        },
+        {
+          "state": "COMMENT_SAMPLE_OBSERVED",
+          "entrypoints": [
+            "monitor-start"
+          ],
+          "access": "WAITING_EXTERNAL_TEST",
+          "evidence": "替身采集只保存 ID、时间和样本覆盖；真实入口仍待授权与端点验收。"
+        },
+        {
+          "state": "COMMENT_SAMPLE_REVIEWED",
+          "entrypoints": [
+            "monitor-report",
+            "page-live-contract-review",
+            "workspace-diagnostics"
+          ],
+          "access": "LOCAL",
+          "evidence": "按轮查看评论首屏的有效页、续页、空响应、错误及未采样。用脱敏诊断交接结果，转移原单轮目录后可核对请求和报告范围。"
+        },
+        {
+          "state": "COMMENT_CHECKPOINT_REPLAN",
+          "entrypoints": [
+            "workspace-replan",
+            "monitor-preview"
+          ],
+          "access": "LOCAL",
+          "evidence": "原前台进程退出后，可选 --from-comment-checkpoint 核对已完成首屏和原批次确认，预览固定 since。中断期间覆盖仍为未知。"
+        }
+      ],
+      "human_gate": "本人明确同意本次具名评论读取范围。",
+      "failure": "权限拒绝只停相关来源；对象关系变化时停止其依赖项。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "当前真实入口待验。通过后按前台规则核剩余时间和请求预算。"
+      },
+      "stop": "预算用尽、认证失效、对象关系变更或操作员停止时结束对应读取。",
+      "resume": "同一范围重新确认并从首页采集。若选择固定评论下界，预览接续计划后用新运行目录并取得本人当次确认。",
+      "audit": "记录轮次、覆盖、最近成功和错误。报告排除评论正文与作者资料。",
+      "references": [
+        "references/WORKFLOWS.md"
+      ]
+    },
+    "live_metrics": {
+      "title": "Page 直播帖子指标",
+      "inputs": "已核对的 Page、Live、Video、具名帖子和指标授权。需要所选主页的分析任务证据。",
+      "dependencies": [
+        "live_identify",
+        "authorization"
+      ],
+      "steps": [
+        {
+          "state": "POST_AND_ROLE_PLAN",
+          "entrypoints": [
+            "workspace-live-plan",
+            "page-live-contract-preview"
+          ],
+          "access": "LOCAL",
+          "evidence": "明确帖子和 Video 关系，预览具名角色核对和各指标请求。"
+        },
+        {
+          "state": "METRICS_CONTRACT_CHECK",
+          "entrypoints": [
+            "page-live-contract-check"
+          ],
+          "access": "AUTHORIZED_READ_CANDIDATE",
+          "evidence": "本次授权及具名角色核对满足后逐项验证指标，保留字段和覆盖证据。"
+        },
+        {
+          "state": "METRICS_OBSERVED",
+          "entrypoints": [
+            "monitor-start"
+          ],
+          "access": "WAITING_EXTERNAL_TEST",
+          "evidence": "真实入口待端点验收；替身覆盖逐项指标、角色、时间和缺失。"
+        },
+        {
+          "state": "METRICS_REVIEWED",
+          "entrypoints": [
+            "monitor-report",
+            "page-live-contract-review",
+            "workspace-diagnostics"
+          ],
+          "access": "LOCAL",
+          "evidence": "本机报告逐项显示 period、observed_at、未知 data_as_of、freshness 和覆盖。脱敏诊断显示各项响应状态及记录数。单轮回读核对预算、授权快照和指标汇总，保留各项权限或服务错误。"
+        }
+      ],
+      "human_gate": "本人确认所选主页、具名帖子及本次指标和可选角色查询。",
+      "failure": "帖子关系、角色或某单项指标不明时逐项记录，缺失保留为未知。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "当前真实入口待验。通过后按前台限流等待和预算规则复查。"
+      },
+      "stop": "帖子附件无法与当前 Live Video 匹配时停止依赖指标，记录其它独立来源。",
+      "resume": "重新核对主页任务证据、帖子与 Live 关系，再以新批次补读可查项目。",
+      "audit": "保留指标标识、请求范围、角色观察、时间口径以及明确值与未知的区别。",
+      "references": [
+        "references/WORKFLOWS.md"
+      ]
+    },
+    "proposal": {
+      "title": "广告策略与提案审阅",
+      "inputs": "客户商品、市场、预算、目标、素材及权利声明，和经过准入的方法包或已保存复盘。",
+      "dependencies": [
+        "asset_inventory"
+      ],
+      "steps": [
+        {
+          "state": "METHOD_AND_CONTEXT_REVIEW",
+          "entrypoints": [
+            "method",
+            "workspace-plan"
+          ],
+          "access": "LOCAL",
+          "evidence": "核固定方法版本与当前业务背景。附归档复盘时可复核原两期回执和合计。"
+        },
+        {
+          "state": "FIRST_LAUNCH_DRAFTS_CHECKED",
+          "entrypoints": [
+            "workspace-first-launch-plan",
+            "workspace-first-launch-check"
+          ],
+          "access": "LOCAL",
+          "evidence": "首次准备单图广告时，从所选广告账户和主页生成四份草案。补填后核对目标、缺失字段和对象依赖。网站转化的数据源、事件和真实父对象仍须取证。"
+        },
+        {
+          "state": "FIRST_LAUNCH_CUSTOMER_HANDOFF",
+          "entrypoints": [
+            "workspace-first-launch-handoff"
+          ],
+          "access": "LOCAL",
+          "evidence": "沿原工作区和计划校验同账户图片观察、父级范围、独立审批引用与单 Ad 尝试。客户后台操作的回执按操作者声明登记，正式自动写入需配置可信宿主。"
+        },
+        {
+          "state": "FIRST_LAUNCH_LOCAL_AUTHORITY_SCOPE",
+          "entrypoints": [
+            "workspace-first-launch-host"
+          ],
+          "access": "LOCAL",
+          "evidence": "以同一工作区、App、业务、账户、Page 和计划导出绑定，或者核对已配置的 macOS 本机审批服务。该入口不使用 Meta 凭据。"
+        },
+        {
+          "state": "FIRST_LAUNCH_STAGE_REVIEWED",
+          "entrypoints": [
+            "workspace-first-launch-progress"
+          ],
+          "access": "LOCAL",
+          "evidence": "本机核对单个步骤和原摘要。只有独立可信宿主具备具名批准及写权限时才处理暂停创建。创建结果未知只用原尝试恢复，启用需独立批准。"
+        },
+        {
+          "state": "FIRST_LAUNCH_PREVIEW_PLANNED",
+          "entrypoints": [
+            "workspace-first-launch-preview"
+          ],
+          "access": "LOCAL",
+          "evidence": "按原链路准备本次 Ad 的移动动态预览。仅在可信宿主具备独立读取授权时请求一次，供客户核对。Creative 降级单独选择。"
+        },
+        {
+          "state": "FIRST_LAUNCH_ACTIVATION_REVIEW_PREPARED",
+          "entrypoints": [
+            "workspace-first-launch-activation-review"
+          ],
+          "access": "LOCAL",
+          "evidence": "沿原首投对象链核对具名 Ad 预览证据，准备单广告的预算及拟议启用时窗审阅。实际批准和父级状态须独立核对。"
+        },
+        {
+          "state": "FIRST_LAUNCH_ACTIVATION_SCOPE",
+          "entrypoints": [
+            "workspace-first-launch-activation"
+          ],
+          "access": "LOCAL",
+          "evidence": "以原审核版本核对一条 Ad 的范围和尝试。正式宿主有独立花费批准、具名授权和已生效的支出限制时才可提交一次。结果未知只回读原尝试。"
+        },
+        {
+          "state": "DRAFT_AND_DIFF_READY",
+          "entrypoints": [
+            "meta-write-prepare",
+            "material-review",
+            "material-bind",
+            "meta-write-review"
+          ],
+          "access": "LOCAL",
+          "evidence": "形成广告结构、文案、素材映射和参数 Diff，保留归档核对状态与待补证字段。"
+        }
+      ],
+      "human_gate": "由客户确认业务目的、市场、预算、素材权利和草案。",
+      "failure": "素材、范围、业务档案或快照变化时重新核对，旧提案保留原证据。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "补证或修订后重新生成该版草案与 Diff。"
+      },
+      "stop": "无法验证输入、方法版本或预算币种时保留待核，停止执行审批接续。",
+      "resume": "从具名客户档案、材料和最新证据重新审阅，形成新摘要。",
+      "audit": "记录方法版本、材料引用、方案与 Diff 摘要、假设、审批待办和撤回情况。",
+      "references": [
+        "references/FIRST_LAUNCH_CUSTOMER.md",
+        "references/FIRST_LAUNCH_LOCAL_AUTHORITY.md"
+      ]
+    },
+    "approval_simulation": {
+      "title": "PAUSED 创建与审批模拟",
+      "inputs": "合成账户、逐对象提案、父级关系、当前版本和明确审核过的 Diff。",
+      "dependencies": [
+        "proposal"
+      ],
+      "steps": [
+        {
+          "state": "SIM_PROPOSAL_READY",
+          "entrypoints": [
+            "proposal-review",
+            "mapped-demo"
+          ],
+          "access": "SIMULATION",
+          "evidence": "审阅合成材料、各级对象、PAUSED 参数与审阅摘要。"
+        },
+        {
+          "state": "SIM_EXECUTION_RECHECK",
+          "entrypoints": [
+            "proposal-approve-sim",
+            "proposal-execute-sim"
+          ],
+          "access": "SIMULATION",
+          "evidence": "按模拟动作独立确认。模拟服务发出前先记录未知并重查范围与版本。"
+        },
+        {
+          "state": "SIM_READBACK_CHECK",
+          "entrypoints": [
+            "proposal-reconcile-sim",
+            "mapped-status",
+            "mapped-reconcile-sim"
+          ],
+          "access": "SIMULATION",
+          "evidence": "用原模拟动作和服务目录核验回执及对象，区分本次已核对、历史状态和当次待核。"
+        }
+      ],
+      "human_gate": "操作者在模拟门禁核对单一动作和审阅摘要。真实创建或真实批准另外验收。",
+      "failure": "批准过期、对象变化或材料变动使原模拟批准失效；未知结果走关联回读。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "未知结果只回读既有动作；变更后的新草案需重新审阅和批准。"
+      },
+      "stop": "失败时保留已存在的 PAUSED 模拟父级和当前账本。",
+      "resume": "按原动作、状态和账本回执核对，满足要求后再行新模拟动作。四步首投演练用 mapped-demo --first-launch；中断后用 mapped-demo --resume-first-launch 指向原目录，先核对登记的动作和既有回读，再接续下一项。",
+      "audit": "保存逐对象提案、审批记录、版本、UNKNOWN 和服务回读回执。",
+      "references": [
+        "references/WORKFLOWS.md"
+      ]
+    },
+    "monitor": {
+      "title": "本地前台监控与恢复",
+      "inputs": "同一工作区指定范围、原计划、时长、预算和实际用到的本机凭据登记。",
+      "dependencies": [
+        "connection"
+      ],
+      "steps": [
+        {
+          "state": "BOUNDED_PLAN_REVIEW",
+          "entrypoints": [
+            "workspace-plan",
+            "workspace-live-plan",
+            "monitor-preview"
+          ],
+          "access": "LOCAL",
+          "evidence": "核来源、轮数、间隔、时长、启动预留及预算。工作区广告每轮从第一页开始，核对可选的 --pages-per-cycle。"
+        },
+        {
+          "state": "CAPTURE_RUNNING",
+          "entrypoints": [
+            "monitor-start",
+            "monitor-resume"
+          ],
+          "access": "AUTHORIZED_READ_CANDIDATE",
+          "evidence": "本人确认后获得本机进程锁并重新认证。真实 Page Live 的发布门槛照常检查。"
+        },
+        {
+          "state": "STATUS_AND_CONTROL",
+          "entrypoints": [
+            "monitor-status",
+            "monitor-health",
+            "monitor-pause",
+            "monitor-stop",
+            "monitor-report"
+          ],
+          "access": "LOCAL",
+          "evidence": "查看实际锁、保存阶段、最近成功和错误。明确暂停或停止后保留运行回执。"
+        },
+        {
+          "state": "PAGE_LIVE_ARCHIVE_REVIEW",
+          "entrypoints": [
+            "page-live-run-review"
+          ],
+          "access": "LOCAL",
+          "evidence": "用完整运行归档离线核对具名计划、请求预留、轮次覆盖和末轮摘要。"
+        }
+      ],
+      "human_gate": "本人确认每次启动或恢复的该份计划、时间与请求上限。",
+      "failure": "原进程持锁、限流等待或实际授权变化时停止依赖步骤。",
+      "retry": {
+        "automatic_limit": 1,
+        "condition": "仅采集阶段满足限流期限、最多 30 秒、预算与许可时补试同一 GET。"
+      },
+      "stop": "明确操作、时长、轮数、预算消耗、认证及范围失效均终止本轮。",
+      "resume": "同一计划在原锁释放后重新确认和核验，从第一页开始新轮次。",
+      "audit": "保留计划、确认、请求计数、状态、恢复依据、完整报告与结果回执。",
+      "references": [
+        "references/WORKFLOWS.md"
+      ]
+    },
+    "review": {
+      "title": "广告与直播复盘",
+      "inputs": "已保存的具名广告或直播状态、数据口径及可核对的直接对象关系。",
+      "dependencies": [
+        "monitor"
+      ],
+      "steps": [
+        {
+          "state": "OBSERVATION_SCOPE_REVIEW",
+          "entrypoints": [
+            "monitor-report"
+          ],
+          "access": "LOCAL",
+          "evidence": "分别核对来源覆盖、报告时间和缺失状态。"
+        },
+        {
+          "state": "COMPARISON_REVIEW",
+          "entrypoints": [
+            "monitor-compare",
+            "monitor-live-ads-review"
+          ],
+          "access": "LOCAL",
+          "evidence": "分期比较可使用两份具名采集回执，按原批次核对日期与分页。广告与 Page Live 联合复盘可用同一工作区的两份完整归档或两份快照。用原复盘回执重现原输入。"
+        },
+        {
+          "state": "FIRST_LAUNCH_DELIVERY_REVIEWED",
+          "entrypoints": [
+            "workspace-first-launch-delivery"
+          ],
+          "access": "LOCAL",
+          "evidence": "用原首投计划的 Ad ID、具名账户与日期复核已保存的 Insights 归档。保留空结果、明确的零和正展示。携带拟议启用审阅时按该账户时区核对报告日桶能否归入时窗。"
+        }
+      ],
+      "human_gate": "客户确认实际业务结果定义、日期窗口、促销背景与复查条件。",
+      "failure": "账户、日期、归因或工作区不可比时保留各自观察和差异。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "补充同范围证据后用新目录复盘。"
+      },
+      "stop": "证据不足时停止计算或关联，不支持的因果说法保留为未知。",
+      "resume": "从原始两边回执补齐来源和对象证据，再复查可比条件。",
+      "audit": "保留各边报告、采集和平台更新时间的区别、比较条件、对象证据与复盘摘要。",
+      "references": [
+        "references/WORKFLOWS.md"
+      ]
+    },
+    "troubleshooting": {
+      "title": "故障定位与交接",
+      "inputs": "当前工作区任务、明确的运行目录或脱敏分类元数据，以及首次错误和最近成功的证据。",
+      "dependencies": [],
+      "steps": [
+        {
+          "state": "RECORDED_FAILURE_READBACK",
+          "entrypoints": [
+            "workspace-route",
+            "monitor-health",
+            "diagnose"
+          ],
+          "access": "LOCAL",
+          "evidence": "分开核对接入、授权、对象、数据覆盖与本机运行状态。"
+        },
+        {
+          "state": "SCOPED_RECOVERY_REVIEW",
+          "entrypoints": [
+            "workspace-diagnostics",
+            "workspace-replan"
+          ],
+          "access": "LOCAL",
+          "evidence": "交接单项脱敏诊断。具名广告账户或 Page 复查通过后可沿用原查询准备新计划，保留原记录并预览当前绑定。"
+        },
+        {
+          "state": "WORKSPACE_RECOVERY_REVIEW",
+          "entrypoints": [
+            "workspace-restore",
+            "workspace-migrate"
+          ],
+          "access": "LOCAL",
+          "evidence": "换机或档案丢失先预览同次备份与新目标。只有已识别的旧 v1 工作区才使用对应迁移命令。"
+        }
+      ],
+      "human_gate": "新的凭据、平台权限、费用或资产变更由客户确认。",
+      "failure": "缺锁、混工作区、旧报告或缺页各自保留原因，外部补件写明下一步。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "定位并修复具体分支后按相应工作流复查。"
+      },
+      "stop": "涉及未经本人确认的外部操作或找不到匹配工作区时，保留原记录。",
+      "resume": "按相应具名工作流复查受影响范围，再由本人确认可能的读取。",
+      "audit": "保存首次错误、最近成功、处理人、修复条件和单项脱敏诊断摘要。",
+      "references": [
+        "references/WORKFLOWS.md"
+      ]
+    },
+    "exit": {
+      "title": "本机退出与授权交接",
+      "inputs": "原工作区、已确认的运行目录、具名登记以及客户的保留或退出决定。",
+      "dependencies": [],
+      "steps": [
+        {
+          "state": "RUNNER_STOP_REQUESTED",
+          "entrypoints": [
+            "monitor-stop",
+            "monitor-status"
+          ],
+          "access": "LOCAL",
+          "evidence": "登记本地停止并核原进程和持锁情况。"
+        },
+        {
+          "state": "SIMULATED_ACTIONS_REVIEWED",
+          "entrypoints": [
+            "workspace-exit-report",
+            "mapped-status",
+            "mapped-reconcile-sim"
+          ],
+          "access": "SIMULATION",
+          "evidence": "有明确选定的模拟账本时，核对原执行锁与待处理动作。UNKNOWN 沿原账本与服务的同一动作回读。"
+        },
+        {
+          "state": "RETENTION_SCOPE_REVIEWED",
+          "entrypoints": [
+            "workspace-removal-plan",
+            "workspace-backup",
+            "workspace-exit-report"
+          ],
+          "access": "LOCAL",
+          "evidence": "分开核对工作区文件、已选本地登记和 Meta 授权。选择保留可移植档案时保存配套回执。"
+        },
+        {
+          "state": "LOCAL_REFERENCE_REVIEWED",
+          "entrypoints": [
+            "credential-status",
+            "credential-disable"
+          ],
+          "access": "LOCAL",
+          "evidence": "只核对具名本地登记。在客户明确决定停用该登记时保存停用结果，再回读退出交接。"
+        },
+        {
+          "state": "OWNER_EXIT_DECISION",
+          "entrypoints": [],
+          "access": "OWNER",
+          "evidence": "本人确认实际的本机保留、系统条目及平台撤权，并分别回传证据。"
+        }
+      ],
+      "human_gate": "真实撤权、删除和保留由本人分别决定与确认。",
+      "failure": "仍持锁、缺明确范围或登记副本冲突时保留待核。",
+      "retry": {
+        "automatic_limit": 0,
+        "condition": "旧进程实际退出或确认正确登记之后重新核查。"
+      },
+      "stop": "无法证明进程退出、所选范围或本人同意时停在核对单。",
+      "resume": "从原交接报告接续所缺证据，按各范围核对完成状态。",
+      "audit": "保留退出报告、原运行与锁的观察、客户确认及平台撤权结果。",
+      "references": [
+        "references/WORKFLOWS.md"
+      ]
+    }
+  }
+}

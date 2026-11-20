@@ -1,0 +1,348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "client_id",
+    "created_at",
+    "updated_at",
+    "app_id",
+    "business_id",
+    "assets",
+    "defaults",
+    "binding",
+    "checks",
+    "adapter",
+    "skill_version"
+  ],
+  "properties": {
+    "schema": {
+      "const": "client-profile-v2"
+    },
+    "client_id": {
+      "type": "string",
+      "pattern": "^client_[a-f0-9]{32}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "app_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "business_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "assets": {
+      "type": "object",
+      "maxProperties": 100,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^(ACCOUNT|PAGE):[1-9][0-9]{0,39}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "id",
+          "ownership_evidence_ref"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "ACCOUNT",
+              "PAGE"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          },
+          "ownership_evidence_ref": {
+            "type": "string",
+            "pattern": "^EV_[A-Z0-9_]{1,80}$"
+          }
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ACCOUNT",
+        "PAGE"
+      ],
+      "properties": {
+        "ACCOUNT": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "PAGE": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "binding": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "principal_id",
+            "secret_ref",
+            "record_hash",
+            "proof",
+            "owner_confirmed",
+            "developer_confirmed",
+            "accounts",
+            "auth_status",
+            "expires_at"
+          ],
+          "properties": {
+            "principal_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            "secret_ref": {
+              "type": "string",
+              "pattern": "^conn_[a-f0-9]{32}$"
+            },
+            "record_hash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "proof": {
+              "const": "NOT_REQUIRED_CONFIRMED"
+            },
+            "owner_confirmed": {
+              "const": true
+            },
+            "developer_confirmed": {
+              "const": true
+            },
+            "accounts": {
+              "type": "array",
+              "maxItems": 100,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,39}$"
+              }
+            },
+            "auth_status": {
+              "enum": [
+                "UNCHECKED",
+                "CURRENT",
+                "AUTH_REQUIRED",
+                "PERMISSION_REQUIRED"
+              ]
+            },
+            "expires_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "checks": {
+      "type": "object",
+      "maxProperties": 100,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^(ACCOUNT|PAGE):[1-9][0-9]{0,39}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "at",
+          "status",
+          "expires",
+          "permissions",
+          "currency",
+          "timezone"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "enum": [
+              "HEALTHY",
+              "DEGRADED",
+              "AUTH_REQUIRED",
+              "PERMISSION_REQUIRED",
+              "ASSET_CHANGED",
+              "VERSION_MISMATCH",
+              "BLOCKED"
+            ]
+          },
+          "expires": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "ads_read",
+                "pages_read_engagement"
+              ]
+            },
+            "maxItems": 1
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_+/.-]{1,100}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grant_binding": {
+            "enum": [
+              "NAMED_PAGE_IN_DEBUG_TARGETS",
+              "NO_EXPLICIT_PAGE_TARGET_LIST"
+            ]
+          }
+        }
+      }
+    },
+    "adapter": {
+      "type": "string",
+      "pattern": "^v[0-9]{1,3}\\.[0-9]{1,2}$"
+    },
+    "skill_version": {
+      "type": "string",
+      "pattern": "^[0-9][0-9a-z.]{0,24}$"
+    },
+    "page_bindings": {
+      "type": "object",
+      "maxProperties": 100,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{0,39}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "principal_id",
+          "secret_ref",
+          "record_hash",
+          "proof",
+          "role",
+          "role_evidence_ref"
+        ],
+        "properties": {
+          "principal_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          },
+          "secret_ref": {
+            "type": "string",
+            "pattern": "^conn_[a-f0-9]{32}$"
+          },
+          "record_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "proof": {
+            "const": "NOT_REQUIRED_CONFIRMED"
+          },
+          "role": {
+            "enum": [
+              "FACEBOOK_ACCESS",
+              "TASK_ACCESS"
+            ]
+          },
+          "role_evidence_ref": {
+            "type": "string",
+            "pattern": "^EV_[A-Z0-9_]{1,80}$"
+          }
+        }
+      }
+    },
+    "business_profiles": {
+      "type": "object",
+      "maxProperties": 100,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{0,39}$"
+      },
+      "additionalProperties": {
+        "$ref": "workspace-business-profile.schema.json"
+      }
+    }
+  }
+}

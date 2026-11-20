@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Owner-declared qualified lead evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "account_id",
+    "currency",
+    "timezone",
+    "business_profile_sha256",
+    "periods"
+  ],
+  "properties": {
+    "schema": {
+      "const": "ads-qualified-lead-evidence-v1"
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,39}$"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "timezone": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_+/-]{1,80}$"
+    },
+    "business_profile_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "periods": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "previous",
+        "current"
+      ],
+      "properties": {
+        "previous": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "date_start",
+            "date_stop",
+            "qualified_count",
+            "evidence_ref",
+            "observed_at"
+          ],
+          "properties": {
+            "date_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "date_stop": {
+              "type": "string",
+              "format": "date"
+            },
+            "qualified_count": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1000000000
+            },
+            "evidence_ref": {
+              "type": "string",
+              "pattern": "^EV_[A-Z0-9_]{1,80}$"
+            },
+            "observed_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "current": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "date_start",
+            "date_stop",
+            "qualified_count",
+            "evidence_ref",
+            "observed_at"
+          ],
+          "properties": {
+            "date_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "date_stop": {
+              "type": "string",
+              "format": "date"
+            },
+            "qualified_count": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1000000000
+            },
+            "evidence_ref": {
+              "type": "string",
+              "pattern": "^EV_[A-Z0-9_]{1,80}$"
+            },
+            "observed_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    }
+  }
+}

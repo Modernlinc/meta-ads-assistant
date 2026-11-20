@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Local account-level review thresholds",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "account_id",
+    "currency",
+    "minimum_lag_days",
+    "rules"
+  ],
+  "properties": {
+    "schema": {
+      "const": "ads-period-alert-rules-v1"
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "minimum_lag_days": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metric",
+          "direction",
+          "threshold_percent",
+          "minimum_per_period"
+        ],
+        "properties": {
+          "metric": {
+            "enum": [
+              "spend",
+              "cpm",
+              "ctr_percent",
+              "website_purchase_cpa",
+              "website_purchase_roas",
+              "website_lead_cpl"
+            ]
+          },
+          "direction": {
+            "enum": [
+              "INCREASE",
+              "DECREASE",
+              "EITHER"
+            ]
+          },
+          "threshold_percent": {
+            "type": "string",
+            "pattern": "^[0-9]{1,24}(?:\\.[0-9]{1,12})?$"
+          },
+          "minimum_per_period": {
+            "type": "string",
+            "pattern": "^[0-9]{1,24}(?:\\.[0-9]{1,12})?$"
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Unique metric per rule file, positive percentage, and positive integer sample for ratios are enforced at runtime. Spend accepts a zero floor. Count thresholds are for returned platform events or impressions, not verified business outcomes."
+}

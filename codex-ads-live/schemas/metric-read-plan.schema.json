@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Page Post Insights and historical simulation metric plans",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "page_id",
+        "live_id",
+        "metric",
+        "operation",
+        "version",
+        "max_age_seconds"
+      ],
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"
+        },
+        "page_id": {
+          "type": "string",
+          "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"
+        },
+        "live_id": {
+          "type": "string",
+          "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"
+        },
+        "metric": {
+          "enum": [
+            "post_video_live_current_viewers",
+            "post_video_views_live",
+            "post_video_social_actions_count_unique",
+            "post_video_views_by_live_status"
+          ]
+        },
+        "operation": {
+          "const": "video_insights"
+        },
+        "version": {
+          "const": "v27.0"
+        },
+        "max_age_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "page_id",
+        "live_id",
+        "metric",
+        "operation",
+        "version",
+        "max_age_seconds",
+        "video_id"
+      ],
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "pattern": "^(?:[1-9][0-9]{0,39}_[1-9][0-9]{0,39}|SIM_[A-Z0-9_]{1,80})$"
+        },
+        "page_id": {
+          "type": "string",
+          "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"
+        },
+        "live_id": {
+          "type": "string",
+          "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"
+        },
+        "metric": {
+          "enum": [
+            "post_video_live_current_viewers",
+            "post_video_views_live",
+            "post_video_social_actions_count_unique",
+            "post_video_views_by_live_status"
+          ]
+        },
+        "operation": {
+          "const": "post_insights"
+        },
+        "version": {
+          "const": "v27.0"
+        },
+        "max_age_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        },
+        "video_id": {
+          "type": "string",
+          "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"
+        }
+      }
+    }
+  ],
+  "$comment": "Page Post plan must match the verified Page, Live object, returned Video and direct Page Post attachment. The old video_insights variant preserves synthetic journals. Real Live transport remains pending."
+}

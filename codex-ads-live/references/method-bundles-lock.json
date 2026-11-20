@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "repository": "Modernlinc/ecommerce-skills",
+  "commit": "1fc556b3a8b900180b63af9ec8966bcc52489dd9",
+  "version": "1.0.0",
+  "bundles": [
+    {
+      "skill": "meta-facebook-ads",
+      "manifest": "methods/meta-facebook-ads/BUNDLE_MANIFEST.json",
+      "manifest_sha256": "e52cc3196b9ed08069dad3049b74ac914390e738c3257c628faf50985ffbb73f",
+      "entry": "methods/meta-facebook-ads/entry.md",
+      "method": "methods/meta-facebook-ads/method.md",
+      "files": 8
+    },
+    {
+      "skill": "ad-creative",
+      "manifest": "methods/ad-creative/BUNDLE_MANIFEST.json",
+      "manifest_sha256": "e1083e847bd7966adbfd55f544f323879a93d111f38515f1daf98b5872ba675d",
+      "entry": "methods/ad-creative/entry.md",
+      "method": "methods/ad-creative/method.md",
+      "files": 8
+    },
+    {
+      "skill": "ecommerce-analytics",
+      "manifest": "methods/ecommerce-analytics/BUNDLE_MANIFEST.json",
+      "manifest_sha256": "c43778f98123bec0e94a728739e12d5bde9b8073400224cd3d30b0c5d39e008d",
+      "entry": "methods/ecommerce-analytics/entry.md",
+      "method": "methods/ecommerce-analytics/method.md",
+      "files": 4
+    },
+    {
+      "skill": "brand-brief",
+      "manifest": "methods/brand-brief/BUNDLE_MANIFEST.json",
+      "manifest_sha256": "5421cd3efd7ad4e84271db2b2c71380b39adc08b9f8973922c4aa24e1598abd4",
+      "entry": "methods/brand-brief/entry.md",
+      "method": "methods/brand-brief/method.md",
+      "files": 4
+    }
+  ],
+  "real_action_authorized": false,
+  "historical_validation_inherited": false,
+  "upstream_scripts_bundled": false
+}

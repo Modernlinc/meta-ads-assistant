@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Non-secret categorical account diagnosis",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "as_of"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "type": "integer"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "authentication_expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "granted_scopes": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      }
+    },
+    "app_binding_matches": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "asset_id_matches": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "asset_owner_verified": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "route_id_differs": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "mcp_write_tools_allowed": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "mcp_connected": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "business_2fa_required": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "business_passkey_required": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "security_recommendations_present": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "verification_continue_changed_state": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "api_read_succeeded": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "ui_zero_test_count": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "ui_contains_drafts": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "live_fixture_available": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "admin_copy_conflict": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "display_name_differs": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "identity_name_check": {
+      "type": "string",
+      "enum": [
+        "MATCH",
+        "MISMATCH",
+        "UNKNOWN"
+      ]
+    },
+    "app_publication": {
+      "type": "string",
+      "enum": [
+        "PUBLISHED",
+        "NOT_PUBLISHED",
+        "UNKNOWN"
+      ]
+    },
+    "verification_state": {
+      "type": "string",
+      "enum": [
+        "NOT_STARTED",
+        "DRAFT",
+        "MORE_INFO",
+        "SUBMITTED",
+        "VERIFIED",
+        "UNKNOWN"
+      ]
+    },
+    "asset_kind": {
+      "type": "string",
+      "enum": [
+        "PAGE",
+        "AD_ACCOUNT",
+        "PERSONAL_PROFILE",
+        "PROFESSIONAL_PROFILE",
+        "INSTAGRAM_LIVE",
+        "UNKNOWN"
+      ]
+    },
+    "ui_numeric_comparison": {
+      "type": "string",
+      "enum": [
+        "MATCH",
+        "MISMATCH",
+        "NOT_COMPARABLE",
+        "NOT_RUN"
+      ]
+    },
+    "data_result": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "value"
+          ],
+          "properties": {
+            "state": {
+              "const": "VALUE"
+            },
+            "value": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "EMPTY",
+                "MISSING",
+                "ERROR",
+                "NOT_RUN"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$comment": "Runtime additionally rejects duplicate JSON keys, nonfinite numbers, contradictory success/data states, and comparison without VALUE; schema validity is not connection validation."
+}

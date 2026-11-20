@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "skills": [
+    {
+      "name": "modernlinc-brand-brief",
+      "version": "S4-brand-20261014-01-final.1",
+      "entry_sha256": "c75b2a6af1036b2f944993451764ddf681766275e4001720153fa4b28c6e83f8"
+    },
+    {
+      "name": "modernlinc-commerce-data",
+      "version": "S4-data-20261014-01-final.1",
+      "entry_sha256": "c4b9d034d96eed2846af12bf379726c6b1e7fd0628972619a8b567491866e7db"
+    },
+    {
+      "name": "modernlinc-creative-planning",
+      "version": "S4-creative-20261014-01-final.1",
+      "entry_sha256": "e05ae3a909e585ee4b5999f06e50491a9a6a55f2131cc09c8e7195a6b7857d55"
+    },
+    {
+      "name": "modernlinc-facebook-ads",
+      "version": "S4-facebook-20261014-01-final.1",
+      "entry_sha256": "12b0c6d9e8d5857232f47afe1561b9e3b0e91a5b7876cedfde9851ef3bdb2d49"
+    }
+  ]
+}

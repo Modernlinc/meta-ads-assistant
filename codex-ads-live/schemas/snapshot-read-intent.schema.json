@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "One action, explicitly confirmed read-only snapshot run",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "snapshot-read-intent-v1"
+    },
+    "connection": {
+      "$ref": "connection-intent.schema.json"
+    },
+    "draft": {
+      "$ref": "meta-write-draft.schema.json"
+    },
+    "duration_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+    },
+    "allowlist": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "CAMPAIGN": {
+          "type": "array",
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        },
+        "ADSET": {
+          "type": "array",
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        },
+        "AD": {
+          "type": "array",
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        },
+        "CREATIVE": {
+          "type": "array",
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        },
+        "PAGE": {
+          "type": "array",
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,39}$"
+          }
+        }
+      },
+      "required": [
+        "account_id",
+        "CAMPAIGN",
+        "ADSET",
+        "AD",
+        "CREATIVE",
+        "PAGE"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "connection",
+    "draft",
+    "duration_seconds",
+    "allowlist"
+  ],
+  "$comment": "Blank preparation is not a valid executable intent. Runtime checks <=32000 UTF-8 bytes, duplicate keys/nonfinite values, matching account IDs, all operation parameters, exact required levels and one node per level with no unused nodes. Scope confirmation includes one debug GET and two object sweeps, at most 11 GET attempts. Current metadata and OS record checkpoints remain required. No write authority or automatic renewal."
+}

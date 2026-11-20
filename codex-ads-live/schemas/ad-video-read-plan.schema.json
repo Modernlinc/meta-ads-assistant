@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fixed ad creative/video relationship read plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "object_id",
+    "account_id",
+    "page_id",
+    "since",
+    "until",
+    "operation",
+    "version",
+    "limit",
+    "reviewed_live_contract"
+  ],
+  "properties": {
+    "object_id": {
+      "type": "string",
+      "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^(?:[0-9]{1,40}|SIM_[A-Z0-9_]{1,60})$"
+    },
+    "page_id": {
+      "type": "null"
+    },
+    "since": {
+      "type": "null"
+    },
+    "until": {
+      "type": "null"
+    },
+    "operation": {
+      "const": "ad_videos"
+    },
+    "version": {
+      "const": "v27.0"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "reviewed_live_contract": {
+      "type": "boolean"
+    }
+  },
+  "$comment": "Runtime additionally requires object_id == account_id. Maps to GET act_ACCOUNT/ads with fixed id,account_id,creative{id,video_id}; no free fields. This is observation-time identity, not historical delivery or causal attribution. No authorization granted by a schema or review flag."
+}

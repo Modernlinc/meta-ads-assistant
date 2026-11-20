@@ -1,0 +1,49 @@
+{
+  "skill": "brand-brief",
+  "version": "1.0.0",
+  "repository": "Modernlinc/ecommerce-skills",
+  "commit": "1fc556b3a8b900180b63af9ec8966bcc52489dd9",
+  "entry": "entry.md",
+  "method": "method.md",
+  "license": "MIT; bundled attribution and third-party notices retained",
+  "mode": "TEXT_METHODS_ONLY_NO_UPSTREAM_SCRIPT_EXECUTION",
+  "analytics_engine_bundled": false,
+  "files": [
+    {
+      "path": "LICENSE.txt",
+      "bytes": 1067,
+      "sha256": "c31f9e7f5cc4271853d7a2c0ed9717f49119073eefc900c046a107799ab564ce",
+      "upstream_path": "LICENSE",
+      "upstream_sha256": "c31f9e7f5cc4271853d7a2c0ed9717f49119073eefc900c046a107799ab564ce",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/brand-brief/LICENSE",
+      "adaptation": "PORTABLE_FILENAMES_NAVIGATION_AND_EXPLICIT_TEXT_ONLY_SCOPE_NOTICE"
+    },
+    {
+      "path": "NOTICE.md",
+      "bytes": 541,
+      "sha256": "38e24edad48f05aa80148346eb1c6af37f1d01656c2f92940582ced35f37a45d",
+      "upstream_path": "NOTICE.md",
+      "upstream_sha256": "b11051d77c987556a6fb5b58e93751f7b02b9bb286060ce976473f926e7be838",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/brand-brief/NOTICE.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "entry.md",
+      "bytes": 277,
+      "sha256": "99d6ca9d9c1a8b4b969802f811e169261d71b46e3f47ea1712ee81f832be0498",
+      "upstream_path": "SKILL.md",
+      "upstream_sha256": "77398405bb869ab810a745b33bfc3b50b73a8a0d7d0a4754c9b1c681f632b235",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/brand-brief/SKILL.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "method.md",
+      "bytes": 412,
+      "sha256": "e5f604dc189f67dd643ae5ef96441a04111e6fa2091c0387c06a9108a13ffa9a",
+      "upstream_path": "references/library/payload/brand-brief-research/METHOD.md",
+      "upstream_sha256": "2eba09385efcab8da44cb3def666905e6764c796cbd3c6c11992e961b5e78621",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/brand-brief/references/library/payload/brand-brief-research/METHOD.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    }
+  ]
+}

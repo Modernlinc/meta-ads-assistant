@@ -1,0 +1,1272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Non-executable bounded Meta write parameter draft",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "operation",
+        "api_version",
+        "account_id",
+        "target_id",
+        "target_level",
+        "context",
+        "before",
+        "parameters",
+        "write_enabled"
+      ],
+      "properties": {
+        "schema": {
+          "const": "meta-write-draft-v1"
+        },
+        "operation": {
+          "const": "CREATE_CAMPAIGN"
+        },
+        "api_version": {
+          "const": "v27.0"
+        },
+        "account_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "target_id": {
+          "type": "null"
+        },
+        "target_level": {
+          "const": "CAMPAIGN"
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_snapshot_sha256",
+            "target_snapshot_sha256",
+            "parent_snapshot_sha256",
+            "creative_snapshot_sha256",
+            "material_sha256",
+            "currency",
+            "timezone",
+            "observed_at",
+            "page_id"
+          ],
+          "properties": {
+            "account_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "target_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "parent_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "creative_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "material_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "currency": {
+              "enum": [
+                null,
+                "USD",
+                "EUR",
+                "JPY"
+              ]
+            },
+            "timezone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100,
+              "pattern": "^[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*$"
+            },
+            "observed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[1-9][0-9]{0,39}$"
+            }
+          }
+        },
+        "before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "configured_status",
+            "daily_budget_minor"
+          ],
+          "properties": {
+            "configured_status": {
+              "enum": [
+                null,
+                "PAUSED",
+                "ACTIVE"
+              ]
+            },
+            "daily_budget_minor": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "objective",
+            "buying_type",
+            "special_ad_categories",
+            "is_adset_budget_sharing_enabled",
+            "status"
+          ],
+          "properties": {
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "objective": {
+              "enum": [
+                null,
+                "OUTCOME_TRAFFIC",
+                "OUTCOME_AWARENESS",
+                "OUTCOME_ENGAGEMENT",
+                "OUTCOME_LEADS",
+                "OUTCOME_SALES",
+                "OUTCOME_APP_PROMOTION"
+              ]
+            },
+            "buying_type": {
+              "enum": [
+                null,
+                "AUCTION"
+              ]
+            },
+            "special_ad_categories": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 0
+            },
+            "is_adset_budget_sharing_enabled": {
+              "enum": [
+                null,
+                false
+              ]
+            },
+            "status": {
+              "enum": [
+                null,
+                "PAUSED"
+              ]
+            }
+          }
+        },
+        "write_enabled": {
+          "const": false
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "operation",
+        "api_version",
+        "account_id",
+        "target_id",
+        "target_level",
+        "context",
+        "before",
+        "parameters",
+        "write_enabled"
+      ],
+      "properties": {
+        "schema": {
+          "const": "meta-write-draft-v1"
+        },
+        "operation": {
+          "const": "CREATE_ADSET"
+        },
+        "api_version": {
+          "const": "v27.0"
+        },
+        "account_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "target_id": {
+          "type": "null"
+        },
+        "target_level": {
+          "const": "ADSET"
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_snapshot_sha256",
+            "target_snapshot_sha256",
+            "parent_snapshot_sha256",
+            "creative_snapshot_sha256",
+            "material_sha256",
+            "currency",
+            "timezone",
+            "observed_at",
+            "page_id"
+          ],
+          "properties": {
+            "account_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "target_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "parent_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "creative_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "material_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "currency": {
+              "enum": [
+                null,
+                "USD",
+                "EUR",
+                "JPY"
+              ]
+            },
+            "timezone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100,
+              "pattern": "^[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*$"
+            },
+            "observed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[1-9][0-9]{0,39}$"
+            }
+          }
+        },
+        "before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "configured_status",
+            "daily_budget_minor"
+          ],
+          "properties": {
+            "configured_status": {
+              "enum": [
+                null,
+                "PAUSED",
+                "ACTIVE"
+              ]
+            },
+            "daily_budget_minor": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "campaign_id",
+            "daily_budget",
+            "billing_event",
+            "optimization_goal",
+            "bid_strategy",
+            "destination_type",
+            "targeting",
+            "status"
+          ],
+          "properties": {
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "campaign_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            "daily_budget": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            },
+            "billing_event": {
+              "enum": [
+                null,
+                "IMPRESSIONS"
+              ]
+            },
+            "optimization_goal": {
+              "enum": [
+                null,
+                "LINK_CLICKS",
+                "OFFSITE_CONVERSIONS"
+              ]
+            },
+            "bid_strategy": {
+              "enum": [
+                null,
+                "LOWEST_COST_WITHOUT_CAP"
+              ]
+            },
+            "destination_type": {
+              "enum": [
+                null,
+                "WEBSITE"
+              ]
+            },
+            "targeting": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "required": [
+                "geo_locations",
+                "age_min",
+                "age_max"
+              ],
+              "properties": {
+                "geo_locations": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "countries"
+                  ],
+                  "properties": {
+                    "countries": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 10,
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{2}$"
+                      }
+                    }
+                  }
+                },
+                "age_min": {
+                  "type": "integer",
+                  "minimum": 18,
+                  "maximum": 65
+                },
+                "age_max": {
+                  "type": "integer",
+                  "minimum": 18,
+                  "maximum": 65
+                }
+              }
+            },
+            "status": {
+              "enum": [
+                null,
+                "PAUSED"
+              ]
+            },
+            "promoted_object": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "required": [
+                "pixel_id",
+                "custom_event_type"
+              ],
+              "properties": {
+                "pixel_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^[1-9][0-9]{0,39}$"
+                },
+                "custom_event_type": {
+                  "enum": [
+                    null,
+                    "PURCHASE",
+                    "LEAD"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "write_enabled": {
+          "const": false
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "operation",
+        "api_version",
+        "account_id",
+        "target_id",
+        "target_level",
+        "context",
+        "before",
+        "parameters",
+        "write_enabled"
+      ],
+      "properties": {
+        "schema": {
+          "const": "meta-write-draft-v1"
+        },
+        "operation": {
+          "const": "CREATE_AD"
+        },
+        "api_version": {
+          "const": "v27.0"
+        },
+        "account_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "target_id": {
+          "type": "null"
+        },
+        "target_level": {
+          "const": "AD"
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_snapshot_sha256",
+            "target_snapshot_sha256",
+            "parent_snapshot_sha256",
+            "creative_snapshot_sha256",
+            "material_sha256",
+            "currency",
+            "timezone",
+            "observed_at",
+            "page_id"
+          ],
+          "properties": {
+            "account_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "target_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "parent_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "creative_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "material_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "currency": {
+              "enum": [
+                null,
+                "USD",
+                "EUR",
+                "JPY"
+              ]
+            },
+            "timezone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100,
+              "pattern": "^[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*$"
+            },
+            "observed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            "proposal_comparison_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "configured_status",
+            "daily_budget_minor"
+          ],
+          "properties": {
+            "configured_status": {
+              "enum": [
+                null,
+                "PAUSED",
+                "ACTIVE"
+              ]
+            },
+            "daily_budget_minor": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "adset_id",
+            "creative",
+            "status"
+          ],
+          "properties": {
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "adset_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            "creative": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "required": [
+                "creative_id"
+              ],
+              "properties": {
+                "creative_id": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,39}$"
+                }
+              }
+            },
+            "status": {
+              "enum": [
+                null,
+                "PAUSED"
+              ]
+            }
+          }
+        },
+        "write_enabled": {
+          "const": false
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "operation",
+        "api_version",
+        "account_id",
+        "target_id",
+        "target_level",
+        "context",
+        "before",
+        "parameters",
+        "write_enabled"
+      ],
+      "properties": {
+        "schema": {
+          "const": "meta-write-draft-v1"
+        },
+        "operation": {
+          "const": "SET_ADSET_DAILY_BUDGET"
+        },
+        "api_version": {
+          "const": "v27.0"
+        },
+        "account_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "target_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "target_level": {
+          "const": "ADSET"
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_snapshot_sha256",
+            "target_snapshot_sha256",
+            "parent_snapshot_sha256",
+            "creative_snapshot_sha256",
+            "material_sha256",
+            "currency",
+            "timezone",
+            "observed_at",
+            "page_id"
+          ],
+          "properties": {
+            "account_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "target_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "parent_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "creative_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "material_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "currency": {
+              "enum": [
+                null,
+                "USD",
+                "EUR",
+                "JPY"
+              ]
+            },
+            "timezone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100,
+              "pattern": "^[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*$"
+            },
+            "observed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[1-9][0-9]{0,39}$"
+            }
+          }
+        },
+        "before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "configured_status",
+            "daily_budget_minor"
+          ],
+          "properties": {
+            "configured_status": {
+              "enum": [
+                null,
+                "PAUSED",
+                "ACTIVE"
+              ]
+            },
+            "daily_budget_minor": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "daily_budget"
+          ],
+          "properties": {
+            "daily_budget": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            }
+          }
+        },
+        "write_enabled": {
+          "const": false
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "operation",
+        "api_version",
+        "account_id",
+        "target_id",
+        "target_level",
+        "context",
+        "before",
+        "parameters",
+        "write_enabled"
+      ],
+      "properties": {
+        "schema": {
+          "const": "meta-write-draft-v1"
+        },
+        "operation": {
+          "const": "SET_STATUS"
+        },
+        "api_version": {
+          "const": "v27.0"
+        },
+        "account_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "target_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "target_level": {
+          "enum": [
+            null,
+            "CAMPAIGN",
+            "ADSET",
+            "AD"
+          ]
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_snapshot_sha256",
+            "target_snapshot_sha256",
+            "parent_snapshot_sha256",
+            "creative_snapshot_sha256",
+            "material_sha256",
+            "currency",
+            "timezone",
+            "observed_at",
+            "page_id"
+          ],
+          "properties": {
+            "account_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "target_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "parent_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "creative_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "material_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "currency": {
+              "enum": [
+                null,
+                "USD",
+                "EUR",
+                "JPY"
+              ]
+            },
+            "timezone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100,
+              "pattern": "^[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*$"
+            },
+            "observed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[1-9][0-9]{0,39}$"
+            }
+          }
+        },
+        "before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "configured_status",
+            "daily_budget_minor"
+          ],
+          "properties": {
+            "configured_status": {
+              "enum": [
+                null,
+                "PAUSED",
+                "ACTIVE"
+              ]
+            },
+            "daily_budget_minor": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                null,
+                "PAUSED",
+                "ACTIVE"
+              ]
+            }
+          }
+        },
+        "write_enabled": {
+          "const": false
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "operation",
+        "api_version",
+        "account_id",
+        "target_id",
+        "target_level",
+        "context",
+        "before",
+        "parameters",
+        "write_enabled"
+      ],
+      "properties": {
+        "schema": {
+          "const": "meta-write-draft-v1"
+        },
+        "operation": {
+          "const": "CREATE_CREATIVE"
+        },
+        "api_version": {
+          "const": "v27.0"
+        },
+        "account_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[1-9][0-9]{0,39}$"
+        },
+        "target_id": {
+          "type": "null"
+        },
+        "target_level": {
+          "const": "CREATIVE"
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_snapshot_sha256",
+            "target_snapshot_sha256",
+            "parent_snapshot_sha256",
+            "creative_snapshot_sha256",
+            "material_sha256",
+            "currency",
+            "timezone",
+            "observed_at",
+            "page_id"
+          ],
+          "properties": {
+            "account_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "target_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "parent_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "creative_snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "material_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "currency": {
+              "enum": [
+                null,
+                "USD",
+                "EUR",
+                "JPY"
+              ]
+            },
+            "timezone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100,
+              "pattern": "^[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*$"
+            },
+            "observed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "page_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[1-9][0-9]{0,39}$"
+            }
+          }
+        },
+        "before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "configured_status",
+            "daily_budget_minor"
+          ],
+          "properties": {
+            "configured_status": {
+              "enum": [
+                null,
+                "PAUSED",
+                "ACTIVE"
+              ]
+            },
+            "daily_budget_minor": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "image_hash",
+            "destination_url",
+            "primary_text",
+            "headline",
+            "call_to_action"
+          ],
+          "properties": {
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "image_hash": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            },
+            "destination_url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^https://",
+              "maxLength": 1000
+            },
+            "primary_text": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "headline": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 500
+            },
+            "call_to_action": {
+              "enum": [
+                null,
+                "LEARN_MORE",
+                "SHOP_NOW"
+              ]
+            }
+          }
+        },
+        "write_enabled": {
+          "const": false
+        }
+      }
+    }
+  ],
+  "$comment": "Incomplete null values are valid preparation. Runtime additionally checks ordered ages, unused context, names/secret patterns, 16000-byte limit and aware timestamps. Complete declarations never authorize a request. SDK v26 mappings and partial v27 public references are not complete server-contract verification; existing MOCK approvals cannot approve these packets."
+}

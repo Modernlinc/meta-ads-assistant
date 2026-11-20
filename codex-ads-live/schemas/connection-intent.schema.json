@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Non-secret single-account connection intent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "app_id",
+    "principal_id",
+    "account_id",
+    "schema",
+    "credential_source",
+    "credential_reference",
+    "app_developer_confirmed",
+    "asset_owner_confirmed",
+    "appsecret_proof_requirement"
+  ],
+  "properties": {
+    "app_id": {
+      "type": "string",
+      "pattern": "^[0-9]{1,40}$"
+    },
+    "principal_id": {
+      "type": "string",
+      "pattern": "^[0-9]{1,40}$"
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^[0-9]{1,40}$"
+    },
+    "schema": {
+      "const": "connection-intent-v1"
+    },
+    "credential_source": {
+      "enum": [
+        "SESSION_INPUT",
+        "OS_REFERENCE"
+      ]
+    },
+    "credential_reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^conn_[0-9a-f]{32}$"
+    },
+    "app_developer_confirmed": {
+      "type": "boolean"
+    },
+    "asset_owner_confirmed": {
+      "type": "boolean"
+    },
+    "appsecret_proof_requirement": {
+      "enum": [
+        "UNKNOWN",
+        "REQUIRED",
+        "NOT_REQUIRED_CONFIRMED"
+      ]
+    }
+  },
+  "$comment": "Blank template null IDs are intentionally not executable. OS_REFERENCE additionally requires --credential-record-dir with an active matching local record; absence, disable or mismatch blocks access. Runtime enforces reference only for OS_REFERENCE, owner/developer confirmations and resolved proof requirement. Flags are not grants or independent identity. Check additionally requires prior user authorization, interactive local confirmation, actual debug metadata and a bounded account GET."
+}

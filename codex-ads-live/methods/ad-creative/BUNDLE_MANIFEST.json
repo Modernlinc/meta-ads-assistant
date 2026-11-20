@@ -1,0 +1,85 @@
+{
+  "skill": "ad-creative",
+  "version": "1.0.0",
+  "repository": "Modernlinc/ecommerce-skills",
+  "commit": "1fc556b3a8b900180b63af9ec8966bcc52489dd9",
+  "entry": "entry.md",
+  "method": "method.md",
+  "license": "MIT; bundled attribution and third-party notices retained",
+  "mode": "TEXT_METHODS_ONLY_NO_UPSTREAM_SCRIPT_EXECUTION",
+  "analytics_engine_bundled": false,
+  "files": [
+    {
+      "path": "01-12670182.md",
+      "bytes": 2482,
+      "sha256": "66498e9933164edad873675fb3c15ee4484e660bfc118bdb075d4434cec66674",
+      "upstream_path": "references/library/references/示例__01_原始委托.md",
+      "upstream_sha256": "ce0eff1b1618f58fdffb5fc4059e58f4a0e78622320439ad88fc75712f8538c8",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/ad-creative/references/library/references/%E7%A4%BA%E4%BE%8B__01_%E5%8E%9F%E5%A7%8B%E5%A7%94%E6%89%98.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "04-110c701e.md",
+      "bytes": 7183,
+      "sha256": "7a6916232ded0a4e04d6d18504bedeb58985121d2aeb9ac8f2eea3b1e6a4564f",
+      "upstream_path": "references/library/references/示例__04_原始跟进成果.md",
+      "upstream_sha256": "309c6c3a1449cacb27ea7352a3dc3cb51ecae392ccc2b394520f37bff900f394",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/ad-creative/references/library/references/%E7%A4%BA%E4%BE%8B__04_%E5%8E%9F%E5%A7%8B%E8%B7%9F%E8%BF%9B%E6%88%90%E6%9E%9C.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "LICENSE.txt",
+      "bytes": 1067,
+      "sha256": "c31f9e7f5cc4271853d7a2c0ed9717f49119073eefc900c046a107799ab564ce",
+      "upstream_path": "LICENSE",
+      "upstream_sha256": "c31f9e7f5cc4271853d7a2c0ed9717f49119073eefc900c046a107799ab564ce",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/ad-creative/LICENSE",
+      "adaptation": "PORTABLE_FILENAMES_NAVIGATION_AND_EXPLICIT_TEXT_ONLY_SCOPE_NOTICE"
+    },
+    {
+      "path": "NOTICE.md",
+      "bytes": 541,
+      "sha256": "38e24edad48f05aa80148346eb1c6af37f1d01656c2f92940582ced35f37a45d",
+      "upstream_path": "NOTICE.md",
+      "upstream_sha256": "b11051d77c987556a6fb5b58e93751f7b02b9bb286060ce976473f926e7be838",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/ad-creative/NOTICE.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "entry.md",
+      "bytes": 263,
+      "sha256": "2f55403bee09a5e491df46673fc44cc28a5c76bf2e5f60e39b5346df90dd9702",
+      "upstream_path": "SKILL.md",
+      "upstream_sha256": "17ad64ab5e9809e1efcbce31c253c6e3741f177ed6624efa05b8d59444ca9827",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/ad-creative/SKILL.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "marketingskills-coreyhaines-mit--e949a972.txt",
+      "bytes": 1069,
+      "sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591",
+      "upstream_path": "references/library/references/MarketingSkills-CoreyHaines-MIT-2025.txt",
+      "upstream_sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/ad-creative/references/library/references/MarketingSkills-CoreyHaines-MIT-2025.txt",
+      "adaptation": "PORTABLE_FILENAMES_NAVIGATION_AND_EXPLICIT_TEXT_ONLY_SCOPE_NOTICE"
+    },
+    {
+      "path": "method.md",
+      "bytes": 621,
+      "sha256": "c2567d907a7e3fe14c22a240c88e5ea1553c54cacb3d69a13780a79dba5a12da",
+      "upstream_path": "references/library/METHOD.md",
+      "upstream_sha256": "2da10249ee90acd9e29b8b5d9ed6755540d2c5352b54ed180b647039d36ba042",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/ad-creative/references/library/METHOD.md",
+      "adaptation": "CUSTOMER_EDITION_EDITORIAL_ADAPTATION"
+    },
+    {
+      "path": "sealeap-nexscope-mit-2026-642c02c3.txt",
+      "bytes": 1095,
+      "sha256": "309607c778b0f3043edee2e0929a5c4714cc6373d3a6060484252c535be13ec2",
+      "upstream_path": "references/library/references/SeaLeap-Nexscope-MIT-2026.txt",
+      "upstream_sha256": "309607c778b0f3043edee2e0929a5c4714cc6373d3a6060484252c535be13ec2",
+      "upstream_url": "https://github.com/Modernlinc/ecommerce-skills/blob/1fc556b3a8b900180b63af9ec8966bcc52489dd9/skills/ad-creative/references/library/references/SeaLeap-Nexscope-MIT-2026.txt",
+      "adaptation": "PORTABLE_FILENAMES_NAVIGATION_AND_EXPLICIT_TEXT_ONLY_SCOPE_NOTICE"
+    }
+  ]
+}
