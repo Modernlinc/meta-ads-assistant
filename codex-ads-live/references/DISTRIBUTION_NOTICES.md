@@ -13,4 +13,5 @@
 - 素材观察维度与品牌、创意简报流程参考 MIT 许可的 [Master Skill](https://github.com/swaylq/master-skill/tree/3dd8a77bcf2d6c415a30e8d2093d3b09823ea136) 和 [Marketing Skills](https://github.com/coreyhaines31/marketingskills/tree/8fd2fcade2fd6629026e9dfe6d133b55b36968b9)。
 - 冻结批次及逐项取回思路参考 MIT 许可的 [Ocean Watch](https://github.com/westng/ocean-watch/tree/9d02ba5e6477af3acb462f2d3daac4b77edf9131)。
 - 公开样本与分页合同参考 MIT 许可的 [Meta Ads Library 客户端](https://github.com/eminberkayd/meta-ads-library/tree/730c2573fb6e189a7aaa5f98d16689cb4c558214)。广告与创意关联和账户活动字段参考 MIT 许可的 [GoMarble Facebook Ads MCP](https://github.com/gomarble-ai/facebook-ads-mcp-server/tree/a3b555a12dff5b888b172ef9113dd1f36d69e525)。
+- 公开样本及详情的关联参考 MIT 许可的 [HyperFX Marketing Skills](https://github.com/hyperfx-ai/marketing-skills/tree/463e5026e5db09123f99e668622bf5e3879c08bf)。具名首投和报表下钻参考 MIT 许可的 [GoMarble Marketing Agent](https://github.com/gomarble-ai/marketing-agent/tree/3e58349a6d29076c474a3c3b32b5afe2a3b8cdcd)。
 - 媒体上传及广告对象请求参考 [Meta Business SDK 固定源码](https://github.com/meta/facebook-python-business-sdk/tree/1145e73272236f03f495099ee2cb1bdcc08a4828)。该 SDK 的许可由 Meta 管理，安装件使用自己实现的受管 HTTP 请求。
