@@ -18,12 +18,12 @@ def _amount(value):
     return value
 
 
-def read_account(get, scope):
+def read_account(get, scope, *, check_currency=True):
     account_id = scope['account_id']
     fields = 'id,account_id,account_status,currency,timezone_name,user_tasks'
     row = get('/v27.0/act_' + account_id + '?' + urlencode(dict(fields=fields)))
-    if ((row.get('id'), row.get('account_id'), row.get('account_status'), row.get('currency')) !=
-            ('act_' + account_id, account_id, 1, scope['currency']) or type(row.get('account_status')) is not int):
+    if ((row.get('id'), row.get('account_id'), row.get('account_status')) != ('act_' + account_id, account_id, 1)
+            or type(row.get('account_status')) is not int or (check_currency and row.get('currency') != scope['currency'])):
         fail('FIRST_LAUNCH_LOCAL_ACCOUNT_ELIGIBILITY')
     return row
 

@@ -1259,8 +1259,63 @@
                 "LEARN_MORE",
                 "SHOP_NOW"
               ]
+            },
+            "video": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "required": [
+                "video_id",
+                "thumbnail_hash"
+              ],
+              "properties": {
+                "video_id": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,39}$"
+                },
+                "thumbnail_hash": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                }
+              }
+            },
+            "media_scope_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "video"
+                ],
+                "properties": {
+                  "video": {
+                    "type": "object"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "media_scope_sha256"
+                ],
+                "properties": {
+                  "media_scope_sha256": {
+                    "type": "string"
+                  },
+                  "image_hash": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ]
         },
         "write_enabled": {
           "const": false

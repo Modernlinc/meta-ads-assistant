@@ -23,7 +23,8 @@ OPERATIONS = (*SNAPSHOT_OPERATIONS, 'CREATE_CREATIVE')
 CREATIVE_CTAS = ('LEARN_MORE', 'SHOP_NOW')
 SUPPORTED_CURRENCIES = ('USD', 'EUR', 'JPY')
 WEBSITE_CONVERSION_OBJECTIVES = {'PURCHASE': 'OUTCOME_SALES', 'LEAD': 'OUTCOME_LEADS'}
-OPTIONAL_PARAMETERS = {'CREATE_ADSET': ('promoted_object',), 'CREATE_CREATIVE': ('description',)}
+OPTIONAL_PARAMETERS = {'CREATE_ADSET': ('promoted_object',),
+                       'CREATE_CREATIVE': ('description', 'video', 'media_scope_sha256')}
 CREATE_EDGES = {'CREATE_CAMPAIGN': 'campaigns', 'CREATE_ADSET': 'adsets',
                 'CREATE_AD': 'ads', 'CREATE_CREATIVE': 'adcreatives'}
 PARAMETERS = {
@@ -31,7 +32,8 @@ PARAMETERS = {
     'CREATE_ADSET': ('name', 'campaign_id', 'daily_budget', 'billing_event', 'optimization_goal', 'bid_strategy',
                      'destination_type', 'targeting', 'status', 'promoted_object'),
     'CREATE_AD': ('name', 'adset_id', 'creative', 'status'),
-    'CREATE_CREATIVE': ('name', 'image_hash', 'destination_url', 'primary_text', 'headline', 'description', 'call_to_action'),
+    'CREATE_CREATIVE': ('name', 'image_hash', 'destination_url', 'primary_text', 'headline', 'description',
+                        'call_to_action', 'video', 'media_scope_sha256'),
     'SET_ADSET_DAILY_BUDGET': ('daily_budget',), 'SET_STATUS': ('status',),
 }
 CONTEXT = ('currency', 'timezone', 'observed_at', 'account_snapshot_sha256', 'target_snapshot_sha256',
@@ -121,6 +123,17 @@ def validate_creative_parameters(params):
     image = params['image_hash']
     if image is not None and (type(image) is not str or not re.fullmatch('[A-Za-z0-9_-]{1,128}', image)):
         fail('META_WRITE_IMAGE_REFERENCE')
+    video = params.get('video')
+    media_scope = params.get('media_scope_sha256')
+    if media_scope is not None and (type(media_scope) is not str or not re.fullmatch('[a-f0-9]{64}', media_scope)):
+        fail('META_WRITE_MANAGED_MEDIA_SCOPE')
+    if video is not None:
+        object_only(video, ('video_id', 'thumbnail_hash'), ('video_id', 'thumbnail_hash'))
+        thumbnail = video['thumbnail_hash']
+        if (image is not None or media_scope is None or video['video_id'] is None
+                or type(thumbnail) is not str or not re.fullmatch('[A-Za-z0-9_-]{1,128}', thumbnail)):
+            fail('META_WRITE_VIDEO_MEDIA_REFERENCE')
+        _nullable_id(video['video_id'])
     url = params['destination_url']
     if url is not None:
         validate_https_destination(url, 'META_WRITE_DESTINATION_URL')
@@ -136,6 +149,14 @@ def validate_creative_parameters(params):
 
 def creative_request_parameters(params, page_id):
     url = params['destination_url']
+    video = params.get('video')
+    if video is not None:
+        video_data = dict(video_id=video['video_id'], image_hash=video['thumbnail_hash'],
+                          message=params['primary_text'], title=params['headline'],
+                          call_to_action=dict(type=params['call_to_action'], value={'link': url}))
+        if params['description'] is not None:
+            video_data['link_description'] = params['description']
+        return dict(name=params['name'], object_story_spec=dict(page_id=page_id, video_data=video_data))
     link_data = dict(image_hash=params['image_hash'], link=url, message=params['primary_text'],
                      name=params['headline'], description=params['description'],
                      call_to_action=dict(type=params['call_to_action'], value={'link': url}))
@@ -248,6 +269,11 @@ def review_draft(value, *, clock=utcnow):
     conversion = op == 'CREATE_ADSET' and params['optimization_goal'] == 'OFFSITE_CONVERSIONS'
     required = [('account_id', value['account_id']), ('target_level', value['target_level'])]
     required += [('parameters.' + key, item) for key, item in params.items() if key != 'promoted_object']
+    if op == 'CREATE_CREATIVE' and params.get('video') is not None:
+        required = [(key, item) for key, item in required if key != 'parameters.image_hash']
+    if op == 'CREATE_CREATIVE':
+        required = [(key, item) for key, item in required if key not in
+                    ('parameters.video', 'parameters.media_scope_sha256')]
     context_required = ['currency', 'timezone', 'observed_at', 'account_snapshot_sha256']
     creating = op.startswith('CREATE_')
     if not creating:
@@ -377,6 +403,9 @@ def draft_schema():
                     age_max=dict(type='integer', minimum=18, maximum=65)))
     target['type'] = ['object', 'null']
     creative = obj(dict(creative_id={**identifier, 'type': 'string'})); creative['type'] = ['object', 'null']
+    video = obj(dict(video_id={**identifier, 'type': 'string'},
+                     thumbnail_hash=dict(type='string', pattern='^[A-Za-z0-9_-]{1,128}$')))
+    video['type'] = ['object', 'null']
     promoted = obj(dict(pixel_id=identifier, custom_event_type=choice(WEBSITE_CONVERSION_OBJECTIVES)))
     promoted['type'] = ['object', 'null']
     fields = dict(name=dict(type=['string', 'null'], minLength=1, maxLength=120), objective=choice(OBJECTIVES),
@@ -385,6 +414,7 @@ def draft_schema():
                   campaign_id=identifier, adset_id=identifier, daily_budget=amount, billing_event=choice(('IMPRESSIONS',)),
                   optimization_goal=choice(('LINK_CLICKS', 'OFFSITE_CONVERSIONS')), bid_strategy=choice(('LOWEST_COST_WITHOUT_CAP',)),
                   destination_type=choice(('WEBSITE',)), targeting=target, creative=creative, promoted_object=promoted,
+                  video=video, media_scope_sha256=dict(type=['string', 'null'], pattern='^[a-f0-9]{64}$'),
                   image_hash=dict(type=['string', 'null'], pattern='^[A-Za-z0-9_-]{1,128}$'),
                   destination_url=dict(type=['string', 'null'], pattern='^https://', maxLength=1000),
                   primary_text=dict(type=['string', 'null'], minLength=1, maxLength=2000),
@@ -401,6 +431,12 @@ def draft_schema():
         parameters_schema = obj(params)
         for key in OPTIONAL_PARAMETERS.get(op, ()):
             parameters_schema['required'].remove(key)
+        if op == 'CREATE_CREATIVE':
+            parameters_schema['allOf'] = [{
+                'if': {'required':['video'], 'properties':{'video':{'type':'object'}}},
+                'then': {'required':['media_scope_sha256'], 'properties':{
+                    'media_scope_sha256':{'type':'string'}, 'image_hash':{'type':'null'}}}
+            }]
         props = dict(schema={'const': 'meta-write-draft-v1'}, operation={'const': op}, api_version={'const': 'v27.0'},
                      account_id=identifier, target_id={'type': 'null'} if op.startswith('CREATE_') else identifier,
                      target_level={'const': blank_draft(op)['target_level']} if op != 'SET_STATUS' else choice(('CAMPAIGN', 'ADSET', 'AD')),

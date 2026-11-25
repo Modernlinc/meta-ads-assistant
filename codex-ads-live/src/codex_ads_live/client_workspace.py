@@ -1519,7 +1519,11 @@ def add_commands(sub):
         'business-set':'保存填好的本地业务档案',
         'business-show':'查看具名广告账户的业务档案和当前版本摘要',
         'first-launch-plan':'按一个已选账户与主页准备首投的四份本地草案',
+        'creative-research':'在原工作区保留品牌学习、来源、选题和素材评语',
+        'public-ad-observations':'在原工作区规范化公开广告样本',
         'first-launch-check':'核对首投草案仍对应原工作区及已选账户、主页',
+        'first-launch-media':'审阅受管素材上传或只读核对原上传',
+        'first-launch-update':'审阅、执行或恢复同一首投已记录对象的具名调整',
         'first-launch-host':'导出原计划的本机受控连接范围，或核对已运行的本机批准服务',
         'first-launch-handoff':'从普通安装接续同一首投的客户后台操作与回读',
         'first-launch-progress':'沿同一首投草案留存具名对象回读并准备下一步',
@@ -1527,6 +1531,7 @@ def add_commands(sub):
         'first-launch-activation-review':'用具名预览、预算和时窗准备独立启用审阅',
         'first-launch-activation':'预审同一 Ad 的启用范围或回读原尝试',
         'first-launch-delivery':'用既有读取归档复盘本次首投的同一广告',
+        'first-launch-evidence':'审阅同一广告的创意与账户活动读取范围',
         'bind':'绑定非敏感 OS 引用记录和具名账户意图', 'refresh':'本人交互确认后核对一个账户的连接',
         'plan':'用已保存的资产准备单一日常任务输入', 'replan':'按同一工作区的历史运行与当前具名接入准备新读取计划',
         'removal-plan':'预览退出范围及需单独确认的操作', 'diagnostics':'导出脱敏的本地状态', 'migrate':'备份旧工作区并在新目录迁移',
@@ -1536,11 +1541,31 @@ def add_commands(sub):
         command.add_argument('--workspace', required=True, type=Path)
         commands[name] = command
     commands['init'].add_argument('--preparation',type=Path)
+    for name in ('creative-research','public-ad-observations'):
+        commands[name].add_argument('--id',help='具名广告账户，省略时使用项目默认账户')
+        commands[name].add_argument('--input',type=Path)
+    commands['creative-research'].add_argument('--public-observations', type=Path)
+    commands['creative-research'].add_argument('--product', help='公开观察关联到自己的具名商品')
     first_launch = commands['first-launch-plan']
     first_launch.add_argument('--account-id')
     first_launch.add_argument('--page-id')
+    first_launch.add_argument('--select-creative', action='append', nargs=3, metavar=('CONCEPT', 'VARIANT', 'ASSET_SHA256'),
+                              help='将素材评语和创意选择摘要冻结到首投计划')
     first_launch.add_argument('--output',type=Path,help='默认保存在工作区的 first-launch-plan 目录')
     commands['first-launch-check'].add_argument('--plan-dir',type=Path)
+    media = commands['first-launch-media']
+    media.add_argument('--plan-dir', type=Path)
+    media.add_argument('--file', type=Path)
+    media.add_argument('--kind', choices=('IMAGE','VIDEO'))
+    media.add_argument('--packet', type=Path)
+    media.add_argument('--mode', choices=('plan','dispatch','recover'), default='plan')
+    update = commands['first-launch-update']
+    from .first_launch_update import ACTIONS
+    update.add_argument('--action', choices=ACTIONS)
+    update.add_argument('--plan-dir', type=Path)
+    update.add_argument('--budget-minor', type=int)
+    update.add_argument('--packet', type=Path)
+    update.add_argument('--mode', choices=('plan','observe','dispatch','recover'), default='plan')
     host_command = commands['first-launch-host']
     host_command.add_argument('--plan-dir',type=Path)
     host_command.add_argument('--status',action='store_true',help='只核对具名本机批准服务')
@@ -1594,6 +1619,12 @@ def add_commands(sub):
     launch_delivery.add_argument('--manual-before',type=Path,help='A1 原父级操作前观察，可沿原计划自动发现')
     launch_delivery.add_argument('--manual-after',type=Path,help='A1 原父级操作后观察，可沿原计划自动发现')
     launch_delivery.add_argument('--manual-ad',type=Path,help='A1 原 Ad 尝试观察，可沿原计划自动发现')
+    launch_delivery.add_argument('--evidence',type=Path,help='同一首投、广告和观察窗口的创意及活动回执')
+    launch_evidence = commands['first-launch-evidence']
+    launch_evidence.add_argument('--plan-dir', type=Path)
+    launch_evidence.add_argument('--since', required=True)
+    launch_evidence.add_argument('--until', required=True)
+    launch_evidence.add_argument('--execute-read', action='store_true')
     commands['onboard'].add_argument('--preparation',type=Path,required=True)
     from .workspace_onboarding import SCOPES
     onboarding = commands['onboarding-report']
@@ -1696,6 +1727,12 @@ def add_commands(sub):
 def run_command(args, *, first_launch_provider=None, first_launch_preview_provider=None, first_launch_activation_provider=None):
     name = args.command.removeprefix('workspace-')
     root = args.workspace
+    if name=='creative-research':
+        from .creative_research import run_research
+        return run_research(root,args.id,args.input,public_path=args.public_observations,product=args.product)
+    if name=='public-ad-observations':
+        from .creative_research import public_observations
+        return public_observations(root,args.id,args.input)
     if name=='init':
         return initialize(root,args.preparation)
     if name=='onboard':
@@ -1740,13 +1777,20 @@ def run_command(args, *, first_launch_provider=None, first_launch_preview_provid
     if name in ('first-launch-plan','first-launch-check'):
         from . import first_launch_plan
         if name=='first-launch-plan':
-            return first_launch_plan.prepare(root,args.output,account_id=args.account_id,page_id=args.page_id)
+            return first_launch_plan.prepare(root,args.output,account_id=args.account_id,page_id=args.page_id,
+                                             creative_selection=args.select_creative)
         return first_launch_plan.check(root,args.plan_dir)
     if name=='first-launch-progress':
         from .first_launch_progress import progress
         return progress(root,args.plan_dir,reserve=args.reserve,readback=args.readback,checkpoint=args.checkpoint,
                         dispatch_stage=args.dispatch_approved,recover_stage=args.recover_host,
                         provider=first_launch_provider)
+    if name=='first-launch-media':
+        from .first_launch_media import run
+        return run(root,args.plan_dir,args.file,args.kind,args.packet,args.mode)
+    if name=='first-launch-update':
+        from .first_launch_update import run
+        return run(root,args.plan_dir,args.action,args.budget_minor,args.packet,args.mode)
     if name=='first-launch-host':
         from .first_launch_local_host import LocalFirstLaunchHost, scope_from_launch
         from .first_launch_progress import progress
@@ -1808,7 +1852,10 @@ def run_command(args, *, first_launch_provider=None, first_launch_preview_provid
         from .first_launch_delivery import delivery_review
         return delivery_review(root,args.plan_dir,args.run_receipt,args.since,args.until,
                                activation_review_path=args.activation_review, manual_before=args.manual_before,
-                               manual_after=args.manual_after, manual_ad=args.manual_ad)
+                               manual_after=args.manual_after, manual_ad=args.manual_ad, evidence_path=args.evidence)
+    if name=='first-launch-evidence':
+        from .first_launch_evidence import run
+        return run(root,args.plan_dir,args.since,args.until,args.execute_read)
     if name=='add':
         return map_asset(root,args.kind,args.id,args.evidence_ref)
     if name=='default':

@@ -263,6 +263,15 @@ def _check_form(binding, form_body):
         story = strict_json(form['object_story_spec'], max_chars=16_000)
         if type(story) is not dict or story.get('page_id') != binding.page_id:
             fail('FIRST_LAUNCH_GRAPH_CREATIVE_PAGE_MISMATCH')
+        branches = set(story) - {'page_id'}
+        if len(branches) != 1 or not branches <= {'link_data', 'video_data'}:
+            fail('FIRST_LAUNCH_GRAPH_CREATIVE_MEDIA_MISMATCH')
+        branch = next(iter(branches))
+        data = story[branch]
+        allowed = ({'image_hash', 'link', 'message', 'name', 'description', 'call_to_action'} if branch == 'link_data'
+                   else {'video_id', 'image_hash', 'message', 'title', 'link_description', 'call_to_action'})
+        if type(data) is not dict or set(data) - allowed or not {'image_hash', 'call_to_action'} <= data.keys():
+            fail('FIRST_LAUNCH_GRAPH_CREATIVE_MEDIA_MISMATCH')
         return
     allowed = set(PARAMETERS[operation])
     required = allowed - set(OPTIONAL_PARAMETERS.get(operation, ()))

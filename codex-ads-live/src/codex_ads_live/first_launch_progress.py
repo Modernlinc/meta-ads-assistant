@@ -7,6 +7,7 @@ operation while its outcome is unknown and correlate observations by its digest.
 from dataclasses import asdict
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 import re
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
@@ -14,7 +15,7 @@ from .client_workspace import journal_for, load, workspace_identity
 from .first_launch_activation_host import activation_operation, validate_activation_attempt
 from .first_launch_host import CREATION_READBACK_SCHEMA as READBACK
 from .first_launch_host import CreationBinding, dispatch_creation, graph_post_request, recover_creation, validate_attempt
-from .first_launch_plan import OPERATIONS, _goal_conflicts, _read_plan_json, current_plan, plan_directory, scoped_draft
+from .first_launch_plan import OPERATIONS, _goal_conflicts, _read_plan_json, current_plan, plan_directory, scoped_draft, stage_specs
 from .first_launch_preview import PREVIEW_FORMAT
 from .journal import Journal, canonical, digest
 from .local_paths import checked_path
@@ -62,14 +63,16 @@ def _validate_record(record, reservation):
         fail('FIRST_LAUNCH_READBACK_OBJECT_MISMATCH')
 
 
-def _validate_state(value, plan_sha):
+def _validate_state(value, plan_sha, levels=LEVELS):
     keys = ('schema', 'plan_sha256', 'stages', 'checkpoint')
-    object_only(value, (*keys, 'activation_attempt', 'manual_activation_attempt'), keys)
+    object_only(value, (*keys, 'activation_attempt', 'manual_activation_attempt', 'batch_configuration_sha256'), keys)
     if value['schema'] != SCHEMA or value['plan_sha256'] != plan_sha:
         fail('FIRST_LAUNCH_PROGRESS_PLAN_CHANGED')
     rows = value['stages']
-    if type(rows) is not list or len(rows) > len(LEVELS):
+    if type(rows) is not list or len(rows) > len(levels):
         fail('FIRST_LAUNCH_PROGRESS_SEQUENCE')
+    if len(levels) > len(LEVELS) and rows and not HEX.fullmatch(value.get('batch_configuration_sha256', '')):
+        fail('FIRST_LAUNCH_BATCH_CONFIGURATION_REQUIRED')
     ids = set()
     configurations = set()
     for index, row in enumerate(rows):
@@ -78,7 +81,7 @@ def _validate_state(value, plan_sha):
         keys = ('plan_sha256', 'operation', 'draft_sha256', 'request_sha256',
                 'expected_object', 'reserved_at', 'stage_sha256')
         object_only(reservation, keys, keys)
-        if (reservation['plan_sha256'] != plan_sha or reservation['operation'] != LEVELS[index]
+        if (reservation['plan_sha256'] != plan_sha or reservation['operation'] != levels[index]
                 or type(reservation['draft_sha256']) is not str or not HEX.fullmatch(reservation['draft_sha256'])
                 or type(reservation['request_sha256']) is not str or not HEX.fullmatch(reservation['request_sha256'])
                 or reservation['stage_sha256'] != _sealed(reservation)
@@ -112,12 +115,12 @@ def _validate_state(value, plan_sha):
     if len(configurations)>1:
         fail('FIRST_LAUNCH_HOST_CONFIGURATION_CHANGED')
     if 'manual_activation_attempt' in value:
-        if 'activation_attempt' in value or len(rows) != len(LEVELS) or not _ready(rows[-1]):
+        if 'activation_attempt' in value or len(rows) != len(levels) or not _ready(rows[-1]):
             fail('FIRST_LAUNCH_ACTIVATION_SOURCE_CONFLICT')
         from .first_launch_handoff import validate_manual_attempt
         validate_manual_attempt(value['manual_activation_attempt'], rows, plan_sha)
     if 'activation_attempt' in value:
-        if len(rows) != len(LEVELS) or not _ready(rows[-1]):
+        if len(rows) != len(levels) or not _ready(rows[-1]):
             fail('FIRST_LAUNCH_ACTIVATION_CHAIN_REQUIRED')
         activation = value['activation_attempt']
         validate_activation_attempt(activation, digest(rows))
@@ -155,10 +158,10 @@ def _validate_state(value, plan_sha):
 
 
 def _stage(root, plan, position, prior):
-    operation, filename, dependencies = OPERATIONS[position]
-    draft = scoped_draft(root, plan, operation, filename)
+    operation, filename, dependencies, selection = stage_specs(plan)[position]
+    draft = scoped_draft(root, plan, operation, filename, selection)
     params = draft['parameters']
-    ids = {row['reservation']['operation']:row['readback']['object']['id'] for row in prior}
+    ids = [row['readback']['object']['id'] for row in prior]
     for key, predecessor in dependencies.items():
         bound = {'creative_id':ids[predecessor]} if key == 'creative' else ids[predecessor]
         if params[key] is not None and params[key] != bound:
@@ -173,10 +176,13 @@ def _stage(root, plan, position, prior):
         if params.get('promoted_object') is not None:
             expected['promoted_object'] = params['promoted_object']
     elif operation == 'CREATE_CREATIVE':
-        expected.update(page_id=plan['page_id'], image_hash=params['image_hash'],
-                        destination_url=params['destination_url'])
+        expected.update(page_id=plan['page_id'], destination_url=params['destination_url'])
+        if params.get('video') is not None:
+            expected.update(video_id=params['video']['video_id'], thumbnail_hash=params['video']['thumbnail_hash'])
+        else:
+            expected['image_hash'] = params['image_hash']
     else:
-        expected.update(campaign_id=ids['CREATE_CAMPAIGN'], adset_id=params['adset_id'],
+        expected.update(campaign_id=ids[0], adset_id=params['adset_id'],
                         creative_id=params['creative']['creative_id'], configured_status='PAUSED')
     return draft, expected
 
@@ -231,9 +237,10 @@ def _launch_configuration(root, plan, rows, clock):
     configuration = []
     issues = {}
     checked_at = clock()
-    ids = {row['reservation']['operation']:row['readback']['object']['id'] for row in rows if _ready(row)}
-    for operation, filename, dependencies in OPERATIONS:
-        draft = scoped_draft(root,plan,operation,filename)
+    specs = stage_specs(plan)
+    ids = {index: row['readback']['object']['id'] for index, row in enumerate(rows) if _ready(row)}
+    for operation, filename, dependencies, selection in specs:
+        draft = scoped_draft(root,plan,operation,filename,selection)
         report = review_draft(draft,clock=lambda:checked_at)
         missing = [key for key in report['missing_fields'] if key.startswith('parameters.')
                    and key.removeprefix('parameters.') not in dependencies]
@@ -251,13 +258,14 @@ def _launch_configuration(root, plan, rows, clock):
             if budget['conflict']:
                 conflicts.append(budget['conflict'])
         if missing or conflicts:
-            issues[operation] = dict(missing_fields=missing,conflicts=conflicts)
+            issues[operation if len(specs) == 4 else filename] = dict(missing_fields=missing,conflicts=conflicts)
         context = draft['context']
         configuration.append(dict(operation=operation, currency=context['currency'] if operation!='CREATE_AD' else None,
                                   timezone=context['timezone'] if operation!='CREATE_AD' else None,
                                   source_material_sha256=context['material_sha256'] if operation=='CREATE_CREATIVE' else None,
                                   parameters={key:value for key,value in draft['parameters'].items() if key not in dependencies},
-                                  depends_on=dependencies))
+                                  depends_on={field: specs[parent][0] for field, parent in dependencies.items()} if len(specs)==4
+                                  else dependencies))
     identity = digest(dict(account_id=plan['account_id'],page_id=plan['page_id'],configuration=configuration))
     saved = next((row['host_attempt']['binding']['configuration_sha256'] for row in rows
                   if (row.get('host_attempt') or {}).get('binding') is not None),None)
@@ -276,6 +284,23 @@ def _base_view(plan,state,workspace_sha):
 def _view(root, plan, state, workspace_sha, clock):
     rows = state['stages']
     response = _base_view(plan,state,workspace_sha)
+    if 'creative_research' in plan:
+        response['creative_research'] = plan['creative_research']
+    specs = stage_specs(plan)
+    if 'creative_research_batch' in plan:
+        response['creative_research_batch'] = plan['creative_research_batch']
+        response['batch_items'] = [
+            dict(item_id=digest([state['plan_sha256'], index, operation, selection]),
+                 operation=operation, file=filename, depends_on=dependencies,
+                 state=('READBACK_MATCHED' if _ready(rows[index]) else
+                        'OUTCOME_UNKNOWN' if rows[index].get('host_attempt') is not None else
+                        'AWAITING_VERIFIED_OBJECT') if index < len(rows) else 'NOT_SENT')
+            for index, (operation, filename, dependencies, selection) in enumerate(specs)
+        ]
+        frozen = state.get('batch_configuration_sha256')
+        if frozen is not None and _launch_configuration(root, plan, rows, clock)['configuration_sha256'] != frozen:
+            response.update(status='FIRST_LAUNCH_SAVED_SCOPE_REVIEW_REQUIRED', changed_stage='FROZEN_BATCH')
+            return response
     for position, row in enumerate(rows):
         draft, expected = _stage(root, plan, position, rows[:position])
         if (_draft_identity(draft) != row['reservation']['draft_sha256']
@@ -297,7 +322,7 @@ def _view(root, plan, state, workspace_sha, clock):
         if latest.get('host_attempt') is not None:
             response.update(readback_template=None, next_action='RECOVER_WITH_ORIGINAL_TRUSTED_HOST')
         return response
-    if len(rows) == len(LEVELS):
+    if len(rows) == len(specs):
         ad = rows[-1]['readback']['object']
         adset_draft = scoped_draft(root,plan,'CREATE_ADSET','adset-draft.json')
         context = adset_draft['context']
@@ -310,7 +335,7 @@ def _view(root, plan, state, workspace_sha, clock):
                                                 daily_budget_minor=rows[1]['readback']['object']['daily_budget_minor']),
                         next_action='REVIEW_THIS_AD_PREVIEW_BEFORE_SEPARATE_ACTIVATION_APPROVAL',
                         preview_target=dict(ad_id=ad['id'],
-                                            fallback_creative_id=rows[2]['readback']['object']['id'],
+                                            fallback_creative_id=ad['creative_id'],
                                             ad_format=PREVIEW_FORMAT),
                         preview_observation_template=dict(schema=PREVIEW_OBSERVATION,
                                                           object_chain_sha256=chain_sha256, kind='AD',
@@ -405,6 +430,28 @@ def _recover_host_stage(provider,root,profile,plan,state,target,save,clock):
     return dict(result,network_used=None,transport_mode='TRUSTED_HOST_MANAGED')
 
 
+def _creation_target_index(workspace_journal, account, operation):
+    return Journal(Path(workspace_journal.directory) / 'first-launch-targets' / account / operation,
+                   stage_snapshots=True)
+
+
+def _validate_target_index(row):
+    object_only(row, ('pending',), ('pending',))
+    pending = row['pending']
+    if pending is not None:
+        fields = ('plan_sha256', 'stage_sha256')
+        object_only(pending, fields, fields)
+        if not all(type(pending[key]) is str and HEX.fullmatch(pending[key]) for key in fields):
+            fail('FIRST_LAUNCH_TARGET_SCOPE_INVALID')
+
+
+def _target_pending(index):
+    row, damaged = index.load(_validate_target_index)
+    if damaged or index.unpublished_snapshot_count():
+        fail('FIRST_LAUNCH_TARGET_INDEX_REVIEW_REQUIRED')
+    return row['pending'] if row else None
+
+
 def progress(workspace, directory=None, *, reserve=False, readback=None, checkpoint=None, dispatch_stage=None,
              recover_stage=None, provider=None, activation_review=None, activation_mode='plan',
              activation_provider=None, manual_inputs=None, manual_reserve=False, clock=utcnow):
@@ -428,6 +475,7 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
     with workspace_journal.locked(existing_only=True):
         profile = load(workspace_journal)
         plan, plan_sha = current_plan(profile, root)
+        levels = tuple(spec[0] for spec in stage_specs(plan))
         workspace_sha = workspace_identity(profile)
         empty = dict(schema=SCHEMA, plan_sha256=plan_sha, stages=[], checkpoint=None)
         location = root/'first-launch-progress'
@@ -438,7 +486,7 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
             return _view(root, plan, empty, workspace_sha, clock)
         journal = Journal(location, existing_only=existing, stage_snapshots=True)
         with journal.locked(wait_seconds=.5, existing_only=existing and not reserve):
-            validate = lambda value: _validate_state(value, plan_sha)
+            validate = lambda value: _validate_state(value, plan_sha, levels)
             stored, damaged = journal.load(validate)
             if damaged or journal.unpublished_snapshot_count():
                 fail('FIRST_LAUNCH_PROGRESS_REVIEW_REQUIRED')
@@ -449,7 +497,24 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
                 journal.save(state,validate)
 
             if recover_stage is not None:
-                return _recover_host_stage(provider,root,profile,plan,state,recover_stage,save,clock)
+                if not rows or rows[-1]['reservation']['stage_sha256'] != recover_stage:
+                    fail('FIRST_LAUNCH_HOST_SELECTED_STAGE_MISMATCH')
+                latest = rows[-1]
+                operation = latest['reservation']['operation']
+                index = _creation_target_index(workspace_journal, plan['account_id'], operation)
+                with index.locked():
+                    expected = dict(plan_sha256=plan_sha, stage_sha256=recover_stage)
+                    pending = _target_pending(index)
+                    if pending not in (None, expected):
+                        fail('FIRST_LAUNCH_ACCOUNT_TARGET_HAS_UNRESOLVED_ATTEMPT')
+                    if latest.get('host_attempt') is None and pending == expected:
+                        # An intent indexed before the plan journal committed cannot have sent.
+                        index.save(dict(pending=None), _validate_target_index)
+                        return dict(_view(root,plan,state,workspace_sha,clock), recovered_target_status='NOT_SENT')
+                    result = _recover_host_stage(provider,root,profile,plan,state,recover_stage,save,clock)
+                    if _ready(latest) and pending == expected:
+                        index.save(dict(pending=None), _validate_target_index)
+                    return result
 
             if activation_mode == 'dispatch':
                 # The manual import and remote host reservation share this journal lock.
@@ -504,6 +569,11 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
                 return activation_operation(activation, activation_mode, state, save, activation_provider,
                                             assert_current_activation, clock)
             if reserve and view['status'] == 'FIRST_LAUNCH_STAGE_FOR_REVIEW':
+                if len(levels) > len(LEVELS) and 'batch_configuration_sha256' not in state:
+                    frozen = _launch_configuration(root, plan, rows, clock)
+                    if frozen['issues']:
+                        fail('FIRST_LAUNCH_BATCH_COMPLETE_CONFIGURATION_REQUIRED')
+                    state['batch_configuration_sha256'] = frozen['configuration_sha256']
                 draft = view['preview']['draft']
                 item = dict(plan_sha256=plan_sha, operation=draft['operation'], draft_sha256=_draft_identity(draft),
                             request_sha256=view['creation_request']['request_sha256'],
@@ -547,7 +617,19 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
                             or _host_request(root,fresh_profile,refreshed,rows,dispatch_stage,configuration_sha) != (binding,body)):
                         fail('FIRST_LAUNCH_HOST_SAVED_SCOPE_CHANGED')
 
-                dispatch_creation(provider,binding,body,rows[-1],save,assert_current,clock)
+                index = _creation_target_index(workspace_journal, plan['account_id'], binding.operation)
+                expected = dict(plan_sha256=plan_sha, stage_sha256=dispatch_stage)
+                with index.locked():
+                    pending = _target_pending(index)
+                    if pending not in (None, expected):
+                        fail('FIRST_LAUNCH_ACCOUNT_TARGET_HAS_UNRESOLVED_ATTEMPT')
+
+                    def save_target_attempt():
+                        if _target_pending(index) is None:
+                            index.save(dict(pending=expected), _validate_target_index)
+                        save()
+
+                    dispatch_creation(provider,binding,body,rows[-1],save_target_attempt,assert_current,clock)
             result = _view(root, plan, state, workspace_sha, clock)
             if result['status'] == 'FIRST_LAUNCH_OUTCOME_UNKNOWN' and rows[-1].get('host_attempt') is None:
                 reserved_sha = rows[-1]['reservation']['stage_sha256']
@@ -558,6 +640,11 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
                     result['host_approval_scope'] = dict(binding=asdict(binding), binding_sha256=binding.sha256,
                                                          form=form, expected_object=rows[-1]['reservation']['expected_object'],
                                                          dispatchable=False)
+                    if binding.operation == 'CREATE_CREATIVE':
+                        draft, _ = _stage(root, plan, len(rows)-1, rows[:-1])
+                        media_scope = draft['parameters'].get('media_scope_sha256')
+                        if media_scope is not None:
+                            result['host_approval_scope']['media_scope_sha256'] = media_scope
             if host_action:
                 result.update(network_used=None, transport_mode='TRUSTED_HOST_MANAGED')
             return result

@@ -199,6 +199,11 @@ def main(argv=None, *, first_launch_provider=None, first_launch_preview_provider
     from .client_workspace import add_commands
     from .graph_network import graph_network_scope
     add_commands(sub)
+    library = sub.add_parser('public-ad-query',help='预览或本人确认后运行有界的官方广告资料库读取')
+    library.add_argument('--input',type=Path,required=True)
+    library.add_argument('--sample-limit',type=int,default=20)
+    library.add_argument('--page-limit',type=int,default=2)
+    library.add_argument('--execute-read', '--execute', dest='execute', action='store_true')
     args = parser.parse_args(argv)
     with graph_network_scope(args.macos_system_proxy):
         return _dispatch(args, first_launch_provider=first_launch_provider,
@@ -228,6 +233,9 @@ def _dispatch(args, *, first_launch_provider=None, first_launch_preview_provider
                 result = run_command(args, first_launch_activation_provider=first_launch_activation_provider)
             else:
                 result = run_command(args)
+        elif args.command == 'public-ad-query':
+            from .ads_library import run_query
+            result=run_query(args.input,args.sample_limit,args.page_limit,args.execute)
         elif args.command == "preflight":
             from .onboarding import preflight
             result = preflight()

@@ -5,6 +5,7 @@ from decimal import Decimal
 from .ads_reconciliation import read_run_observations
 from .analysis import aggregate_ads
 from .first_launch_activation import account_days_against_window, daily_window, read_review
+from .first_launch_evidence import import_evidence, next_review, spend_focus
 from .first_launch_handoff import activation_paths, resume_manual
 from .monitor import account_cycle_pagination_unverified
 from .review import ads_analysis, daily_date_coverage
@@ -21,7 +22,7 @@ def _stored_control_window(attempt):
 
 
 def delivery_review(workspace, directory, receipt, since, until, *, activation_review_path=None,
-                    manual_before=None, manual_after=None, manual_ad=None):
+                    manual_before=None, manual_after=None, manual_ad=None, evidence_path=None):
     explicit_manual = any(path is not None for path in (manual_before, manual_after, manual_ad))
     activation_review_path, before, after, ad_path = activation_paths(
         workspace, directory, review=activation_review_path,
@@ -42,11 +43,13 @@ def delivery_review(workspace, directory, receipt, since, until, *, activation_r
     if (query['since'], query['until']) != (since, until):
         fail('FIRST_LAUNCH_REPORT_WINDOW_MISMATCH')
     ad = launch['stages'][-1]['readback']['object']
+    evidence = import_evidence(launch, evidence_path, since, until)
     report = dict(status='FIRST_LAUNCH_DELIVERY_REVIEWED', ad_id=ad['id'],
                   account_id=launch['account_id'], stage_sha256=launch['stages'][-1]['reservation']['stage_sha256'],
                   run=run, reviewed_window={'since':since,'until':until}, metrics=None,
                   last_decision=launch['checkpoint'],
                   independent_activation_approval_verified=False, spend_authorized=False,
+                  creative_id=ad['creative_id'], launch_evidence=evidence,
                   identity_source=('STORED_HOST_CREATION_READBACK' if launch['stages'][-1].get('host_attempt') is not None
                                    else 'LOCAL_DECLARED_CREATION_READBACK'), network_used=False)
     if attempt is not None:
@@ -96,7 +99,8 @@ def delivery_review(workspace, directory, receipt, since, until, *, activation_r
     scope = ads_analysis(sources, pagination_unverified=account_cycle_pagination_unverified(observation))
     if scope['state'] != 'COMPUTED':
         return dict(report, delivery_state='NOT_OBSERVED', reason=scope['reason'],
-                    recommendation='WAIT_FOR_USABLE_REPORT')
+                    recommendation='WAIT_FOR_USABLE_REPORT',
+                    next_review=next_review(ad['id'], launch['declared_result_type'], None, False, evidence))
     context = scope['context']
     if activation_review is not None:
         report['report_days_in_proposed_window'] = daily_window(activation_review, context)
@@ -111,10 +115,12 @@ def delivery_review(workspace, directory, receipt, since, until, *, activation_r
     coverage = daily_date_coverage(rows, context)
     report.update(currency=context['currency'], timezone=context['timezone'], attribution=context['attribution'],
                   coverage=coverage, observation=scope['evidence']['insights'],
-                  source_state=sources['ads']['result'])
+                  source_state=sources['ads']['result'],
+                  account_spend_focus=spend_focus(sources['ads']['rows'], context, scope['analysis']['coverage']))
     if not rows:
         return dict(report, delivery_state='AD_ABSENT' if completed else 'NOT_OBSERVED',
-                    recommendation='HOLD_NO_OBSERVED_ROWS')
+                    recommendation='HOLD_NO_OBSERVED_ROWS',
+                    next_review=next_review(ad['id'], launch['declared_result_type'], None, False, evidence))
     covered = completed and coverage['state']=='ALL_DATES_RETURNED'
     metrics = aggregate_ads(rows,context,context,'COMPLETE' if covered else 'PARTIAL')['metrics']
     impressions = metrics['impressions']['value']
@@ -122,6 +128,7 @@ def delivery_review(workspace, directory, receipt, since, until, *, activation_r
     if impressions is not None:
         delivery = 'POSITIVE_IMPRESSIONS_OBSERVED' if Decimal(impressions)>0 else 'OBSERVED_ZERO_IMPRESSIONS'
     report.update(metrics=metrics, delivery_state=delivery,
+                  next_review=next_review(ad['id'], launch['declared_result_type'], metrics, covered, evidence),
                   recommendation='REVIEW_SAME_AD_AND_WINDOW' if covered else 'HOLD_INCOMPLETE_WINDOW')
     if activation_review is not None:
         if report['report_days_in_proposed_window']['relation'] == 'WHOLLY_WITHIN_PROPOSED_WINDOW':

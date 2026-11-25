@@ -12,6 +12,7 @@ from .validation import fail
 
 
 HOST = 'graph.facebook.com'
+VIDEO_HOST = 'graph-video.facebook.com'
 PORT = 443
 NETWORK_FAILURE = 'HTTP_NETWORK_OR_TLS_FAILURE'
 PROXY_UNAVAILABLE = 'MACOS_SYSTEM_PROXY_UNAVAILABLE'
@@ -55,10 +56,12 @@ def _macos_https_proxy():
         fail(PROXY_UNAVAILABLE)
 
 
-def graph_https_connection(timeout, context):
+def graph_https_connection(timeout, context, *, host=HOST):
+    if host not in (HOST, VIDEO_HOST):
+        fail('GRAPH_HOST_REFUSED')
     route = _system_route.get()
     if route is None:
-        connection = http.client.HTTPSConnection(HOST, port=PORT, timeout=timeout, context=context)
+        connection = http.client.HTTPSConnection(host, port=PORT, timeout=timeout, context=context)
     else:
         if route.endpoint is None:
             route.endpoint = _macos_https_proxy()
@@ -66,7 +69,7 @@ def graph_https_connection(timeout, context):
         connection = http.client.HTTPSConnection(proxy_host, port=proxy_port, timeout=timeout, context=context)
         # The CONNECT request carries only the fixed destination. Request headers
         # and parameters are sent after TLS has authenticated that destination.
-        connection.set_tunnel(HOST, port=PORT)
+        connection.set_tunnel(host, port=PORT)
         connect = connection.connect
 
         def connect_with_budget():

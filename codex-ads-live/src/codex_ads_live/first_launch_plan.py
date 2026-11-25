@@ -21,6 +21,23 @@ OPERATIONS = (
 PAGE_OPERATIONS = ('CREATE_CREATIVE', 'CREATE_AD')
 
 
+def stage_specs(plan):
+    """The first pair keeps the A3 filenames; further pairs share its parent objects."""
+    batch = plan.get('creative_research_batch')
+    result = [
+        ('CREATE_CAMPAIGN', 'campaign-draft.json', {}, None),
+        ('CREATE_ADSET', 'adset-draft.json', {'campaign_id': 0}, None),
+    ]
+    for index, selection in enumerate(batch or [plan.get('creative_research')]):
+        suffix = '' if index == 0 else '-' + str(index + 1)
+        creative = len(result)
+        result.extend((
+            ('CREATE_CREATIVE', 'creative-draft' + suffix + '.json', {}, selection),
+            ('CREATE_AD', 'ad-draft' + suffix + '.json', {'adset_id': 1, 'creative': creative}, selection),
+        ))
+    return result
+
+
 def plan_directory(workspace, directory):
     return directory if directory is not None else Path(workspace) / 'first-launch-plan'
 
@@ -58,7 +75,7 @@ def _plan(profile, selection):
                 notes=notes, dispatchable=False)
 
 
-def _draft(plan, operation):
+def _draft(plan, operation, selection=None):
     draft = blank_draft(operation)
     draft['account_id'] = plan['account_id']
     context = plan['previously_observed_account_context']
@@ -67,6 +84,8 @@ def _draft(plan, operation):
     draft['context']['timezone'] = context.get('timezone')
     if operation in PAGE_OPERATIONS:
         draft['context']['page_id'] = plan['page_id']
+    if operation in PAGE_OPERATIONS and selection is not None:
+        draft['context']['material_sha256'] = selection['asset_sha256']
     if 'status' in draft['parameters']:
         draft['parameters']['status'] = 'PAUSED'
     result_type = plan['declared_result_type']
@@ -93,17 +112,33 @@ def _goal_conflicts(plan, operation, params):
     return []
 
 
-def prepare(workspace, output=None, *, account_id=None, page_id=None):
+def prepare(workspace, output=None, *, account_id=None, page_id=None, creative_selection=None):
     journal = journal_for(workspace, existing_only=True)
     with journal.locked(existing_only=True):
-        plan = _plan(load(journal), dict(account_id=account_id, page_id=page_id))
+        profile = load(journal)
+        plan = _plan(profile, dict(account_id=account_id, page_id=page_id))
+        if creative_selection:
+            from .creative_research import freeze_selection
+            if len(creative_selection) > 6:
+                fail('FIRST_LAUNCH_BATCH_LIMIT')
+            selected = [freeze_selection(journal, profile, plan['account_id'], *args) for args in creative_selection]
+            if len({item['asset_sha256'] for item in selected}) != len(selected):
+                fail('FIRST_LAUNCH_BATCH_DUPLICATE_ASSET')
+            if len(selected) == 1:
+                plan['creative_research'] = selected[0]
+            else:
+                plan['creative_research_batch'] = selected
         plan['plan_id'] = uuid4().hex
         root = new_directory(plan_directory(workspace, output))
         files = [_write_new(root, 'first-launch-plan.json', plan)]
-        for operation, filename, _ in OPERATIONS:
-            files.append(_write_new(root, filename, _draft(plan, operation)))
+        for operation, filename, _, selection in stage_specs(plan):
+            files.append(_write_new(root, filename, _draft(plan, operation, selection)))
         result = dict(status=PREPARED, plan_file='first-launch-plan.json',
                       draft_files=[row['path'] for row in files[1:]], notes=plan['notes'],
+                      object_selection=dict(account='EXISTING_MAPPED', page='EXISTING_MAPPED',
+                                            campaign='CREATE_PAUSED', adset='CREATE_PAUSED',
+                                            creative='CREATE_FROM_EXISTING_IMAGE_OR_APPROVED_MEDIA',
+                                            ad='CREATE_PAUSED', budget_owner='ADSET'),
                       network_used=False, dispatchable=False)
         _write_new(root, 'RECEIPT.json', dict(result, files=files, plan_sha256=digest(plan)))
     return dict(result, plan_directory=str(root), plan_sha256=digest(plan))
@@ -130,12 +165,16 @@ def current_plan(profile, root):
     stable_fields = ('account_id', 'page_id', 'workspace_scope_sha256')
     if any(current[key] != plan.get(key) for key in stable_fields):
         fail('FIRST_LAUNCH_WORKSPACE_SCOPE_CHANGED')
+    if 'creative_research' in plan:
+        current['creative_research'] = plan['creative_research']
+    if 'creative_research_batch' in plan:
+        current['creative_research_batch'] = plan['creative_research_batch']
     return current, receipt['plan_sha256']
 
 
-def scoped_draft(root, current, operation, filename):
+def scoped_draft(root, current, operation, filename, selection=None):
     draft = load_draft(root/filename)
-    expected = _draft(current, operation)
+    expected = _draft(current, operation, selection)
     if (draft['operation'], draft['account_id'], draft['context']['page_id']) != (
             operation, expected['account_id'], expected['context']['page_id']):
         fail('FIRST_LAUNCH_DRAFT_SCOPE_CHANGED')
@@ -145,6 +184,9 @@ def scoped_draft(root, current, operation, filename):
     timezone = current['previously_observed_account_context'].get('timezone')
     if timezone is not None and draft['context']['timezone'] not in (None, timezone):
         fail('FIRST_LAUNCH_ACCOUNT_TIMEZONE_CHANGED')
+    if selection is not None and operation in PAGE_OPERATIONS:
+        if draft['context']['material_sha256'] != expected['context']['material_sha256']:
+            fail('FIRST_LAUNCH_RESEARCH_ASSET_CHANGED')
     return draft
 
 
@@ -156,13 +198,14 @@ def check(workspace, directory=None, *, clock=utcnow):
     with journal.locked(existing_only=True):
         current, _ = current_plan(load(journal), root)
         check_at = clock()
-        for operation, filename, dependencies in OPERATIONS:
-            draft = scoped_draft(root, current, operation, filename)
+        specs = stage_specs(current)
+        for operation, filename, dependencies, selection in specs:
+            draft = scoped_draft(root, current, operation, filename, selection)
             report = review_draft(draft, clock=lambda: check_at)
             conflicts = _goal_conflicts(current, operation, draft['parameters'])
-            stages[operation] = dict(file=filename, status=report['status'], review_sha256=report['review_sha256'],
+            stages[operation if len(specs) == 4 else filename] = dict(file=filename, status=report['status'], review_sha256=report['review_sha256'],
                 missing_fields=report['missing_fields'], blockers=[*report['blockers'], *conflicts], dependencies={
-                    field: dict(operation=predecessor, state='NOT_PROVIDED' if draft['parameters'][field] is None
+                    field: dict(operation=specs[predecessor][0], state='NOT_PROVIDED' if draft['parameters'][field] is None
                                 else 'DECLARED_ID_REQUIRES_VERIFIED_READBACK')
                     for field, predecessor in dependencies.items()})
     return dict(status='WORKSPACE_FIRST_LAUNCH_DRAFTS_CHECKED', stages=stages, notes=current['notes'],

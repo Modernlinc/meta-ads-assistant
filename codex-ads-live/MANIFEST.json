@@ -1,6 +1,6 @@
 {
   "package": "codex-ads-live",
-  "version": "0.1.0.dev1+v142a3",
+  "version": "0.1.0.dev1+v16r1",
   "production_ready": false,
   "status": "DEVELOPMENT_CANDIDATE",
   "files": [
@@ -11,13 +11,13 @@
     },
     {
       "path": "README.md",
-      "bytes": 874,
-      "sha256": "cc0c154abe0775f06799f06120becc2631f9a93636baa5877513b9a4f68eedb2"
+      "bytes": 1018,
+      "sha256": "b7b20db944c453ee212137bd3b8059d5e7253bff72dc6e57c3be3476e8c39fd7"
     },
     {
       "path": "SKILL.md",
-      "bytes": 3119,
-      "sha256": "a1165ebf6231bc3f9f2222652acc5f23d0868b34227ca27197d96e42d2ca3be3"
+      "bytes": 4238,
+      "sha256": "f317562fdc9a1c351e6416a51342fbfc27effd295b136b13723261645277aa3f"
     },
     {
       "path": "assets/iana-timezones/LICENSE.txt",
@@ -215,14 +215,19 @@
       "sha256": "1b5d5bf8464e28744455cce43d0900972285eebfcbdb26e01300bbfb4ad8b09a"
     },
     {
+      "path": "references/CREATIVE_AND_DELIVERY.md",
+      "bytes": 7370,
+      "sha256": "7717784ae19bb6f5986967de301e0bed28c85f55794a3bc9418295c9ac5cdbed"
+    },
+    {
       "path": "references/CUSTOMER_SOP.md",
       "bytes": 13143,
       "sha256": "61869669425a8c265b6705a09b8eb3f2453802daf8415e7fe3d3ec09cb609417"
     },
     {
       "path": "references/DISTRIBUTION_NOTICES.md",
-      "bytes": 817,
-      "sha256": "78714852dedc54b537eec0d980b6b90082b035ca7b87e4ea5422207b2013d44e"
+      "bytes": 2078,
+      "sha256": "a9239166dae1cea535aa43aa12c7b86541555547ac438da73b247ff266bddc8c"
     },
     {
       "path": "references/FIRST_LAUNCH_CUSTOMER.md",
@@ -231,8 +236,8 @@
     },
     {
       "path": "references/FIRST_LAUNCH_LOCAL_AUTHORITY.md",
-      "bytes": 8356,
-      "sha256": "5c0ac7986295c3ef7a73a91403ec46eb892e701033c5abb3b89ab6ba13769b54"
+      "bytes": 10886,
+      "sha256": "9d0413f61b69293d5c62e5f310f5eeeaececee51d77a0569295f86378027e5ac"
     },
     {
       "path": "references/INSTALL_RUN.md",
@@ -321,8 +326,8 @@
     },
     {
       "path": "schemas/meta-write-draft.schema.json",
-      "bytes": 31471,
-      "sha256": "d4adecada6390ae23e033aafcebc10d3316d72ce801cfe0f3e76fb5d43944f4c"
+      "bytes": 32937,
+      "sha256": "719eba5fc12d2908c5e85d1727fedc1ab02f6e01fac386fcb473aae249a199d3"
     },
     {
       "path": "schemas/meta-write-snapshots.schema.json",
@@ -361,18 +366,23 @@
     },
     {
       "path": "src/codex_ads_live/__init__.py",
-      "bytes": 85,
-      "sha256": "29811d381fffeefe79cb895a4d43bf6afec565db4f78825f35172b2261aa7327"
+      "bytes": 84,
+      "sha256": "ff04cd252b1a05d033d64fa39cffbb046e00859ddd62e31762c9d51f02a14f74"
     },
     {
       "path": "src/codex_ads_live/__main__.py",
-      "bytes": 35424,
-      "sha256": "041a1154abf54001829ed214a8224824d2a865af16f0030e33f5f08dc600507c"
+      "bytes": 36005,
+      "sha256": "ef5cb90e16486ff69cd510dc87e092ab4abb3786e6a58e86c2695ad68b54dcd6"
     },
     {
       "path": "src/codex_ads_live/activation.py",
       "bytes": 14608,
       "sha256": "e290bee2b18f65832a3279dcb0c10d548c0a41d060091e9c2874ab654cc19043"
+    },
+    {
+      "path": "src/codex_ads_live/ads_library.py",
+      "bytes": 5618,
+      "sha256": "b46712c048e181a6da2d5d0409977baf67c656f2d0c620ddcb36190e25fd6f05"
     },
     {
       "path": "src/codex_ads_live/ads_reconciliation.py",
@@ -406,8 +416,8 @@
     },
     {
       "path": "src/codex_ads_live/client_workspace.py",
-      "bytes": 108913,
-      "sha256": "bb288c048aaaa5e977b78df8f72e5c0707d55cbfe0c680ed8ebbe559467c52d6"
+      "bytes": 112117,
+      "sha256": "f7171fb1ec8524ffc40c0cd6d67ba803c8e38bdb8437c255e0e6b48cc3241aca"
     },
     {
       "path": "src/codex_ads_live/connection.py",
@@ -423,6 +433,11 @@
       "path": "src/codex_ads_live/creation.py",
       "bytes": 16230,
       "sha256": "7400ca3226db10b87dcb8a507c607589e7b6fb48ac6d63d24a9e03b87f92097e"
+    },
+    {
+      "path": "src/codex_ads_live/creative_research.py",
+      "bytes": 14792,
+      "sha256": "10fa1afa4fa21ed4e4f78886832f6252d6d75efdd21b491e5d904787dae59360"
     },
     {
       "path": "src/codex_ads_live/credential_record.py",
@@ -456,23 +471,28 @@
     },
     {
       "path": "src/codex_ads_live/first_launch_authority.py",
-      "bytes": 15093,
-      "sha256": "e64091269e74c9976770bd1c8ad51e3df9b386fe9a58ef85efee143c201c6f6c"
+      "bytes": 22130,
+      "sha256": "10b371a66e4e06875ae23d87de38d594d36cf697aaa589b6ebcd6e97a398b211"
     },
     {
       "path": "src/codex_ads_live/first_launch_controls.py",
-      "bytes": 3060,
-      "sha256": "3573cd5118943c32123b6267121e1ddfa71e6862484ee53c2901adf00a1414f7"
+      "bytes": 3109,
+      "sha256": "1c8b2d908cb2609ca42b7706b855daa08120218563ffda961a180acb5dcdf109"
     },
     {
       "path": "src/codex_ads_live/first_launch_delivery.py",
-      "bytes": 9331,
-      "sha256": "c02631e4ae1129435b499edd2fecd700a4e73075199cd129864559b1b4e5f7cc"
+      "bytes": 10019,
+      "sha256": "d331e6d5cb90bdcb2366eda32d29df787c4a07eb3cbd30684b5f8e686ba0432b"
+    },
+    {
+      "path": "src/codex_ads_live/first_launch_evidence.py",
+      "bytes": 10700,
+      "sha256": "33daa5c26b3620dffcb04c011865e8e6a87ace2953b5ef8891e88cdef3df9a90"
     },
     {
       "path": "src/codex_ads_live/first_launch_graph.py",
-      "bytes": 13791,
-      "sha256": "7a884e604d82347938c5c3f28127b98914673f80aaaf0b6b21b1e2bbeeb97007"
+      "bytes": 14448,
+      "sha256": "ae2b1d367ae0f485eefa2250021495b16cb4e92d7e14a53598c90371d938866a"
     },
     {
       "path": "src/codex_ads_live/first_launch_handoff.py",
@@ -486,18 +506,23 @@
     },
     {
       "path": "src/codex_ads_live/first_launch_local_host.py",
-      "bytes": 12612,
-      "sha256": "ac30ba7ab81b95e1b13c4c1cb394793e221960bd917c38d79892ac35ffb56280"
+      "bytes": 12627,
+      "sha256": "e2829575f23408035a1ec85f93f0507867f3d9fe3d9364c288bbce5fec52ae90"
     },
     {
       "path": "src/codex_ads_live/first_launch_managed_write.py",
-      "bytes": 9564,
-      "sha256": "e16235e6d7403d6a714ab27b40cd8d0aaedb178ec68763dd0a3b5dfbf11dfe73"
+      "bytes": 15181,
+      "sha256": "107ec90936d8d0243043d1254a548f98c1dc9f0408949d10b57f6da910a43130"
+    },
+    {
+      "path": "src/codex_ads_live/first_launch_media.py",
+      "bytes": 12252,
+      "sha256": "6bd79caafa91e09e8e570fddbcd012a0cd7d63734517dec30cea11a818773d6a"
     },
     {
       "path": "src/codex_ads_live/first_launch_plan.py",
-      "bytes": 9097,
-      "sha256": "a3d5715787aa3cb0834f50cccc532fdb1a48148d9fce55f799f1495f53051c2f"
+      "bytes": 11603,
+      "sha256": "bfeab27b638c36729358780c7ebb8d365db475b76ad56ad8d33b039722dd8dd5"
     },
     {
       "path": "src/codex_ads_live/first_launch_preview.py",
@@ -506,13 +531,18 @@
     },
     {
       "path": "src/codex_ads_live/first_launch_progress.py",
-      "bytes": 33785,
-      "sha256": "94b13204d54c18f4dfa2369e59b70d7fb090e4d2a5db989d98605c0cd03d7a57"
+      "bytes": 39030,
+      "sha256": "ed4ef82ca18b4bd8d8b88dcbfc44e75a25ade5a7a582ba3e15c1374ee1e8ade1"
     },
     {
       "path": "src/codex_ads_live/first_launch_readback.py",
-      "bytes": 7239,
-      "sha256": "269748bda9a1954096ae947beeacc3c038b1f00b22d4e6227f434ac1bcdb5986"
+      "bytes": 7760,
+      "sha256": "a26059296b4713444f1769979afa2a8f5f83e5ed738c88bddc4e9a5c24cae596"
+    },
+    {
+      "path": "src/codex_ads_live/first_launch_update.py",
+      "bytes": 10832,
+      "sha256": "52c7944beb180b03cc4c0760b59b99226739552df6bf37d26d7141422a2eec70"
     },
     {
       "path": "src/codex_ads_live/first_run.py",
@@ -521,8 +551,8 @@
     },
     {
       "path": "src/codex_ads_live/graph_network.py",
-      "bytes": 3608,
-      "sha256": "4b6d2315b741098bd26db667068a2b3dddf8457dcdd96ee92d43c7d24e07f54b"
+      "bytes": 3736,
+      "sha256": "56b30ee2c6f5013bc3fb24ac681beefad13b141c5dec1e9e8a3144de680b4c68"
     },
     {
       "path": "src/codex_ads_live/http_read.py",
@@ -581,8 +611,8 @@
     },
     {
       "path": "src/codex_ads_live/meta_write_mapping.py",
-      "bytes": 27411,
-      "sha256": "40768f2bda0dac3ff961b8702739068e908c127c2f44bb949cd989befcfb2ab7"
+      "bytes": 29744,
+      "sha256": "c87628588edf805fa48476b06e0cd0898645fbe092e8d685e83d9eef9364ab68"
     },
     {
       "path": "src/codex_ads_live/method_bundle.py",

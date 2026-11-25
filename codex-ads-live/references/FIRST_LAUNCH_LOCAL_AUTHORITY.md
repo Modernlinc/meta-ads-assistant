@@ -74,3 +74,13 @@ python3 run.py workspace-first-launch-activation --workspace W --recover
 
 
 首次在当前设备使用前，管理员应核对部署、两个身份的有效权限、具名客户授权及同一动作的回执。服务版本和账户读取回执可在各自的设置步骤查看。
+
+## 5. 受管素材、复盘证据和原对象调整
+
+使用同一版本的客户安装和管理员服务。管理员从客户侧取得明确的计划包后，先核对账户、原计划、文件或对象、权限和批准期限。在下列命令中，用实际请求文件及凭据引用对应的证据编号替换示例名称。
+
+- 上传一张图片或一个视频时，先用 `workspace-first-launch-media` 生成请求，核对实际本机原件与文件摘要。管理员执行 `sudo "$ADMIN_PYTHON" -I -B "$ADMIN_COPY/authority.py" approve media --packet media-packet.json --media-file "/客户原文件的绝对路径" --evidence-ref EV-MEDIA`。原文件由客户项目用户拥有。已批准字节保存在管理员专属目录中，按管理员的素材保留策略管理。该权限只发送该文件。
+- 原媒体读回由管理员执行 `approve read --packet SETUP_SCOPE.json --read-purpose media --read-operation media-packet.json --evidence-ref EV-MEDIA-READ` 后，客户使用 `workspace-first-launch-media --mode recover --packet media-packet.json`。看到原视频仍在处理中时可稍后发起同一只读检查。
+- 需要复盘的同一 Ad 创意和账户活动时，将 `workspace-first-launch-evidence` 的预览保存为 `evidence-preview.json`。管理员核对日期和对象后，使用 `approve read --packet SETUP_SCOPE.json --read-purpose delivery-evidence --read-operation evidence-preview.json --evidence-ref EV-REPORT-CONTEXT`。客户沿原日期生成回执。活动读取限当前账户和最多三页，输出仅保留指定广告及父级的记录。
+- 暂停或调原广告组日预算时，先通过 `approve read --packet SETUP_SCOPE.json --read-purpose maintenance --evidence-ref EV-MAINTENANCE` 开通具名检查。客户用 `workspace-first-launch-update --mode observe` 生成原值、目标值和影响对象包。管理员核对后用 `approve update --packet update-packet.json --evidence-ref EV-UPDATE`。客户以原包执行一次 `--mode dispatch`，然后以 `--mode recover` 读回。恢复要求仍有 maintenance 读批准。受管服务用已登记的管理员角色对原对象单独发起 GET。确认收到请求时为 `ACKNOWLEDGED`，只有原节点回读一致才为 `READBACK_MATCHED`。
+- 日预算提交前，系列、广告组与完整受影响 Ad 清单均须处暂停。父级范围与预期不同、源文件已变、预览包到期或原尝试未决时，先核对原范围。恢复读到的配置状态和平台实际投递指标需分别解释。

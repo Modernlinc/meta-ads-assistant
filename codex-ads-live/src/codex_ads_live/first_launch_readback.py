@@ -107,18 +107,28 @@ def _project(plan, page_id, status, body):
     projected = dict(id=plan.object_id, account_id=plan.account_id)
     if plan.level == 'CREATIVE':
         story = body.get('object_story_spec')
-        if type(story) is not dict or story.get('page_id') != page_id or type(story.get('link_data')) is not dict:
+        if type(story) is not dict or story.get('page_id') != page_id:
             fail('FIRST_LAUNCH_GRAPH_READ_CREATIVE_MISMATCH')
-        link_data = story['link_data']
-        image = link_data.get('image_hash')
+        story_kind = [key for key in ('link_data', 'video_data') if type(story.get(key)) is dict]
+        if len(story_kind) != 1:
+            fail('FIRST_LAUNCH_GRAPH_READ_CREATIVE_MISMATCH')
+        creative = story[story_kind[0]]
+        image = creative.get('image_hash')
         if type(image) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', image):
             fail('FIRST_LAUNCH_GRAPH_READ_CREATIVE_IMAGE')
-        url = link_data.get('link')
+        if story_kind[0] == 'video_data':
+            cta = creative.get('call_to_action')
+            value = cta.get('value') if type(cta) is dict else None
+            url = value.get('link') if type(value) is dict else None
+            projected.update(video_id=_native_id(creative.get('video_id')), thumbnail_hash=image)
+        else:
+            url = creative.get('link')
+            projected.update(image_hash=image)
         validate_https_destination(url, 'FIRST_LAUNCH_GRAPH_READ_CREATIVE_URL')
         if (len(url) > 1000 or '\\' in url
                 or any(character.isspace() or ord(character) < 32 or ord(character) == 127 for character in url)):
             fail('FIRST_LAUNCH_GRAPH_READ_CREATIVE_URL')
-        projected.update(page_id=page_id, image_hash=image, destination_url=url)
+        projected.update(page_id=page_id, destination_url=url)
         return 'CREATIVE_OBSERVED', projected
     state = body.get('status')
     if state not in ('PAUSED', 'DRAFT'):

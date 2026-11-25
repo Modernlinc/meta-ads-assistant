@@ -74,7 +74,7 @@ class LocalFirstLaunchHost:
             if node.st_uid != 0 or not stat.S_ISSOCK(node.st_mode):
                 fail('FIRST_LAUNCH_LOCAL_AUTHORITY_SOCKET_UNTRUSTED')
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
-                client.settimeout(120 if action == 'execute' else 3)
+                client.settimeout(120 if action in ('execute', 'reconcile') else 3)
                 client.connect(str(SOCKET_NAME))
                 message = dict(action=action, identity=self.identity, kind=kind, key=key, attempt_id=attempt_id)
                 client.sendall((canonical(message) + '\n').encode())
