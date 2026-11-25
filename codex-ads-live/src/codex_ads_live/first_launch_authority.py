@@ -25,6 +25,7 @@ from .validation import InputError, aware_time, fail, object_only, strict_json
 STATE = Path('/Library/Application Support/ModernLinc/CodexAdsLive/first-launch-v2')
 SOCKET_NAME = STATE / 'authority.sock'
 IMPLEMENTATION = 'MACOS_LOCAL_AUTHORITY_V2'
+RPC_IMPLEMENTATION = 'MACOS_LOCAL_AUTHORITY_V2_MEDIA_R2'
 WRITE_KEYCHAIN = STATE / 'private' / 'admin-write.keychain-db'
 IDENTITY = ('workspace_sha256', 'plan_sha256', 'business_id', 'app_id', 'account_id', 'page_id')
 READ_PURPOSES = {
@@ -98,7 +99,7 @@ def _eligibility_ref(value):
 
 
 def _record(kind, key):
-    if kind not in ('read', 'create', 'activate', 'media', 'update') or type(key) is not str or not HEX.fullmatch(key):
+    if kind not in ('read', 'create', 'activate', 'media', 'media-reuse', 'update') or type(key) is not str or not HEX.fullmatch(key):
         fail('FIRST_LAUNCH_AUTHORITY_OPERATION_REFUSED')
     return STATE / f'{kind}-{key}.json'
 
@@ -125,7 +126,39 @@ def _validate_profile(profile):
         fail('FIRST_LAUNCH_INDEPENDENT_READ_REFERENCE_REQUIRED')
 
 
+def _related_profile(profile, scope):
+    plan = scope['plan_sha256']
+    if type(plan) is not str or not HEX.fullmatch(plan):
+        fail('FIRST_LAUNCH_LOCAL_AUTHORITY_PROFILE')
+    related = dict(profile, plan_sha256=plan)
+    _match(related, scope)
+    return related
+
+
+def _related_profile_path(profile):
+    return STATE / ('plan-profile-' + profile['plan_sha256'] + '.json')
+
+
+def _service_profile(profile, scope):
+    related = _related_profile(profile, scope)
+    if related != profile and _read(_related_profile_path(related), trust=True) != related:
+        fail('FIRST_LAUNCH_LOCAL_AUTHORITY_SCOPE_MISMATCH')
+    return related
+
+
+def _register_plan(profile, packet):
+    related = _related_profile(profile, packet['identity'])
+    if related == profile:
+        fail('FIRST_LAUNCH_AUTHORITY_PLAN_ALREADY_REGISTERED')
+    identity = {name: related[name] for name in IDENTITY}
+    _confirm(dict(operation='REGISTER_PLAN', identity=identity, client_uid=related['client_uid']))
+    _write(_related_profile_path(related), related)
+    return dict(status='LOCAL_AUTHORITY_PLAN_REGISTERED', identity=identity)
+
+
 def _claim_key(record):
+    if record['kind'] == 'media' and 'generation' in record:
+        return STATE / ('consumed-media-r2-' + _expected_attempt(record) + '.json')
     # Stable for the scope even when another process tries to use the same approval.
     return STATE / ('consumed-' + record['kind'] + '-' + record['key'] + '.json')
 
@@ -133,10 +166,13 @@ def _claim_key(record):
 def _respond(profile, request):
     keys = ('action', 'identity', 'kind', 'key', 'attempt_id')
     object_only(request, keys, keys)
-    _match(profile, request['identity'])
+    profile = _service_profile(profile, request['identity'])
     action, kind, key = (request[name] for name in ('action', 'kind', 'key'))
     if action == 'status':
-        return dict(implementation=IMPLEMENTATION, **{name: profile[name] for name in IDENTITY})
+        return dict(implementation=RPC_IMPLEMENTATION, **{name: profile[name] for name in IDENTITY})
+    if action == 'reuse' and kind == 'media-reuse' and request['attempt_id'] is None:
+        from .first_launch_managed_write import reuse_media
+        return reuse_media(profile, _usable_record(profile, kind, key))
     if action == 'reconcile' and kind == 'update':
         row = _read(_record(kind, key), trust=True)
         if row['profile_sha256'] != digest(profile) or request['attempt_id'] != _expected_attempt(row):
@@ -146,6 +182,9 @@ def _respond(profile, request):
     if action == 'receipt':
         if kind not in ('create', 'media') or type(request['attempt_id']) is not str or not HEX.fullmatch(request['attempt_id']):
             fail('FIRST_LAUNCH_AUTHORITY_OPERATION_REFUSED')
+        if kind == 'media':
+            from .first_launch_media_ledger import receipt
+            return receipt(profile, key, request['attempt_id'])
         key_path = _record(kind, key)
         if not key_path.exists() and kind == 'create':
             return dict(object_id=None)
@@ -153,8 +192,6 @@ def _respond(profile, request):
         expected = _expected_attempt(row)
         if row['profile_sha256'] != digest(profile) or request['attempt_id'] != expected:
             fail('FIRST_LAUNCH_AUTHORITY_ATTEMPT_MISMATCH')
-        if kind == 'media':
-            return _media_receipt(row)
         receipt = STATE / ('receipt-' + expected + '.json')
         return _read(receipt, trust=True) if receipt.exists() else dict(object_id=None)
     if action not in ('get', 'execute'):
@@ -171,6 +208,8 @@ def _respond(profile, request):
         result['reference'] = profile['read_reference']
     elif kind in ('media', 'update'):
         result['attempt_id'] = _expected_attempt(row)
+        if kind == 'media':
+            result['generation'] = row.get('generation', 0)
     else:
         result['permit'] = row['permit']
     return result
@@ -183,42 +222,38 @@ def _expected_attempt(row):
     if row['kind'] == 'activate':
         return activation_attempt_id(row['scope'], permit['request_sha256'], permit['effect_sha256'], digest(permit))
     if row['kind'] == 'media':
+        if 'generation' in row:
+            return digest(['first-launch-media-attempt-v2', row['key'], row['profile_sha256'], row['generation']])
         return digest(['first-launch-media-attempt-v1', row['key'], row['profile_sha256']])
+    if row['kind'] == 'media-reuse':
+        return digest(['first-launch-media-reuse-v1', row['key'], row['profile_sha256'], row['origin']['attempt_id']])
     if row['kind'] == 'update':
         return digest(['first-launch-update-attempt-v1', row['key'], row['profile_sha256']])
     fail('FIRST_LAUNCH_AUTHORITY_OPERATION_REFUSED')
 
 
-def _media_receipt(row):
-    expected = _expected_attempt(row)
-    receipt = STATE / ('receipt-' + expected + '.json')
-    if receipt.exists():
-        return _read(receipt, trust=True)
-    phase = STATE / ('media-' + expected + '-image_ack.json')
-    if phase.exists():
-        return _read(phase, trust=True)
-    started = STATE / ('media-' + expected + '-video_started.json')
-    if started.exists():
-        return dict(_read(started, trust=True), status='OUTCOME_UNKNOWN')
-    return dict(status='OUTCOME_UNKNOWN' if _claim_key(row).exists() else 'NOT_SENT')
-
-
 def match_creative_media(profile, binding, key, video):
     if key is None and video is None:
         return None
-    record = _read(_record('media', key), trust=True)
-    scope = record['scope']
-    _match(profile, scope)
+    from .first_launch_media_ledger import creative_record
+    scope, observed = creative_record(profile, key)
+    _match(profile, asdict(binding))
     expected_kind = 'VIDEO' if video is not None else 'IMAGE'
-    if (record['profile_sha256'] != digest(profile) or record['key'] != key
-            or scope['media_type'] != expected_kind or scope['asset_sha256'] != binding.material_sha256):
+    if scope['media_type'] != expected_kind or scope['asset_sha256'] != binding.material_sha256:
         fail('FIRST_LAUNCH_MANAGED_MEDIA_SCOPE_MISMATCH')
-    return _media_receipt(record)
+    accepted = ('PROCESSING', 'READY') if video is not None else ('ACKNOWLEDGED', 'READY')
+    if observed['status'] not in accepted:
+        fail('FIRST_LAUNCH_MEDIA_ORIGINAL_ATTEMPT_RECOVERY_ONLY')
+    return observed
 
 
 def _usable_record(profile, kind, key):
-    row = _read(_record(kind, key), trust=True)
-    if row['kind'] != kind or row['key'] != key or row['profile_sha256'] != digest(profile):
+    if kind == 'media':
+        from .first_launch_media_ledger import approval
+        row = approval(key)
+    else:
+        row = _read(_record(kind, key), trust=True)
+    if row is None or row['kind'] != kind or row['key'] != key or row['profile_sha256'] != digest(profile):
         fail('FIRST_LAUNCH_AUTHORITY_REVIEW_SCOPE_CHANGED')
     now = utcnow()
     if not aware_time(row['approved_at']) <= now < aware_time(row['expires_at']):
@@ -280,19 +315,68 @@ def _confirm(review):
         fail('FIRST_LAUNCH_AUTHORITY_APPROVAL_NOT_CONFIRMED')
 
 
+def _approve_media(profile, packet, args, now, evidence, expires):
+    from .first_launch_media import validate_scope
+    from .first_launch_media_ledger import approve_upload, locked, origin
+    scope = packet['media_scope']
+    validate_scope(scope)
+    profile = _service_profile(profile, scope)
+    key = digest(scope)
+    row = dict(kind=args.kind, key=key, scope=scope, permit=None, profile_sha256=digest(profile),
+               evidence_ref=evidence, approved_at=now.isoformat(), expires_at=expires.isoformat())
+    review = dict(operation=args.kind, scope=scope, evidence_ref=evidence, expires_at=expires.isoformat())
+    if args.kind == 'media':
+        if args.media_file is None:
+            fail('FIRST_LAUNCH_MEDIA_FILE_AND_TYPE_REQUIRED')
+        def confirm(generation, prior):
+            _confirm(dict(review, file=str(args.media_file), permission='ads_management',
+                          generation=generation, prior_attempt_id=prior, allows_delivery=False))
+        row = approve_upload(profile, row, args.media_file, confirm)
+        return dict(status='LOCAL_AUTHORITY_REVIEW_SAVED', kind=args.kind, scope_sha256=key,
+                    generation=row['generation'], attempt_id=_expected_attempt(row))
+
+    path = _record(args.kind, key)
+    with locked():
+        original = origin(profile, scope)
+        previous = _read(path, trust=True) if path.exists() else None
+        if previous is not None and aware_time(previous['expires_at']) > now:
+            fail('FIRST_LAUNCH_AUTHORITY_APPROVAL_ALREADY_PENDING')
+    _confirm(dict(review, origin=original, request_method='GET', credential_role='ENROLLED_ADMIN',
+                  allows_upload=False, allows_delivery=False))
+    with locked():
+        if (path.exists() and _read(path, trust=True) != previous) or origin(profile, scope) != original:
+            fail('FIRST_LAUNCH_MEDIA_REUSE_SCOPE_MISMATCH')
+        confirmed = utcnow()
+        if confirmed >= expires:
+            fail('FIRST_LAUNCH_AUTHORITY_REVIEW_EXPIRED')
+        row.update(approved_at=confirmed.isoformat(), origin=original)
+        if previous is None:
+            _write(path, row)
+        else:
+            import tempfile
+            with tempfile.TemporaryDirectory(dir=STATE) as temporary:
+                staged = Path(temporary) / 'reuse-approval.json'
+                _write(staged, row)
+                os.replace(staged, path)
+    return dict(status='LOCAL_AUTHORITY_REVIEW_SAVED', kind=args.kind, scope_sha256=key)
+
+
 def _approve(profile, args):
     packet = _read(args.packet)
     kind = args.kind
     now, evidence = utcnow(), _eligibility_ref(args.evidence_ref)
     expires = now + timedelta(minutes=args.minutes)
-    scope = {key: profile[key] for key in IDENTITY}
     permit = None
     if args.media_file is not None and kind != 'media':
         fail('FIRST_LAUNCH_MEDIA_UNEXPECTED_FILE')
     if args.read_operation is not None and kind != 'read':
         fail('FIRST_LAUNCH_EXACT_READ_OPERATION_UNEXPECTED')
+    if kind in ('media', 'media-reuse'):
+        print(canonical(_approve_media(profile, packet, args, now, evidence, expires)))
+        return
     if kind == 'read':
-        _match(profile, packet['identity'])
+        profile = _service_profile(profile, packet['identity'])
+        scope = {key: profile[key] for key in IDENTITY}
         operation = _read(args.read_operation) if args.read_operation is not None else None
         operation_scope = None
         if args.read_purpose == 'media' and operation is not None:
@@ -320,7 +404,7 @@ def _approve(profile, args):
         binding = CreationBinding(**request['binding'])
         validate_creation_binding(binding)
         scope = asdict(binding)
-        _match(profile, scope)
+        profile = _service_profile(profile, scope)
         _check_form(binding, request['form'])
         key = binding.sha256
         details = dict(binding=scope, form=request['form'], planned_fields=request['expected_object'])
@@ -333,20 +417,10 @@ def _approve(profile, args):
                 details['managed_media'] = dict(scope_sha256=media_scope, receipt=receipt)
         permit = asdict(CreationPermit(key, evidence, digest([digest(profile), 'ads_management', key]),
                                      digest([scope, evidence]), now.isoformat(), expires.isoformat()))
-    elif kind == 'media':
-        from .first_launch_media import validate_scope
-        scope = packet['media_scope']
-        validate_scope(scope)
-        _match(profile, scope)
-        if args.media_file is None:
-            fail('FIRST_LAUNCH_MEDIA_FILE_AND_TYPE_REQUIRED')
-        key = digest(scope)
-        details = dict(scope=scope, path=str(args.media_file), operation='UPLOAD_ONE_REVIEWED_FILE',
-                       permission='ads_management', allows_delivery=False)
     elif kind == 'update':
         from .first_launch_update import request as update_request
         scope = packet['update_scope']
-        _match(profile, scope)
+        profile = _service_profile(profile, scope)
         route, form = update_request(scope)
         age = now - aware_time(scope['observed_at'])
         if not timedelta(0) <= age <= timedelta(minutes=5):
@@ -358,7 +432,7 @@ def _approve(profile, args):
     else:
         scope = packet['review']
         binding = scope['binding']
-        _match(profile, dict(binding, workspace_sha256=binding['workspace_identity_sha256']))
+        profile = _service_profile(profile, dict(binding, workspace_sha256=binding['workspace_identity_sha256']))
         key = scope['review_sha256']
         if key != digest(binding) or scope['review_blockers'] or scope['preview_kind'] != 'AD':
             fail('FIRST_LAUNCH_AUTHORITY_ACTIVATION_REVIEW_REQUIRED')
@@ -386,8 +460,6 @@ def _approve(profile, args):
         row['approved_form'] = request['form']
         if binding.operation == 'CREATE_CREATIVE' and media_scope is not None:
             row['media_scope_sha256'] = media_scope
-    if kind == 'media':
-        _stage_media(profile, scope, args.media_file)
     if path.exists():
         if kind != 'read' and _claim_key(row).exists():
             fail('FIRST_LAUNCH_AUTHORITY_APPROVAL_ALREADY_USED')
@@ -437,8 +509,10 @@ def main(argv=None):
     for field in ('principal-id', 'read-reference', 'write-reference'):
         setup.add_argument('--' + field, required=True)
     commands.add_parser('serve')
+    enroll = commands.add_parser('register-plan')
+    enroll.add_argument('--from-packet', type=Path, required=True)
     approve = commands.add_parser('approve')
-    approve.add_argument('kind', choices=('read', 'create', 'activate', 'media','update'))
+    approve.add_argument('kind', choices=('read', 'create', 'activate', 'media', 'media-reuse', 'update'))
     approve.add_argument('--packet', type=Path, required=True)
     approve.add_argument('--media-file', type=Path)
     approve.add_argument('--read-purpose', choices=tuple(READ_PURPOSES), default='launch')
@@ -468,6 +542,8 @@ def main(argv=None):
             print('LOCAL_FIRST_LAUNCH_AUTHORITY_CONFIGURED')
         elif args.command == 'serve':
             _serve(_profile())
+        elif args.command == 'register-plan':
+            print(canonical(_register_plan(_profile(), _read(args.from_packet))))
         else:
             _approve(_profile(), args)
         return 0

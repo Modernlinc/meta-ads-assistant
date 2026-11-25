@@ -75,6 +75,27 @@ python3 "$RUN" workspace-first-launch-media --workspace "$WS" --packet media-pac
 
 只有 `READY` 的同账户回执才能用于受管建单。图片在 Creative 参数填回读的 `image_hash` 和 `media_scope_sha256`。视频填写 `video` 对象内的 `video_id` 和本账户已核对的 `thumbnail_hash`，再填视频的 `media_scope_sha256`，外层 `image_hash` 留空。两种格式均须填写 Page、落地页、主文案、标题及 CTA。缩略图可用本账号的既有图片。图片与视频文件的摘要放在对应草案的 `context.material_sha256`。上传返回 `PROCESSING` 时稍后读原 ID。
 
+### 恢复未发送的上传
+
+如果上传中断，先用原 `media-packet.json` 运行 `--mode recover`。只有结果为 `NOT_SENT`，且回执显示本机审批服务已封存原尝试时，才请管理员按原文件重新批准。得到新批准代次后，使用同一计划及请求包继续一次。
+
+```sh
+python3 "$RUN" workspace-first-launch-media --workspace "$WS" --packet media-packet.json --mode continue
+```
+
+`OUTCOME_UNKNOWN`、`PROCESSING` 或平台报错时，保留原请求与回执。继续查原 ID，确认对应素材状态。原记录保存在工作区。
+
+### 在后续计划复用已上传素材
+
+在同一工作区、同一账户和 Page 下创建新计划。新计划选用同一份原文件并生成自己的请求包。管理员登记新计划并为原平台素材批准一次只读核对，见[管理员操作](FIRST_LAUNCH_LOCAL_AUTHORITY.md)。
+
+```sh
+python3 "$RUN" workspace-first-launch-media --workspace "$WS" --plan-dir NEW_PLAN --kind VIDEO --file "素材.mp4" > reuse-packet.json
+python3 "$RUN" workspace-first-launch-media --workspace "$WS" --plan-dir NEW_PLAN --packet reuse-packet.json --mode reuse
+```
+
+看到 `REUSE_READY` 后，把返回的原媒体 ID 或图片哈希以及**新计划的** `scope_sha256` 填到相应 Creative 的媒体引用字段。建单前还会核对同一媒体和缩略图。新计划可按自己的批准继续，素材无需再次上传。
+
 ## 预览、调整与复盘
 
 按[首投步骤](FIRST_LAUNCH_CUSTOMER.md)核对实际 Ad 的预览。当前批次的原首投启用和复盘入口指向最后一个完成的 Ad，其他条目保持原记录与暂停设置。启用仍由具名范围和实际预算控制单独批准。

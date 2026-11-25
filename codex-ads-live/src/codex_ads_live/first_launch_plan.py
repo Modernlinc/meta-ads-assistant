@@ -44,7 +44,8 @@ def plan_directory(workspace, directory):
 
 def _plan(profile, selection):
     object_only(selection, ('account_id', 'page_id'), ('account_id', 'page_id'))
-    account_scope = draft_review_scope(profile, selection['account_id'])
+    # Compatible R1 profiles keep their existing plan identity and ledger paths.
+    account_scope = draft_review_scope(profile, selection['account_id'], compatible_versions=('0.1.0.dev1+v16r1',))
     account = account_scope['account_id']
     page = selection['page_id'] if selection['page_id'] is not None else profile['defaults']['PAGE']
     if page is None:

@@ -25,7 +25,7 @@ description: 在当前客户项目中接通具名 Meta 广告账户，复用其�
 | 读取公共主页或查看直播记录 | 先确认 Page ID 及对应权限，使用 `workspace-route` 进入该主页，按实际可读取的字段判断覆盖。[工作流](references/WORKFLOWS.md) |
 | 保存品牌、来源、选题和素材评语 | 用 `workspace-creative-research` 读取现有资料或导入本次补充。将选定素材的 SHA-256、概念与变体传给 `workspace-first-launch-plan --select-creative`。有授权文稿时逐条引用观察，未看到画面时保留缺项。[品牌及创意操作](references/CREATIVE_AND_DELIVERY.md) |
 | 导入公开广告观察 | 先用 `public-ad-query` 查范围，具备 Ads Library API 权限才执行。已有导出可直接使用 `workspace-public-ad-observations`，将公开观察及推断作为两类消息保留。 |
-| 上传图片或视频 | 以 `workspace-first-launch-media` 核对对应计划与素材摘要。每份文件需独立批准，上传完成后从原尝试只读核对。将就绪的媒体引用写入对应 Creative 草案。[操作说明](references/CREATIVE_AND_DELIVERY.md) |
+| 上传和复用图片或视频 | 以 `workspace-first-launch-media` 核对计划与素材摘要。上传后用 `recover` 核对原尝试。权威服务封存为 `NOT_SENT` 且有新批准时才用 `continue`。同一素材经新计划获准核对后用 `reuse` 并将就绪引用写入 Creative。[操作说明](references/CREATIVE_AND_DELIVERY.md) |
 | 调整或复盘同一条广告 | 用 `workspace-first-launch-update` 预览具名暂停或日预算范围。用 `workspace-first-launch-delivery` 复盘原 Ad ID，按需补原创意和活动证据。[操作说明](references/CREATIVE_AND_DELIVERY.md) |
 | 商品、创意、核算和复盘方法 | 用 `method --intent` 加上 `ads_plan`、`creative`、`analytics` 或 `positioning` 选择随包方法，按已提供的数据标出结论、假设和缺项。[随包方法](methods/ADAPTATION.md) |
 

@@ -13,7 +13,7 @@ from uuid import uuid4
 
 from .connection import _debug, _get_connection_json, debug_expiries_and_scopes, valid_debug_data
 from .first_launch_activation_host import ActivationPermit
-from .first_launch_authority import IDENTITY, IMPLEMENTATION, LIMIT, SOCKET_NAME, STATE, _decode, protected
+from .first_launch_authority import IDENTITY, RPC_IMPLEMENTATION, LIMIT, SOCKET_NAME, STATE, _decode, protected
 from .first_launch_graph import GraphActivationProvider
 from .first_launch_controls import observe_guard
 from .first_launch_host import CreationPermit
@@ -74,7 +74,7 @@ class LocalFirstLaunchHost:
             if node.st_uid != 0 or not stat.S_ISSOCK(node.st_mode):
                 fail('FIRST_LAUNCH_LOCAL_AUTHORITY_SOCKET_UNTRUSTED')
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
-                client.settimeout(120 if action in ('execute', 'reconcile') else 3)
+                client.settimeout(120 if action in ('execute', 'reconcile', 'reuse') else 3)
                 client.connect(str(SOCKET_NAME))
                 message = dict(action=action, identity=self.identity, kind=kind, key=key, attempt_id=attempt_id)
                 client.sendall((canonical(message) + '\n').encode())
@@ -87,7 +87,7 @@ class LocalFirstLaunchHost:
         if type(response) is not dict or response.get('ok') is not True or type(response.get('result')) is not dict:
             fail('FIRST_LAUNCH_LOCAL_AUTHORITY_APPROVAL_UNAVAILABLE')
         result = response['result']
-        if action == 'status' and result != dict(implementation=IMPLEMENTATION, **self.identity):
+        if action == 'status' and result != dict(implementation=RPC_IMPLEMENTATION, **self.identity):
             fail('FIRST_LAUNCH_LOCAL_AUTHORITY_SCOPE_MISMATCH')
         return result
 

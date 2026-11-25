@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 import warnings
 
 from .connection import _credential_format, _get_connection_json
-from .creative_research import _normalize_public, _value
+from .creative_research import _normalize_public, _value, add_public_record
 from .meta_write_mapping import utcnow
 from .validation import InputError, fail
 
@@ -65,7 +65,7 @@ def fetch(plan,get,*,clock=utcnow):
             bodies=row.get('ad_creative_bodies')
             if bodies is not None and (type(bodies) is not list or any(type(x) is not str for x in bodies)):
                 fail('PUBLIC_AD_QUERY_RESPONSE_INVALID')
-            entries.setdefault((page,identifier),dict(ad_archive_id=identifier,page_id=page,
+            add_public_record(entries, dict(ad_archive_id=identifier,page_id=page,
                 source_url='https://www.facebook.com/ads/library/?id='+identifier,observed_at=clock().isoformat(),
                 body='\n'.join(bodies)[:2400] if bodies and any(x.strip() for x in bodies) else None,
                 delivery_start=_delivery_day(row.get('ad_delivery_start_time')),

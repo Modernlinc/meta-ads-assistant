@@ -1059,9 +1059,9 @@ def business_context(profile, identifier, clock):
     return dict(account_id=identifier,dispatchable=False,**result)
 
 
-def draft_review_scope(profile, account):
+def draft_review_scope(profile, account, *, compatible_versions=()):
     account = business_account(profile,account)
-    if (profile['adapter']!='v27.0' or profile['skill_version']!=__version__
+    if (profile['adapter']!='v27.0' or profile['skill_version'] not in (__version__, *compatible_versions)
             or not profile['app_id'] or not profile['business_id']):
         fail('WORKSPACE_DRAFT_REVIEW_PROFILE_REQUIRED')
     key = asset_key('ACCOUNT',account)
@@ -1558,7 +1558,8 @@ def add_commands(sub):
     media.add_argument('--file', type=Path)
     media.add_argument('--kind', choices=('IMAGE','VIDEO'))
     media.add_argument('--packet', type=Path)
-    media.add_argument('--mode', choices=('plan','dispatch','recover'), default='plan')
+    media.add_argument('--mode', choices=('plan', 'dispatch', 'recover', 'continue', 'reuse'), default='plan',
+                       help='recover 核对原尝试；仅封存未发送后 continue；复用已上传素材用 reuse')
     update = commands['first-launch-update']
     from .first_launch_update import ACTIONS
     update.add_argument('--action', choices=ACTIONS)

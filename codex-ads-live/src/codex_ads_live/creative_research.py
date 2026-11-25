@@ -70,6 +70,23 @@ def _public_url(value, archive_id=None):
     return value
 
 
+def _public_content(row):
+    stable = {key: value for key, value in row.items() if key not in ('observed_at', 'detail')}
+    stable.update(delivery_start=row.get('delivery_start'), delivery_stop=row.get('delivery_stop'))
+    detail = row.get('detail')
+    stable['detail'] = None if detail is None else {key: value for key, value in detail.items() if key != 'observed_at'}
+    return stable
+
+
+def add_public_record(entries, row):
+    identifier = (row['page_id'], row['ad_archive_id'])
+    previous = entries.get(identifier)
+    if previous is None:
+        entries[identifier] = row
+    elif _public_content(previous) != _public_content(row):
+        fail('PUBLIC_OBSERVATION_DUPLICATE_CONFLICT')
+
+
 def _normalize_public(value):
     _fixed(value,('scope','records','coverage'))
     scope=value['scope']
@@ -110,10 +127,7 @@ def _normalize_public(value):
             _public_url(detail['source_url'], detail['ad_archive_id'])
             aware_time(detail['observed_at'])
             if detail['body'] is not None:_short(detail['body'])
-        identifier=(row['page_id'],row['ad_archive_id'])
-        if identifier in entries and entries[identifier]!=row:
-            fail('PUBLIC_OBSERVATION_DUPLICATE_CONFLICT')
-        entries[identifier]=row
+        add_public_record(entries, row)
     return dict(scope=scope,records=list(entries.values()),coverage=value['coverage'],
                 own_account_metrics=False,source_type='PUBLIC_AD_OBSERVATIONS')
 
@@ -213,6 +227,7 @@ def _media_review(entry,data):
         observation=seen.get(_ref(comment['observation_id']))
         if observation is None or observation['kind'] not in DIMENSIONS[dimension]:
             fail('RESEARCH_MATERIAL_COMMENT_NO_MATCHING_EVIDENCE')
+        _short(comment['comment'])
         facts[dimension]=dict(comment,state='OBSERVED')
     weakest=entry['weakest']
     if weakest is not None and (weakest not in facts or facts[weakest]['state']!='OBSERVED'):

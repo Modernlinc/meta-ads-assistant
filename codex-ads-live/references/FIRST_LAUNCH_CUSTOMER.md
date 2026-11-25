@@ -9,6 +9,8 @@
 3. 客户首次用 `workspace-first-launch-plan --workspace W` 建计划，再用 `workspace-first-launch-check --workspace W` 补全四份草案、目标、事件、素材、日预算和时区。W 是原工作区。默认 PLAN 为该工作区的 `first-launch-plan`。使用自选计划目录时，后续命令都带 `--plan-dir PLAN`。
 4. 用 `workspace-first-launch-handoff --workspace W` 看下一步。再次使用时打开原项目，运行同一命令。它继续核对保存在原 PLAN 的观察文件与启用审阅。已持久保存的四步对象和复盘决定仍由原进度账本维护。需要保留某个时点的交接，使用 `--output NEW` 存入全新目录。
 
+使用多份素材、视频或之前已核对的受管素材时，按[品牌、素材与广告复盘](CREATIVE_AND_DELIVERY.md)准备和核对原素材。
+
 ## 核同账户首图
 
 优先选广告账户已有并获准使用的商品图片。只有本地商品文件时，由素材负责人确认要用的具体文件和权利，客户明确批准上传范围后，实施人在 [Meta 广告管理工具](https://adsmanager.facebook.com/)选本次广告账户，从广告编辑器的素材选择区进入图片管理并上传单张图片。上传前检查界面身份及账户，保留原草案和投递开关的状态。界面出现要同时发布广告的操作时，先退出该发布流程，改由客户已获准的账户素材管理通道处理。

@@ -57,7 +57,7 @@
 1. 从当前工作区与非秘密登记准备一个具名目标。主页使用 --kind PAGE 并核对角色材料。 `workspace-connection-prepare`
 2. 首次连接或添加具名资产时，按已确认的范围绑定。已有同范围绑定时继续预览与复查。 `workspace-bind`、`workspace-page-bind`
 3. 绑定后复核同一具名请求、权限、凭据登记与预算。 `connection-preview`、`workspace-page-preview`
-4. 经当次交互确认，保留具名结果、实际权限观察和有效期；目前产品通过替身合同测试。 `connection-check`、`workspace-refresh`、`workspace-page-refresh`
+4. 在本机终端确认后，保存指定资产的返回结果、实际观察到的权限和有效期。若权限失效，回到同一资产核查。 `connection-check`、`workspace-refresh`、`workspace-page-refresh`
 5. 按同一具名确认核对请求预留、结果和回执摘要，区分保存的失败、中断与冲突。 `connection-review`
 
 由客户确认的事项。本人核对所选 App、资产和至多两次 GET，并在本机终端确认。
@@ -69,7 +69,7 @@
 一个已核对的广告账户、时区、币种、目标报表类型和明确的日期与归因口径。
 
 1. 复用已保存的报表时，路由按本次日期及报表口径核对原运行。按任务准备 Insights、对象盘点或版位拆分，核对具名范围和 GET 上限。单轮广告报告及对象盘点的分页来源默认各三页，可用 --report-pages 选择 1 至 20 页。 `workspace-route`、`workspace-plan`、`monitor-preview`
-2. 启动时重查账户；记录每来源覆盖、空值、错误和历史成功。产品候选已有替身证据。 `monitor-start`
+2. 本次读取获准后启动。工具重查账户，并按来源保存覆盖、空值、错误和最近成功时间。 `monitor-start`
 3. 复查报告及同口径 Ads Manager 导出，明确无数据、缺字段和无法对账。 `monitor-report`、`monitor-reconcile-prepare`、`monitor-reconcile`
 
 由客户确认的事项。本人确认账户、时间范围、允许来源、请求上限；后台导出由获准操作者准备。
@@ -83,7 +83,7 @@
 1. 核对具名对象输入和现有关系证据。只有链接时列出需要补充的 Live ID。 `workspace-live-preview`
 2. 固定 Page、Live 和已提供的 Video，分别显示身份核验和单轮请求预算。 `workspace-live-plan`、`page-live-contract-preview`
 3. 在本人当次授权后执行一次具名对象检查，保留独立的 T1 计划与结果。 `page-live-contract-check`
-4. 真实入口仍为 REAL_LIVE_CONTRACT_PENDING；替身验收覆盖对象与归属核对。 `monitor-start`
+4. 使用上一步的具名检查回执核对 Page、Live 和 Video 的归属。当前版本的常规运行入口暂未开放真实直播采集。
 
 由客户确认的事项。本人确认具名 Page、现成直播、允许查询范围和独立 Page 凭据。
 
@@ -95,7 +95,7 @@
 
 1. 具名目标和有界首屏采样进入计划。 `workspace-live-plan`、`page-live-contract-preview`
 2. 在本人当次授权后验证同一直播的首屏有界样本，保留范围和返回类型。 `page-live-contract-check`
-3. 替身采集只保存 ID、时间和样本覆盖；真实入口仍待授权与端点验收。 `monitor-start`
+3. 在具名检查回执中查看返回的评论 ID、时间或样本覆盖。当前版本暂未开放连续读取真实评论。
 4. 按轮查看评论首屏的有效页、续页、空响应、错误及未采样。用脱敏诊断交接结果，转移原单轮目录后可核对请求和报告范围。 `monitor-report`、`page-live-contract-review`、`workspace-diagnostics`
 5. 原前台进程退出后，可选 --from-comment-checkpoint 核对已完成首屏和原批次确认，预览固定 since。中断期间覆盖仍为未知。 `workspace-replan`、`monitor-preview`
 
@@ -109,7 +109,7 @@
 
 1. 明确帖子和 Video 关系，预览具名角色核对和各指标请求。 `workspace-live-plan`、`page-live-contract-preview`
 2. 本次授权及具名角色核对满足后逐项验证指标，保留字段和覆盖证据。 `page-live-contract-check`
-3. 真实入口待端点验收；替身覆盖逐项指标、角色、时间和缺失。 `monitor-start`
+3. 在具名检查回执中逐项核对实际返回的指标、时间与缺项。当前版本暂未开放常规运行入口中的持续直播指标读取。
 4. 本机报告逐项显示 period、observed_at、未知 data_as_of、freshness 和覆盖。脱敏诊断显示各项响应状态及记录数。单轮回读核对预算、授权快照和指标汇总，保留各项权限或服务错误。 `monitor-report`、`page-live-contract-review`、`workspace-diagnostics`
 
 由客户确认的事项。本人确认所选主页、具名帖子及本次指标和可选角色查询。

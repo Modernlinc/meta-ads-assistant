@@ -95,7 +95,8 @@ class _ManagedAttempt:
         return _get_connection_json(path, self._token, self._assert_current, time_remaining=self._remaining)
 
     def _check_account_role(self):
-        tasks = read_account(self._get, self.scope, check_currency=self.row['kind'] != 'media').get('user_tasks')
+        tasks = read_account(self._get, self.scope,
+                             check_currency=self.row['kind'] not in ('media', 'media-reuse')).get('user_tasks')
         if type(tasks) is not list or not any(task in ('ADVERTISE', 'MANAGE') for task in tasks):
             fail('FIRST_LAUNCH_LOCAL_ACCOUNT_WRITE_ROLE_UNVERIFIED')
 
@@ -177,16 +178,13 @@ class _ManagedAttempt:
 
     def upload_file(self):
         from .first_launch_media import file_bytes, post_media, upload, verify_bytes
+        from .first_launch_media_ledger import begin_upload
         scope = self.scope
         path = staged_media(scope)
         protected(path)
         data = file_bytes(path, scope['media_type'], owner=0)
         verify_bytes(scope, data)
-        self._assert_current()
-        asset_target = digest(['managed-media', scope['account_id'], scope['media_type'], scope['asset_sha256']])
-        _write(STATE / ('media-target-' + asset_target + '.json'), dict(attempt_id=self.attempt_id))
-        _write(_claim_key(self.row), dict(attempt_id=self.attempt_id, review_sha256=self.row['key'],
-                                         consumed_at=utcnow().isoformat()))
+        begin_upload(self.row, self._assert_current)
 
         def record(phase, evidence):
             sequence = '-' + str(evidence['index']) if 'index' in evidence else ''
@@ -262,6 +260,29 @@ def recover_update(profile, row, attempt_id):
         result = dict(status='READBACK_MATCHED', observation=observed, observed_at=utcnow().isoformat(),
                       attempt_id=attempt_id)
         _write(settled, result)
+        return result
+    finally:
+        attempt.close()
+
+
+def reuse_media(profile, row):
+    from .first_launch_media import read_media
+    from .first_launch_media_ledger import bind_reuse, locked, origin
+    scope = row['scope']
+    _match(profile, scope)
+    attempt = _ManagedAttempt(profile, row, _expected_attempt(row))
+    try:
+        with locked():
+            original = origin(profile, scope)
+            if original != row['origin']:
+                fail('FIRST_LAUNCH_MEDIA_REUSE_SCOPE_MISMATCH')
+        attempt.open()
+        observed = read_media(scope['account_id'], original['asset'], attempt._get)
+        result = dict(state=observed['status'], media=observed, scope_sha256=row['key'],
+                      origin_attempt_id=original['attempt_id'], upload_sent=False)
+        if observed['status'] == 'READY':
+            binding = bind_reuse(profile, row, observed, attempt._assert_current)
+            result.update(state='REUSE_READY', bound_at=binding['observed_at'])
         return result
     finally:
         attempt.close()

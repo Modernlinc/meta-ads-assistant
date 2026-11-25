@@ -26,6 +26,8 @@ python3 .agents/skills/codex-ads-live/run.py --version
 
 看到 `PROJECT_INSTALL_VERIFIED`，记下最后一条显示的版本。打开相同项目，在 Codex 输入「使用 $codex-ads-live，只检查本项目的安装位置，告诉我加载的是哪个 SKILL.md」。路径应指向项目内的 `.agents/skills/codex-ads-live/SKILL.md`。找不到时，先核对项目路径，再重新打开该项目。[Python macOS 下载](https://www.python.org/downloads/macos/) · [Codex Skill](https://developers.openai.com/codex/skills/)
 
+已有 V1.6R1 项目时，先在独立目录安装 V1.6R2。日常配置可按 `python3 install.py --help` 的 `--upgrade-from` 预览分阶段接续。该步骤只接续可移植配置。若需恢复原媒体尝试，请用 R2 的 `run.py` 明确指定原 `--workspace`、原 `--plan-dir` 和原媒体请求包。受管端也须按[管理员更新步骤](FIRST_LAUNCH_LOCAL_AUTHORITY.md)切换到 R2，并使用原状态目录。
+
 ## 查到自己的广告账户
 
 打开[账户接通流程](CUSTOMER_SOP.md)。想快速验证自有账户，可用本人终端临时输入；希望日后在同一个工作区持续使用，可以直接选钥匙串方式。两条路径择一即可。账户读通的标志是本次指定账户返回 `NAMED_ACCOUNT_READ_PASSED`，同时 ID、币种、时区与 Meta 里的目标一致。

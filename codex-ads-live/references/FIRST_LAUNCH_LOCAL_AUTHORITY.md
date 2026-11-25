@@ -1,6 +1,6 @@
 # macOS 管理员操作说明｜首投受控执行端 V2
 
-**适用场景**为一台受管理 Mac、一个已建立的客户工作区和本次首投计划。客户项目继续使用正常 Skill。每台 Mac 由管理员分别核对服务部署、钥匙串访问和系统权限。真实权限、系统部署、平台创建与花费须分别取得对应批准。
+**适用场景**为一台受管理 Mac、一个已建立的客户工作区和本次首投计划。服务可登记该工作区中同一 Business、App、账户与 Page 下的新计划。每台 Mac 由管理员分别核对服务部署、钥匙串访问和系统权限。真实权限、系统部署、平台创建与花费须分别取得对应批准。
 
 ## 1. 确定两个执行身份
 
@@ -33,7 +33,8 @@ sudo /usr/bin/install -d -o root -g wheel -m 0700 "$STATE/private"
 ```
 
 3. App 管理员核对同一 App、具名开发者身份、广告账户、Page、币种与角色。自检使用该 App 开发者的 USER 令牌，要求令牌和数据访问均有明确的未来到期时间。客户只读引用与专用写引用使用不同的 `conn_` 加 32 位小写十六进制编号。客户会话的通用密码项目只登记具有 `ads_read`、不含 `ads_management` 的只读令牌。管理员使用受管钥匙串工具，**只在** `/Library/Application Support/ModernLinc/CodexAdsLive/first-launch-v2/private/admin-write.keychain-db` 的通用密码项目中登记允许 `ads_management` 的写令牌。项目服务名为 `ModernLinc.CodexAdsLive.<对应的conn_编号>`，账户名为 `<APP_ID>.<PRINCIPAL_ID>`。钥匙串必须允许管理员执行服务在批准时非交互读取，private 目录须 root 专属（0700），钥匙串文件须 root 专属（0600），两者均不带扩展 ACL，钥匙串文件仅有一个硬链接。凭据和钥匙串口令经受管渠道设置，不进入终端参数、聊天、源码或工作区文件。该产品使用既有凭据，只支持无需 App Secret Proof 的已授权连接。
-4. 迁移旧版 时，管理员先停止旧审批服务，复核旧的未决尝试、批准和真实平台状态。对普通用户过去可读的写令牌完成撤销或轮换，确认相同写能力不再保留于客户登录钥匙串、脚本及旧宿主，再启用 V2。原项目账本和证据应保留。新服务使用独立目录，不消费旧批准。旧尝试未知时先核对原对象，不能补发。
+4. 从 V2 以前的部署迁移时，管理员先停止旧审批服务，复核未决尝试和平台状态。对普通用户过去可读的写令牌完成撤销或轮换。保留原项目账本与证据，再按本节部署 V2。
+5. 从 V1.6R1 受管端更新到 V1.6R2 时，先停止原受管端。在新的受保护源码目录安装本次管理员副本，再使用同一个 V2 状态目录启动服务。客户端与受管端应同时切换到 R2，保留原 profile、批准和发送状态文件。已封存的旧尝试不能交给旧服务执行。需恢复中断的媒体操作时，用 R2 客户端指向原工作区及计划，按下文检查原尝试。
 
 ## 3. 绑定原计划并查看服务状态
 
@@ -43,7 +44,7 @@ sudo /usr/bin/install -d -o root -g wheel -m 0700 "$STATE/private"
 python3 run.py workspace-first-launch-host --workspace W > SETUP_SCOPE.json
 ```
 
-管理员从已获准的非秘密配置包核对 UID、App、账户、Page 和原计划。分别在管理员终端配置并运行固定服务。下列 `READ_REF` 和 `WRITE_REF` 是引用名。首次配置只写新 profile；已经绑定到另一计划时停止核对，不覆盖或复用其他客户的绑定。
+管理员从已获准的非秘密配置包核对 UID、App、账户、Page 和原计划。分别在管理员终端配置并运行固定服务。下列 `READ_REF` 和 `WRITE_REF` 是引用名。首次配置写入原计划档案。已经配置的服务使用 `register-plan` 登记同一范围的新计划。
 
 ```sh
 sudo "$ADMIN_PYTHON" -I -B "$ADMIN_COPY/authority.py" configure --from-packet SETUP_SCOPE.json --client-uid CLIENT_UID --principal-id PRINCIPAL_ID --read-reference READ_REF --write-reference WRITE_REF
@@ -81,6 +82,14 @@ python3 run.py workspace-first-launch-activation --workspace W --recover
 
 - 上传一张图片或一个视频时，先用 `workspace-first-launch-media` 生成请求，核对实际本机原件与文件摘要。管理员执行 `sudo "$ADMIN_PYTHON" -I -B "$ADMIN_COPY/authority.py" approve media --packet media-packet.json --media-file "/客户原文件的绝对路径" --evidence-ref EV-MEDIA`。原文件由客户项目用户拥有。已批准字节保存在管理员专属目录中，按管理员的素材保留策略管理。该权限只发送该文件。
 - 原媒体读回由管理员执行 `approve read --packet SETUP_SCOPE.json --read-purpose media --read-operation media-packet.json --evidence-ref EV-MEDIA-READ` 后，客户使用 `workspace-first-launch-media --mode recover --packet media-packet.json`。看到原视频仍在处理中时可稍后发起同一只读检查。
+- 客户从原包恢复并收到 `NOT_SENT` 时，先核对本机审批服务的封存记录。再用同一 `approve media` 命令重新审阅原文件，核对新的批准代次和尝试编号。客户使用 `--mode continue` 继续一次。`OUTCOME_UNKNOWN` 仍须沿原尝试核对。
+- 已确认上传的素材可在同一工作区的新计划复用。客户用新计划导出 `workspace-first-launch-host --plan-dir NEW_PLAN` 的登记包，再用同一份原文件生成新计划的 `reuse-packet.json`。管理员按以下命令登记和批准。服务核对同一 Business、App、账户、Page、源文件摘要和原回执。复用检查用已登记的管理员角色对原素材发起 GET。客户看到 `REUSE_READY` 后才使用新范围摘要建单。
+
+```sh
+sudo "$ADMIN_PYTHON" -I -B "$ADMIN_COPY/authority.py" register-plan --from-packet NEW_SETUP_SCOPE.json
+sudo "$ADMIN_PYTHON" -I -B "$ADMIN_COPY/authority.py" approve media-reuse --packet reuse-packet.json --evidence-ref EV-MEDIA-REUSE
+```
+
 - 需要复盘的同一 Ad 创意和账户活动时，将 `workspace-first-launch-evidence` 的预览保存为 `evidence-preview.json`。管理员核对日期和对象后，使用 `approve read --packet SETUP_SCOPE.json --read-purpose delivery-evidence --read-operation evidence-preview.json --evidence-ref EV-REPORT-CONTEXT`。客户沿原日期生成回执。活动读取限当前账户和最多三页，输出仅保留指定广告及父级的记录。
 - 暂停或调原广告组日预算时，先通过 `approve read --packet SETUP_SCOPE.json --read-purpose maintenance --evidence-ref EV-MAINTENANCE` 开通具名检查。客户用 `workspace-first-launch-update --mode observe` 生成原值、目标值和影响对象包。管理员核对后用 `approve update --packet update-packet.json --evidence-ref EV-UPDATE`。客户以原包执行一次 `--mode dispatch`，然后以 `--mode recover` 读回。恢复要求仍有 maintenance 读批准。受管服务用已登记的管理员角色对原对象单独发起 GET。确认收到请求时为 `ACKNOWLEDGED`，只有原节点回读一致才为 `READBACK_MATCHED`。
 - 日预算提交前，系列、广告组与完整受影响 Ad 清单均须处暂停。父级范围与预期不同、源文件已变、预览包到期或原尝试未决时，先核对原范围。恢复读到的配置状态和平台实际投递指标需分别解释。

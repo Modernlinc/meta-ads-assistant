@@ -1,6 +1,6 @@
 {
   "package": "codex-ads-live",
-  "version": "0.1.0.dev1+v16r1",
+  "version": "0.1.0.dev1+v16r2",
   "production_ready": false,
   "status": "DEVELOPMENT_CANDIDATE",
   "files": [
@@ -16,8 +16,8 @@
     },
     {
       "path": "SKILL.md",
-      "bytes": 4238,
-      "sha256": "f317562fdc9a1c351e6416a51342fbfc27effd295b136b13723261645277aa3f"
+      "bytes": 4313,
+      "sha256": "e0819073d36cc8be4711fbb55d7bf31216d33ad58d1c951fbc0e5d86c2728707"
     },
     {
       "path": "assets/iana-timezones/LICENSE.txt",
@@ -216,8 +216,8 @@
     },
     {
       "path": "references/CREATIVE_AND_DELIVERY.md",
-      "bytes": 7370,
-      "sha256": "7717784ae19bb6f5986967de301e0bed28c85f55794a3bc9418295c9ac5cdbed"
+      "bytes": 8786,
+      "sha256": "26de7394cec6a87cb27b2b4799b93c252142dfa8d2779f34680f118901e4a01f"
     },
     {
       "path": "references/CUSTOMER_SOP.md",
@@ -231,18 +231,18 @@
     },
     {
       "path": "references/FIRST_LAUNCH_CUSTOMER.md",
-      "bytes": 9313,
-      "sha256": "80a421f7f195bb8b4e2cc2d1afc246990596edfc130001b7ac4b725a118d7e2c"
+      "bytes": 9469,
+      "sha256": "d5c88c72670a789cc879ba5ac4ea0025cf51b937416d8c9e2fa5fe2c4e3a0305"
     },
     {
       "path": "references/FIRST_LAUNCH_LOCAL_AUTHORITY.md",
-      "bytes": 10886,
-      "sha256": "9d0413f61b69293d5c62e5f310f5eeeaececee51d77a0569295f86378027e5ac"
+      "bytes": 12189,
+      "sha256": "7e9e43fa31feafb315f7aed986765556af6f4991049f7f3c4966eefba955ce84"
     },
     {
       "path": "references/INSTALL_RUN.md",
-      "bytes": 5889,
-      "sha256": "bdb20eb4bdfaab3eed9984b8a5f9e367904cfa74c11fc2ee124986ced47907a9"
+      "bytes": 6321,
+      "sha256": "68494978c150e58464ddbb03b497affd94172889c996e0650370e1aa43731a55"
     },
     {
       "path": "references/OPERATOR_WORKFLOWS.json",
@@ -251,8 +251,8 @@
     },
     {
       "path": "references/WORKFLOWS.md",
-      "bytes": 15314,
-      "sha256": "2410daf764c0beeb0259350b1b5a421b442d852c0087c169b8db859fbcf7ec65"
+      "bytes": 15454,
+      "sha256": "9295c5cbad9f210ab4c55fb21d18c6e632e7667bd50a9991bc193ac5751e77ac"
     },
     {
       "path": "references/method-bundles-lock.json",
@@ -367,7 +367,7 @@
     {
       "path": "src/codex_ads_live/__init__.py",
       "bytes": 84,
-      "sha256": "ff04cd252b1a05d033d64fa39cffbb046e00859ddd62e31762c9d51f02a14f74"
+      "sha256": "70afe163a022c156b5d8d687e27c1b0b3cdb57db8583a412f02d77ecccfba4f6"
     },
     {
       "path": "src/codex_ads_live/__main__.py",
@@ -381,8 +381,8 @@
     },
     {
       "path": "src/codex_ads_live/ads_library.py",
-      "bytes": 5618,
-      "sha256": "b46712c048e181a6da2d5d0409977baf67c656f2d0c620ddcb36190e25fd6f05"
+      "bytes": 5627,
+      "sha256": "becd141a7dee1018d1ce21ff51dcadb61aec68438fed231f97be5f1dbfb60b6f"
     },
     {
       "path": "src/codex_ads_live/ads_reconciliation.py",
@@ -416,8 +416,8 @@
     },
     {
       "path": "src/codex_ads_live/client_workspace.py",
-      "bytes": 112117,
-      "sha256": "f7171fb1ec8524ffc40c0cd6d67ba803c8e38bdb8437c255e0e6b48cc3241aca"
+      "bytes": 112318,
+      "sha256": "8e4b669cbda2334ad9124bafbbbcee127b35b2998fa1d3002f2c4a99decf29b9"
     },
     {
       "path": "src/codex_ads_live/connection.py",
@@ -436,8 +436,8 @@
     },
     {
       "path": "src/codex_ads_live/creative_research.py",
-      "bytes": 14792,
-      "sha256": "10fa1afa4fa21ed4e4f78886832f6252d6d75efdd21b491e5d904787dae59360"
+      "bytes": 15358,
+      "sha256": "c2ac0e7ff699747fca394b340301ea152434625039cc91174d7677e44f06657e"
     },
     {
       "path": "src/codex_ads_live/credential_record.py",
@@ -471,8 +471,8 @@
     },
     {
       "path": "src/codex_ads_live/first_launch_authority.py",
-      "bytes": 22130,
-      "sha256": "10b371a66e4e06875ae23d87de38d594d36cf697aaa589b6ebcd6e97a398b211"
+      "bytes": 26304,
+      "sha256": "6519bd3a31eeec1c96dcb7151bd95690e172c047c3aa1f6e9100ff63a5e7ca4d"
     },
     {
       "path": "src/codex_ads_live/first_launch_controls.py",
@@ -506,23 +506,28 @@
     },
     {
       "path": "src/codex_ads_live/first_launch_local_host.py",
-      "bytes": 12627,
-      "sha256": "e2829575f23408035a1ec85f93f0507867f3d9fe3d9364c288bbce5fec52ae90"
+      "bytes": 12644,
+      "sha256": "40cbddccc95514917855c6bf317d38177debc8e520496c9f7503f0ad7b08051f"
     },
     {
       "path": "src/codex_ads_live/first_launch_managed_write.py",
-      "bytes": 15181,
-      "sha256": "107ec90936d8d0243043d1254a548f98c1dc9f0408949d10b57f6da910a43130"
+      "bytes": 15917,
+      "sha256": "36397678aef790ba65a2100af3612045aef7562f4a861aecd6c837db40ee3d32"
     },
     {
       "path": "src/codex_ads_live/first_launch_media.py",
-      "bytes": 12252,
-      "sha256": "6bd79caafa91e09e8e570fddbcd012a0cd7d63734517dec30cea11a818773d6a"
+      "bytes": 15827,
+      "sha256": "ff4479887bfb2a13c7cb58dd2b482a7ebd0b893e982ce53a1b62c317b8a3b5d4"
+    },
+    {
+      "path": "src/codex_ads_live/first_launch_media_ledger.py",
+      "bytes": 12260,
+      "sha256": "383cb46bf817fa3fe1101082c9ed33dddd626d491c91e3e6f322891acee5d303"
     },
     {
       "path": "src/codex_ads_live/first_launch_plan.py",
-      "bytes": 11603,
-      "sha256": "bfeab27b638c36729358780c7ebb8d365db475b76ad56ad8d33b039722dd8dd5"
+      "bytes": 11727,
+      "sha256": "85a9bad1799620df11c48334367d033ece7820b86606cefb6a7abe4412415cba"
     },
     {
       "path": "src/codex_ads_live/first_launch_preview.py",

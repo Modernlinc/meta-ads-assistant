@@ -14,7 +14,7 @@ from .graph_network import HOST, VIDEO_HOST, graph_https_connection
 from .http_read import arm_http_deadline
 from .journal import digest
 from .local_paths import checked_path
-from .validation import InputError, fail, object_only, strict_json
+from .validation import InputError, aware_time, fail, object_only, strict_json
 
 LIMITS = {'IMAGE': 10 * 1024**2, 'VIDEO': 100 * 1024**2}
 CHUNK_LIMIT = 16 * 1024**2
@@ -194,65 +194,137 @@ def post_media(host, path, fields, part, token, remaining):
         connection.close()
 
 
-def run(workspace, directory, file, kind, packet, mode):
+def _validate_history(row, scope, key):
+    if 'attempts' not in row:
+        # The original R1 snapshot is a single durable reservation.
+        fields = ('scope_sha256', 'scope', 'attempt_id', 'reserved_at')
+        object_only(row, fields, fields)
+        attempts = [dict(attempt_id=row['attempt_id'], generation=0, reserved_at=row['reserved_at'], not_sent=None)]
+    else:
+        fields = ('schema', 'scope_sha256', 'scope', 'attempts')
+        object_only(row, fields, fields)
+        attempts = row['attempts']
+        if row['schema'] != 'first-launch-media-history-v2' or type(attempts) is not list or not attempts:
+            fail('FIRST_LAUNCH_MEDIA_ATTEMPT_SCOPE_CHANGED')
+    if row['scope'] != scope or row['scope_sha256'] != key:
+        fail('FIRST_LAUNCH_MEDIA_ATTEMPT_SCOPE_CHANGED')
+    previous = -1
+    ids = set()
+    for i, attempt in enumerate(attempts):
+        fields = ('attempt_id', 'generation', 'reserved_at', 'not_sent')
+        object_only(attempt, fields, fields)
+        identifier, generation = attempt['attempt_id'], attempt['generation']
+        if (type(identifier) is not str or not HEX.fullmatch(identifier) or identifier in ids
+                or type(generation) is not int or generation <= previous):
+            fail('FIRST_LAUNCH_MEDIA_ATTEMPT_SCOPE_CHANGED')
+        aware_time(attempt['reserved_at'])
+        fact = attempt['not_sent']
+        if fact is not None:
+            fields = ('source', 'sealed_at')
+            object_only(fact, fields, fields)
+            if fact['source'] != 'LOCAL_AUTHORITY':
+                fail('FIRST_LAUNCH_MEDIA_NOT_SENT_UNVERIFIED')
+            aware_time(fact['sealed_at'])
+        elif i != len(attempts) - 1:
+            fail('FIRST_LAUNCH_MEDIA_ORIGINAL_ATTEMPT_RECOVERY_ONLY')
+        ids.add(identifier)
+        previous = generation
+    return attempts
+
+
+def _media_attempt(workspace, host, scope, key, mode):
     from .first_launch_authority import read_key
+    from .journal import Journal
+    from .meta_write_mapping import utcnow
+
+    location = Path(workspace) / 'managed-media' / key
+    existing_only = mode != 'dispatch'
+    journal = Journal(location, stage_snapshots=True, existing_only=existing_only)
+
+    def validate(row):
+        return _validate_history(row, scope, key)
+
+    def save(attempts):
+        journal.save(dict(schema='first-launch-media-history-v2', scope_sha256=key, scope=scope,
+                          attempts=attempts), validate)
+
+    with journal.locked(existing_only=existing_only):
+        row, damaged = journal.load(validate)
+        if damaged or journal.unpublished_snapshot_count():
+            fail('FIRST_LAUNCH_MEDIA_JOURNAL_REVIEW_REQUIRED')
+        attempts = validate(row) if row is not None else []
+        original = attempts[-1] if attempts else None
+        if mode in ('dispatch', 'continue'):
+            if mode == 'dispatch' and original is not None:
+                fail('FIRST_LAUNCH_MEDIA_ORIGINAL_ATTEMPT_RECOVERY_ONLY')
+            if mode == 'continue' and (original is None or original['not_sent'] is None):
+                fail('FIRST_LAUNCH_MEDIA_NOT_SENT_SEAL_REQUIRED')
+            approval = host.rpc('get', 'media', key)
+            generation = approval['generation']
+            if original is not None and (type(generation) is not int or generation <= original['generation']):
+                fail('FIRST_LAUNCH_MEDIA_NEW_APPROVAL_REQUIRED')
+            attempt = dict(attempt_id=approval['attempt_id'], generation=generation,
+                           reserved_at=utcnow().isoformat(), not_sent=None)
+            updated = [*attempts, attempt]
+            save(updated)
+            view = dict(scope_sha256=key, scope=scope, attempt_count=len(updated), **attempt)
+            try:
+                asset = host.rpc('execute', 'media', key, attempt['attempt_id'])
+            except (InputError, OSError):
+                return dict(state='OUTCOME_UNKNOWN', **view)
+            return dict(state=asset['status'], **view)
+        if original is None:
+            fail('FIRST_LAUNCH_MEDIA_ATTEMPT_REQUIRED')
+        asset = host.rpc('receipt', 'media', key, original['attempt_id'])
+        if asset['status'] == 'NOT_SENT':
+            if asset.get('sealed') is not True or asset.get('attempt_id') != original['attempt_id']:
+                fail('FIRST_LAUNCH_MEDIA_NOT_SENT_UNVERIFIED')
+            fact = dict(source='LOCAL_AUTHORITY', sealed_at=aware_time(asset['sealed_at']).isoformat())
+            if original['not_sent'] != fact:
+                if original['not_sent'] is not None:
+                    fail('FIRST_LAUNCH_MEDIA_NOT_SENT_UNVERIFIED')
+                original['not_sent'] = fact
+                save(attempts)
+        elif original['not_sent'] is not None:
+            fail('FIRST_LAUNCH_MEDIA_NOT_SENT_UNVERIFIED')
+        view = dict(scope_sha256=key, scope=scope, attempt_count=len(attempts), **original)
+        if 'image_hash' not in asset and 'video_id' not in asset:
+            return dict(state=asset['status'], **view)
+        identity = {name: scope[name] for name in IDENTIFIERS}
+        lease_key = read_key(identity, 'media', key)
+        lease = host._validated_lease('read', lease_key)
+        observed = read_media(identity['account_id'], asset, lambda path: host._get(
+            path, lease, assert_current=lambda: host.assert_lease(lease, 'read', lease_key)))
+        state = 'OUTCOME_UNKNOWN' if asset['status'] == 'OUTCOME_UNKNOWN' else observed['status']
+        return dict(state=state, media=observed, **view, network_used=True)
+
+
+def run(workspace, directory, file, kind, packet, mode):
     from .first_launch_local_host import LocalFirstLaunchHost, scope_from_launch
     from .first_launch_plan import _read_plan_json
     from .first_launch_progress import progress
-    from .journal import Journal
-    from .meta_write_mapping import utcnow
 
     launch = progress(workspace, directory)
     identity = scope_from_launch(launch)
     if mode == 'plan':
         if file is None or kind is None or packet is not None:
             fail('FIRST_LAUNCH_MEDIA_FILE_AND_TYPE_REQUIRED')
-        scoped = media_scope(identity, kind, file, file_bytes(file, kind))
-        selected = launch.get('creative_research_batch') or [launch.get('creative_research')]
-        if selected[0] is not None and scoped['asset_sha256'] not in {item['asset_sha256'] for item in selected}:
-            fail('FIRST_LAUNCH_RESEARCH_ASSET_CHANGED')
-        return dict(media_scope=scoped, scope_sha256=digest(scoped), network_used=False,
+        scope = media_scope(identity, kind, file, file_bytes(file, kind))
+    else:
+        if packet is None or file is not None or kind is not None:
+            fail('FIRST_LAUNCH_MEDIA_ORIGINAL_PACKET_REQUIRED')
+        scope = _read_plan_json(packet)['media_scope']
+        validate_scope(scope)
+        if any(scope[key] != val for key, val in identity.items()):
+            fail('FIRST_LAUNCH_MEDIA_SCOPE_CHANGED')
+    selected = launch.get('creative_research_batch') or [launch.get('creative_research')]
+    if selected[0] is not None and scope['asset_sha256'] not in {item['asset_sha256'] for item in selected}:
+        fail('FIRST_LAUNCH_RESEARCH_ASSET_CHANGED')
+    key = digest(scope)
+    if mode == 'plan':
+        return dict(media_scope=scope, scope_sha256=key, network_used=False,
                     required_permission='INDEPENDENT_MEDIA_APPROVAL', write_authorized=False)
-    if packet is None or file is not None or kind is not None:
-        fail('FIRST_LAUNCH_MEDIA_ORIGINAL_PACKET_REQUIRED')
-    scoped = _read_plan_json(packet)['media_scope']
-    validate_scope(scoped)
-    if any(scoped[key] != val for key, val in identity.items()):
-        fail('FIRST_LAUNCH_MEDIA_SCOPE_CHANGED')
-    key = digest(scoped)
     host = LocalFirstLaunchHost(identity)
-    location = Path(workspace) / 'managed-media' / key
-    journal = Journal(location, stage_snapshots=True, existing_only=mode=='recover')
-
-    def validate(row):
-        object_only(row, ('scope_sha256', 'attempt_id', 'reserved_at', 'scope'), ('scope_sha256', 'attempt_id', 'reserved_at', 'scope'))
-        if (row['scope'] != scoped or row['scope_sha256'] != key
-                or type(row['attempt_id']) is not str or not HEX.fullmatch(row['attempt_id'])):
-            fail('FIRST_LAUNCH_MEDIA_ATTEMPT_SCOPE_CHANGED')
-
-    with journal.locked(existing_only=mode=='recover'):
-        row, damaged = journal.load(validate)
-        if damaged or journal.unpublished_snapshot_count():
-            fail('FIRST_LAUNCH_MEDIA_JOURNAL_REVIEW_REQUIRED')
-        if mode == 'dispatch':
-            if row is not None:
-                fail('FIRST_LAUNCH_MEDIA_ORIGINAL_ATTEMPT_RECOVERY_ONLY')
-            approval = host.rpc('get', 'media', key)
-            row = dict(scope_sha256=key, scope=scoped, attempt_id=approval['attempt_id'],
-                       reserved_at=utcnow().isoformat())
-            journal.save(row, validate)
-            try:
-                asset = host.rpc('execute', 'media', key, row['attempt_id'])
-            except (InputError, OSError):
-                return dict(state='OUTCOME_UNKNOWN', **row)
-            return dict(state=asset['status'], **row)
-        if row is None:
-            fail('FIRST_LAUNCH_MEDIA_ATTEMPT_REQUIRED')
-        asset = host.rpc('receipt', 'media', key, row['attempt_id'])
-        if 'image_hash' not in asset and 'video_id' not in asset:
-            return dict(state=asset['status'], **row)
-        lease_key = read_key(identity, 'media', key)
-        lease = host._validated_lease('read', lease_key)
-        observed = read_media(identity['account_id'], asset, lambda path: host._get(
-            path, lease, assert_current=lambda: host.assert_lease(lease, 'read', lease_key)))
-        return dict(state=observed['status'], media=observed, **row, network_used=True)
+    if mode == 'reuse':
+        return host.rpc('reuse', 'media-reuse', key)
+    return _media_attempt(workspace, host, scope, key, mode)
