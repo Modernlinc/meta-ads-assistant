@@ -109,8 +109,18 @@ def main(argv=None, *, first_launch_provider=None, first_launch_preview_provider
         command.add_argument("--record-dir", type=Path, required=True)
     diagnostic = sub.add_parser("diagnose", help="分类元数据诊断；不接收凭据、真实ID、姓名或原始API响应")
     diagnostic.add_argument("input", type=Path)
-    method = sub.add_parser("method", help="核验随包方法全文与依赖；不执行上游脚本")
-    method.add_argument("--intent", choices=("ads_plan", "creative", "analytics", "positioning"), required=True)
+    method = sub.add_parser("method", help="维护入口：具名核验方法；日常助手自动使用 method-plan")
+    from .method_bundle import NAMED_METHODS, RESEARCH_LOCK
+    select_method = method.add_mutually_exclusive_group(required=True)
+    select_method.add_argument("--intent", choices=("ads_plan", "creative", "analytics", "positioning"))
+    select_method.add_argument("--skill", choices=NAMED_METHODS)
+    method.add_argument("--source-root", type=Path, help="兼容原来的固定源码目录")
+    method.add_argument("--workspace",type=Path,help="自动查找此工作区已安装的可选方法")
+    for verb, help_text in (('install','获取指定固定版本的文本方法、许可证并校验'),
+                            ('disable','停用工作区方法，保留原文件和回执')):
+        method_action=sub.add_parser(f'method-{verb}',help=help_text)
+        method_action.add_argument('--workspace',type=Path,required=True)
+        method_action.add_argument('--skill',choices=sorted(RESEARCH_LOCK['methods']),required=True)
     demo = sub.add_parser("demo", help="固定合成案例贯通演示；拒绝已有输出目录")
     demo.add_argument("--output", type=Path, required=True)
     monitor_demo = sub.add_parser("monitor-demo", help="广告/直播状态/评论的合成监控及有界报告，不连Meta")
@@ -198,11 +208,37 @@ def main(argv=None, *, first_launch_provider=None, first_launch_preview_provider
             command.add_argument("--cycles",type=int,default=None,help="省略则前台持续运行；Ctrl-C中断")
     from .client_workspace import add_commands
     from .graph_network import graph_network_scope
+    from .operator_v1 import add_commands as add_operator_commands
     add_commands(sub)
+    add_operator_commands(sub)
+    from .media_buyer import add_command as add_buyer_command
+    add_buyer_command(sub)
+    from .workspace_connect import add_command as add_connect_command
+    add_connect_command(sub)
+    from .method_workflow import add_commands as add_method_workflow
+    add_method_workflow(sub)
+    from .method_handoff import add_command as add_method_handoff
+    add_method_handoff(sub)
+    from .tracking_setup import add_command as add_tracking_command
+    add_tracking_command(sub)
+    from .shopify_transport import add_commands as add_shopify_commands
+    add_shopify_commands(sub)
+    from .native_insights import add_command as add_native_insights
+    add_native_insights(sub)
+    from .native_inventory import add_command as add_native_inventory
+    add_native_inventory(sub)
+    from .native_rules import add_command as add_native_rules
+    add_native_rules(sub)
+    from .native_audience import add_command as add_native_audience
+    add_native_audience(sub)
+    from .catalog_preflight import add_commands as add_catalog_commands
+    add_catalog_commands(sub)
     library = sub.add_parser('public-ad-query',help='预览或本人确认后运行有界的官方广告资料库读取')
     library.add_argument('--input',type=Path,required=True)
     library.add_argument('--sample-limit',type=int,default=20)
     library.add_argument('--page-limit',type=int,default=2)
+    library.add_argument('--page-id',help='与广告库 ID 一并指定，限定已授权的公开 Page 查询')
+    library.add_argument('--archive-id',help='与 Page ID 一并指定，按实际返回的双 ID 匹配')
     library.add_argument('--execute-read', '--execute', dest='execute', action='store_true')
     args = parser.parse_args(argv)
     with graph_network_scope(args.macos_system_proxy):
@@ -214,7 +250,24 @@ def main(argv=None, *, first_launch_provider=None, first_launch_preview_provider
 def _dispatch(args, *, first_launch_provider=None, first_launch_preview_provider=None, first_launch_activation_provider=None):
     unicode_terminal = sys.stdout.isatty() and sys.stdout.encoding == 'utf-8'
     try:
-        if args.command.startswith("workspace-"):
+        if args.command == 'workspace-connect':
+            from .workspace_connect import run
+            result = run(args)
+        elif args.command in ('method-catalog', 'method-plan', 'method-apply'):
+            from . import method_workflow
+            if args.command == 'method-catalog':
+                result = method_workflow.catalog()
+            elif args.command == 'method-plan':
+                result = method_workflow.plan(args.workspace, args.account_id, args.intent, args.objective,
+                                              args.output, offline=args.offline)
+            else:
+                from .method_application import apply
+                result = apply(args.workspace, args.plan, args.intent, args.input, args.output, args.source_material)
+        elif args.command == 'workspace-method-record':
+            from .method_handoff import record
+            result = record(args.workspace, args.account_id, args.skill, args.source_root, args.input, args.output,
+                            args.source_material)
+        elif args.command.startswith("workspace-") and args.command != "workspace-evidence":
             from .client_workspace import run_command
             if args.command == 'workspace-first-launch-progress':
                 if first_launch_provider is None and (args.dispatch_approved is not None or args.recover_host is not None):
@@ -233,9 +286,148 @@ def _dispatch(args, *, first_launch_provider=None, first_launch_preview_provider
                 result = run_command(args, first_launch_activation_provider=first_launch_activation_provider)
             else:
                 result = run_command(args)
+        elif args.command == 'media-buyer':
+            from .media_buyer import run_case
+            result = run_case(args.workspace, args.case, args.phase, args.input, args.output)
+        elif args.command in ('meta-access-review', 'shopify-read-plan'):
+            from .operator_review import load_input
+            if args.command == 'meta-access-review':
+                from .platform_access import review
+                result = review(load_input(args.input))
+            else:
+                from .shopify_graphql import request_plan
+                result = request_plan(load_input(args.input))
+        elif args.command == 'knowledge-search':
+            from .operator_v1 import knowledge_search
+            if args.batch01:
+                from .batch_knowledge import search
+                result = search(args.topic, args.query, method_id=args.card_id, offset=args.offset, limit=args.limit)
+            elif args.card_id is not None:
+                raise InputError('KNOWLEDGE_CARD_REQUIRES_BATCH01')
+            else:
+                result = knowledge_search(args.topic, args.video_id, notes=args.notes, query=args.query,
+                                          offset=args.offset, limit=args.limit)
+        elif args.command == 'meta-guidance-review':
+            from .meta_guidance import review
+            from .operator_review import load_input
+            result = review(load_input(args.input))
+        elif args.command == 'operator-route':
+            from .operator_v1 import operator_route
+            result = operator_route(args.platform)
+        elif args.command == 'media-analyze':
+            from .media_evidence import analyze
+            result = analyze(args.file, args.output, subtitles=args.subtitles,
+                             model=args.model, observations=args.observations, concept_id=args.concept_id,
+                             model_sha256=args.model_sha256, language=args.language,
+                             fallback_subtitles=args.fallback_subtitles)
+        elif args.command == 'tracking-prepare':
+            from .tracking_setup import prepare as prepare_tracking
+            result = prepare_tracking(args.workspace, args.account_id, args.output, destination=args.destination,
+                                      dataset=args.dataset, event=args.event, trigger=args.trigger,
+                                      stack=args.stack, existing=args.existing, campaign=args.campaign)
+        elif args.command in ('strategy-review', 'performance-diagnose', 'tracking-audit', 'business-readiness'):
+            from .operator_v1 import run_review
+            result = run_review(args.command, args.input)
+        elif args.command == 'commerce-reconcile':
+            from .commerce_csv import reconcile
+            result = reconcile(args.orders, args.refunds, args.spend, args.store_id, args.account_id,
+                               args.currency, args.since, args.until, args.refund_basis)
+            if args.output is not None:
+                from .commerce_report import export
+                result = dict(result, report_files=export(result, args.output))
+        elif args.command == 'multi-account-review':
+            from .multi_account_review import summarize
+            result = summarize(args.workspace, args.receipt, args.account_id)
+        elif args.command == 'multi-account-plan':
+            from .multi_account_review import prepare
+            result = prepare(args.workspace, args.account_id, args.last_complete_days)
+        elif args.command == 'account-inventory-review':
+            from .multi_account_review import review_inventory
+            result = review_inventory(args.workspace, args.monitor, args.account_id, args.kind, args.id,
+                                      args.parent_id, args.parent_kind)
+        elif args.command in ('catalog-review', 'ad-policy-preflight'):
+            from .catalog_preflight import catalog, policy
+            from .operator_review import load_input
+            source = load_input(args.input)
+            result = catalog(args.feed, source, args.output) if args.command == 'catalog-review' else policy(source, args.output)
+        elif args.command == 'native-audience':
+            from .native_audience import run
+            result = run(args)
+        elif args.command == 'native-rules':
+            from .native_rules import run
+            result = run(args)
+        elif args.command == 'native-inventory':
+            from .native_inventory import run
+            result = run(args)
+        elif args.command == 'native-insights':
+            from .native_insights import run as run_native_insights
+            result = run_native_insights(args.workspace, args.output, args.level, args.id, args.since, args.until,
+                                         account_id=args.account_id, breakdowns=args.breakdown,
+                                         page_budget=args.page_budget, record_directory=args.credential_record_dir,
+                                         execute=args.execute_read, daily=args.daily, report_mode=args.report_mode,
+                                         job_state=args.job_state, resume=args.resume,
+                                         include_object_context=args.include_object_context,
+                                         metrics=args.metric, report_time=args.report_time)
+        elif args.command == 'account-insights-slice':
+            from .multi_account_review import insights_slice
+            result = insights_slice(args.workspace, args.receipt, args.account_id, args.kind, args.id)
+        elif args.command == 'creative-compare':
+            from .creative_research import compare_concepts
+            result = compare_concepts(args.workspace, args.account_id, args.concept_id, args.output,
+                                      media_reports=args.media_report)
+        elif args.command == 'page-live-export-review':
+            from .page_export import review
+            from .operator_review import load_input
+            result = review(args.workspace, load_input(args.input))
+        elif args.command == 'workspace-evidence':
+            from .workspace_evidence import revise
+            from .operator_review import load_input
+            result = revise(args.workspace, args.account_id,
+                            update=load_input(args.input) if args.input else None, plan_dir=args.plan_dir)
+        elif args.command == 'shopify-bind':
+            from .shopify_transport import bind
+            result = bind(args.workspace, args.store, args.shop_id, args.timezone, args.currency)
+        elif args.command == 'shopify-read':
+            from .shopify_transport import collect
+            result = collect(args.workspace, args.since, args.until, args.output, resume=args.resume,
+                             inventory=args.inventory, cross_window_refunds=args.include_cross_window_refunds)
+        elif args.command == 'shopify-read-preview':
+            from .operator_review import load_input
+            from .shopify_readiness import preview
+            result = preview(load_input(args.input))
+        elif args.command == 'shopify-read-review':
+            from .operator_review import load_input
+            from .shopify_graphql import reconcile_spend, review
+            from .validation import fail
+            details = (args.spend, args.account_id, args.spend_timezone, args.minor_digits)
+            if any(v is not None for v in details) and any(v is None for v in details):
+                fail("SHOPIFY_SPEND_SCOPE_REQUIRED")
+            document = load_input(args.input)
+            result = review(document)
+            if args.spend is not None:
+                result["reconciliation"] = reconcile_spend(document, result, *details)
+        elif args.command == 'partner-brief-review':
+            from .operator_review import load_input
+            from .partner_brief import review
+            result = review(load_input(args.input))
+        elif args.command.startswith('commerce-watch'):
+            from . import commerce_watch
+            if args.command == 'commerce-watch':
+                result = commerce_watch.run(args.input, args.state_dir, cycles=args.cycles,
+                                            interval_seconds=args.interval_seconds, runtime_seconds=args.runtime_seconds,
+                                            retry_count=args.retry_count, resume=args.resume)
+            elif args.command == 'commerce-watch-stop':
+                result = commerce_watch.stop(args.state_dir)
+            else:
+                result = commerce_watch.report(args.state_dir)
         elif args.command == 'public-ad-query':
             from .ads_library import run_query
-            result=run_query(args.input,args.sample_limit,args.page_limit,args.execute)
+            result=run_query(args.input,args.sample_limit,args.page_limit,args.execute,
+                             page_id=args.page_id,archive_id=args.archive_id)
+        elif args.command == 'public-ad-inspect':
+            from .ads_library import inspect_detail
+            result = inspect_detail(args.input, args.page_id, args.archive_id,
+                                    args.media_report, args.angle_hypothesis)
         elif args.command == "preflight":
             from .onboarding import preflight
             result = preflight()
@@ -318,8 +510,15 @@ def _dispatch(args, *, first_launch_provider=None, first_launch_preview_provider
             data = strict_json(args.input.read_text(encoding="utf-8"))
             result = diagnose(data)
         elif args.command == "method":
-            from .method_bundle import bundled_route
-            result = bundled_route(args.intent)
+            from .method_bundle import bundled_route, external_route
+            if args.intent and args.source_root:
+                raise InputError('USE_NAMED_METHOD_WITH_SOURCE_ROOT')
+            result = external_route(args.skill, args.source_root,workspace=args.workspace) if args.skill else bundled_route(args.intent)
+        elif args.command in ('method-install','method-disable'):
+            from .method_library import disable, install
+
+            handler=install if args.command=='method-install' else disable
+            result=handler(args.workspace,args.skill)
         elif args.command == "demo":
             from .demo import run_demo
             result = run_demo(args.output)

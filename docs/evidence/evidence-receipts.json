@@ -1,0 +1,160 @@
+{
+  "candidate_commit": "525bee82b2e1abcc8da8b01b4834085f1798ebc0",
+  "v1_final_win_sha256": "74e42aacb776f67463c59b360bdd61a28769e01a60268fbd81a54c578416d20b",
+  "r1_sha256": "e9047a6f7ffdfdf4d460c2df49df8534a01b96ca29dbfba2231f79c61fb9e55c",
+  "provenance": "仅摘录固定归档中列出的字段；原始响应、凭据、账户编号和本机路径省略。",
+  "samples": [
+    {
+      "group": "install-status",
+      "archive_member": "evidence/qa/install/install-status.json",
+      "archive_member_sha256": "fbc8c6ea06349872aefd0153b4a8e924df790dfd966d673da499b3df7e73dcce",
+      "values": {
+        "status": "PROJECT_INSTALL_VERIFIED",
+        "version": "0.1.0.dev5+v1win"
+      }
+    },
+    {
+      "group": "release-audit",
+      "archive_member": "evidence/qa/install/release-audit.json",
+      "archive_member_sha256": "f0942242201769eab9bdd324ee3a8c7ef5497ddc3c91e1a7e8178b2430f8721b",
+      "values": {
+        "status": "INSTALL_AND_SYNTHETIC_QA_VERIFIED",
+        "version": "0.1.0.dev5+v1win",
+        "manifest_count": 180,
+        "current_cli_count": 138,
+        "real_accounts_used": false,
+        "writes_to_platform": false
+      }
+    },
+    {
+      "group": "cross-platform-macos-proof",
+      "archive_member": "evidence/qa/install/cross-platform-macos-proof.json",
+      "archive_member_sha256": "18f2af327476a08a0561935f6cab333c7b2f5abb91f2ffe02cdeb78d2944160c",
+      "values": {
+        "status": "MACOS_PORTABLE_CLI_PASSED",
+        "actual_system": "Darwin",
+        "architecture": "arm64",
+        "native_desktop_discovery_verified": false,
+        "old_project_byte_unchanged": true,
+        "steps": 30,
+        "real_platform_requests": 0
+      }
+    },
+    {
+      "group": "windows-native-gate",
+      "archive_member": "evidence/qa/windows-replay/windows-native-gate.json",
+      "archive_member_sha256": "f05f387fa97fb98c92937ffed7607d5afaedb214aa73914187b6963a830ff22a",
+      "values": {
+        "status": "WINDOWS_HOST_REQUIRED",
+        "actual_system": "Darwin"
+      }
+    },
+    {
+      "group": "buyer-workflow-proof",
+      "archive_member": "evidence/qa/install/buyer-workflow-proof.json",
+      "archive_member_sha256": "20b71ceabf6e063cf75154621435730041c30a972a1631e89d2d6338bd39889e",
+      "values": {
+        "status": "INSTALLED_MEDIA_BUYER_SYNTHETIC_PASS",
+        "windows": 2,
+        "report_input": "INSTALLED_ARCHIVE_VALIDATED_AFTER_LOCAL_HTTP_STUB",
+        "duplicate_plan": false,
+        "scope_drift_rejected": true,
+        "optimization": "PAUSE_AD_PLAN_AND_MANUAL_AUDIENCE_REVIEW",
+        "real_requests": 0
+      }
+    },
+    {
+      "group": "batch-candidate",
+      "archive_member": "evidence/qa/install/batch-candidate.json",
+      "archive_member_sha256": "bf5117a9055e4236ea8bbad9ea0556e8229fe2456e089d5ec6ae590170bffc51",
+      "values": {
+        "result": "PASS",
+        "fixture": "SYNTHETIC_NOT_META",
+        "real_graph_requests": 0,
+        "stages": 6,
+        "original_unknown_recovered": true,
+        "cross_ad_review_rejected": true,
+        "three_mock_posts": 8
+      }
+    },
+    {
+      "group": "media-evidence",
+      "archive_member": "evidence/qa/extras/media/media-evidence.json",
+      "archive_member_sha256": "fde58cd87454b8ce4eda6b4885fa4fc858fdd6d7d2e7d826c459e6340915dfa5",
+      "values": {
+        "status": "LOCAL_MEDIA_EVIDENCE",
+        "duration_ms": 2000,
+        "transcript_state": "USER_SUPPLIED_SRT",
+        "actions_authorized": false,
+        "audio_state": "EXTRACTED",
+        "frames_count": 3,
+        "subtitle_cues": 1,
+        "frame_timestamps_ms": [
+          0,
+          666,
+          1333
+        ],
+        "review_states": {
+          "selling_point": "UNOBSERVED",
+          "hook": "UNOBSERVED",
+          "conversion_point": "UNOBSERVED",
+          "human_feel": "UNOBSERVED"
+        }
+      }
+    },
+    {
+      "group": "named-account-stubs",
+      "archive_member": "evidence/qa/extras/named-account-stubs.json",
+      "archive_member_sha256": "9fa6939bf05dab58c2a6364f89754ca39c24f84c9f9145f7b92c5a11a564e9fc",
+      "values": {
+        "result": "PASS",
+        "transport": "HTTP_STUB_ONLY",
+        "no_secret_on_disk_or_console": true,
+        "remote_write_calls": 0,
+        "last_request_methods": [
+          "GET",
+          "GET"
+        ]
+      }
+    },
+    {
+      "group": "scheduler-cold-stop-stubs",
+      "archive_member": "evidence/qa/extras/scheduler-cold-stop-stubs.json",
+      "archive_member_sha256": "d7e166467a5e089de38411cdab2793beabc16fdbfda1391a8e4136d0f3fdf989",
+      "values": {
+        "result": "PASS",
+        "cold": "STALE",
+        "reads_after_stop": 0,
+        "restarted": true,
+        "last_success_preserved": true
+      }
+    },
+    {
+      "group": "shopify-refund-paging-receipt",
+      "archive_member": "evidence/qa/extras/shopify-refund-paging-receipt.json",
+      "archive_member_sha256": "ccd7055076c5d851c70a851d54c53ef517edf9fb5eaf67aeb52d2628af2491fe",
+      "values": {
+        "status": "SHOPIFY_READ_COMPLETE",
+        "api_version": "2026-10",
+        "profile_identity_matched": true,
+        "network_used": false,
+        "source": "LOCAL_RESPONSE_TRANSCRIPT",
+        "live_shopify_status": "DEFERRED_NOT_RUN"
+      }
+    },
+    {
+      "group": "new-managed-update-and-prerequisite-proof",
+      "archive_member": "evidence/qa/install/new-managed-update-and-prerequisite-proof.json",
+      "archive_member_sha256": "da3cb634f774464af81857ac0beaefacef63f7deb54aa1b1c3ea9f9337c5c3f5",
+      "values": {
+        "creative_readback_scope_verified": true,
+        "creative_wrong_page_rejected": true,
+        "targeting_preview_verified": true,
+        "bid_preview_verified": true,
+        "shopify_read_plan": "SHOPIFY_GRAPHQL_READ_PLAN",
+        "meta_access_review": "META_PREREQUISITES_REVIEW",
+        "real_platform_requests": 0
+      }
+    }
+  ]
+}

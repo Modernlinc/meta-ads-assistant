@@ -1,0 +1,97 @@
+{
+  "schema": "media-buyer-intake-v1",
+  "page_id": "500",
+  "business": {
+    "schema": "business-readiness-v1",
+    "account_id": "100",
+    "product_id": "cup",
+    "market": "US",
+    "currency": "USD",
+    "as_of": "2026-11-26",
+    "facts": [
+      {
+        "id": "EV_EXAMPLE_PRODUCT",
+        "kind": "PRODUCT",
+        "value": "Synthetic ceramic cup",
+        "observed_on": "2026-11-26"
+      },
+      {
+        "id": "EV_EXAMPLE_OFFER",
+        "kind": "OFFER",
+        "value": "One cup",
+        "observed_on": "2026-11-26"
+      },
+      {
+        "id": "EV_EXAMPLE_DESTINATION",
+        "kind": "DESTINATION",
+        "value": "https://store.example.com/products/cup?utm_source=meta&utm_medium=paid_social",
+        "observed_on": "2026-11-26"
+      },
+      {
+        "id": "EV_EXAMPLE_LANDING_PAGE_STATUS",
+        "kind": "LANDING_PAGE_STATUS",
+        "value": "READY",
+        "observed_on": "2026-11-26"
+      },
+      {
+        "id": "EV_EXAMPLE_NET_ORDER_MINOR",
+        "kind": "NET_ORDER_MINOR",
+        "value": 4200,
+        "observed_on": "2026-11-26"
+      },
+      {
+        "id": "EV_EXAMPLE_VARIABLE_COST_MINOR",
+        "kind": "VARIABLE_COST_MINOR",
+        "value": 2100,
+        "observed_on": "2026-11-26"
+      }
+    ]
+  },
+  "tracking": {
+    "schema": "operator-tracking-v1",
+    "dataset_id": "555",
+    "destination": "https://store.example.com/products/cup?utm_source=meta&utm_medium=paid_social",
+    "events": [
+      {
+        "channel": "PIXEL",
+        "name": "Purchase",
+        "event_id": "EV_TEST_ORDER",
+        "mode": "TEST"
+      },
+      {
+        "channel": "CAPI",
+        "name": "Purchase",
+        "event_id": "EV_TEST_ORDER",
+        "mode": "TEST"
+      }
+    ]
+  },
+  "strategy": {
+    "schema": "operator-strategy-v1",
+    "account_id": "100",
+    "currency": "USD",
+    "product": "Synthetic ceramic cup",
+    "offer": "One cup",
+    "goal": "PURCHASE",
+    "audience": "First time cup buyers",
+    "destination": "https://store.example.com/products/cup?utm_source=meta&utm_medium=paid_social",
+    "proof_ref": "EV_EXAMPLE_PRODUCT",
+    "commercial": {
+      "net_order_minor": 4200,
+      "variable_cost_minor": 2100,
+      "target_cpa_minor": 1000,
+      "test_budget_minor": 6000,
+      "minimum_results": 3,
+      "days": 3
+    },
+    "test_variable": "CREATIVE_ANGLE",
+    "advantage_plus": "UNKNOWN"
+  },
+  "creatives": [
+    {
+      "concept_id": "idea",
+      "variant_id": "img",
+      "asset_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

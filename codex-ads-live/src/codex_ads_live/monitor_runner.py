@@ -170,7 +170,7 @@ def validate_monitor_intent(value):
 def load_monitor_intent(path):
     path = checked_path(path, link_error='MONITOR_INTENT_SYMLINK', volume_error='MONITOR_VOLUME_NOT_MOUNTED')
     if not path.is_file() or path.stat().st_size > 64000: fail('MONITOR_INTENT_FILE')
-    value = strict_json(path.read_text(encoding='utf-8'))
+    value = strict_json(path.read_text(encoding='utf-8-sig'))
     validate_monitor_intent(value)
     receipt_path = path.parent / 'RECEIPT.json'
     if value['schema']=='monitor-intent-v1' and path.name=='monitor-intent.json' and receipt_path.is_file():

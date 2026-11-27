@@ -1,0 +1,894 @@
+{
+  "schema": "batch01-skill-knowledge-v1",
+  "version": "2026-11-27.1",
+  "original_zip_sha256": "478aee3a0d3895908ae82815228743edcd1fc345c3a709d72ad2a9c7affc107d",
+  "sources_sha256": "c7a415605269fbfed45b883e75746103d367666f598211aee0326f8c976f879d",
+  "cards": {
+    "MC-AUT-01": {
+      "method_id": "MC-AUT-01",
+      "title": "会话式广告操作中的数据刷新、审批绑定与状态核对",
+      "domain": "automation",
+      "creator": "Gui Costa",
+      "version": "2026-11-27.1",
+      "sha256": "d5c23a9fff56566d4a9547d0b5eb36e5dd2ed324348401aa24df7cac5d720622",
+      "entry": "cards/MC-AUT-01.md",
+      "path_in_input": "method-cards/MC-AUT-01.md",
+      "original_sha256": "062b28dd072c6d8bc47edd8772f84040aff4ce0f65010a5119bd6f15247bffe0",
+      "source_ids": [
+        "YT-ngRxcBVBjHs"
+      ],
+      "intents": [
+        "strategy",
+        "performance"
+      ],
+      "disposition": "CONDITIONAL_DECISION_METHOD",
+      "limitations": "具名刷新、原审批与旧尝试；永不授权写入",
+      "role": "WORKSPACE_OPERATIONS",
+      "brief_kind": "revision",
+      "applicability": "已有Meta连接、需要连续复盘和受控修改的客户。",
+      "capability_ids": [
+        "C01",
+        "C11",
+        "C12",
+        "C14",
+        "C16",
+        "C21",
+        "C22",
+        "C23",
+        "C28"
+      ],
+      "eval_ids": [
+        "EV-AUT-01",
+        "EV-AUT-02",
+        "EV-AUT-03"
+      ]
+    },
+    "MC-AUT-02": {
+      "method_id": "MC-AUT-02",
+      "title": "以行级素材契约组织批量建广告和回读验收",
+      "domain": "automation",
+      "creator": "Markifact",
+      "version": "2026-11-27.1",
+      "sha256": "0a0f6a6c29428202af86da1dbc17b3f56ccf00476991e77b7c657eff30a10bdf",
+      "entry": "cards/MC-AUT-02.md",
+      "path_in_input": "method-cards/MC-AUT-02.md",
+      "original_sha256": "40cc1f577550b683f7b48f1cd92269aed0c7199d22492f23313a6614711a19b7",
+      "source_ids": [
+        "YT-BEwgfL-jCSM"
+      ],
+      "intents": [
+        "strategy",
+        "creative"
+      ],
+      "disposition": "RETRIEVABLE_REFERENCE",
+      "limitations": "参考行级素材/结果；不承诺任意批传模板或开放私有素材",
+      "role": "WORKSPACE_OPERATIONS",
+      "brief_kind": "revision",
+      "applicability": "同一客户批量单图广告; 其他格式通过独立实现及运行验收后扩展",
+      "capability_ids": [
+        "C08",
+        "C09",
+        "C10",
+        "C12",
+        "C13",
+        "C15",
+        "C22",
+        "C28"
+      ],
+      "eval_ids": [
+        "EV-AUT-04",
+        "EV-AUT-05",
+        "EV-AUT-06"
+      ]
+    },
+    "MC-COM-01": {
+      "method_id": "MC-COM-01",
+      "title": "经营约束下的预算情景",
+      "domain": "commerce",
+      "creator": "启发：UAG / CTC；卡片结构与决策门槛为 MODERNLINC 设计",
+      "version": "2026-11-27.1",
+      "sha256": "bd865b1fa01dfdea4e578f2cfb2cb6ab9a27a0a76bacb308f44e4f4855c79d58",
+      "entry": "cards/MC-COM-01.md",
+      "path_in_input": "method-cards/MC-COM-01.md",
+      "original_sha256": "1514ec5330a3c5e29e65948c0ccd3919f9e3f8308c5d338ebf55000c6664ed06",
+      "source_ids": [
+        "YT-DQw0EVlbjYE"
+      ],
+      "intents": [
+        "commerce",
+        "strategy",
+        "performance"
+      ],
+      "disposition": "CONDITIONAL_DECISION_METHOD",
+      "limitations": "比较净贡献、现金和库存，MER 不独断预算",
+      "role": "COMMERCE_ANALYTICS",
+      "brief_kind": "settlement_basis",
+      "applicability": "有订单与成本资料且希望把广告决策接到经营结果的 DTC 业务。",
+      "capability_ids": [
+        "C05",
+        "C19",
+        "C21",
+        "C25"
+      ],
+      "eval_ids": [
+        "EV-COM-01-01",
+        "EV-COM-01-02"
+      ]
+    },
+    "MC-COM-02": {
+      "method_id": "MC-COM-02",
+      "title": "线索到订单的队列验证",
+      "domain": "commerce",
+      "creator": "启发：Johnny Person / Aug11；验证结构为 MODERNLINC 设计",
+      "version": "2026-11-27.1",
+      "sha256": "df896cae54a09c8dc35331de1e2c5ab06000e94b73bcc8a3628d84d605015974",
+      "entry": "cards/MC-COM-02.md",
+      "path_in_input": "method-cards/MC-COM-02.md",
+      "original_sha256": "1e03ab6e02cb9efbf5f63dbeebd25cc6a64929eeae73f9f74d5a6e09577330e5",
+      "source_ids": [
+        "YT-OvjGs5AwzwQ"
+      ],
+      "intents": [
+        "commerce",
+        "performance"
+      ],
+      "disposition": "RETRIEVABLE_REFERENCE",
+      "limitations": "线索到已成交队列用自有材料；无原生 CRM 联接",
+      "role": "COMMERCE_ANALYTICS",
+      "brief_kind": "settlement_basis",
+      "applicability": "Meta 获线索后由邮件/CRM 承接的电商漏斗。",
+      "capability_ids": [
+        "C05",
+        "C11",
+        "C19",
+        "C25"
+      ],
+      "eval_ids": [
+        "EV-COM-02-01",
+        "EV-COM-02-02"
+      ]
+    },
+    "MC-COM-03": {
+      "method_id": "MC-COM-03",
+      "title": "订阅回款情景与预算约束",
+      "domain": "commerce",
+      "creator": "启发：Zach Stuck（MarsMen）在 Scalability School 的经营讨论；模型为 MODERNLINC 设计",
+      "version": "2026-11-27.1",
+      "sha256": "f84c1cffe76f236558790d88e5e97a4f4fb2e55d74698ef7d15c4db942858db2",
+      "entry": "cards/MC-COM-03.md",
+      "path_in_input": "method-cards/MC-COM-03.md",
+      "original_sha256": "a79d74798ecbf46dc450136d132efcba46c817e7d25ddd14503920e51de3c44c",
+      "source_ids": [
+        "YT-o9jxZGLm3Qs"
+      ],
+      "intents": [
+        "commerce"
+      ],
+      "disposition": "RETRIEVABLE_REFERENCE",
+      "limitations": "订阅应收与现款分离，无预测引擎，单次商品无需套用",
+      "role": "COMMERCE_ANALYTICS",
+      "brief_kind": "settlement_basis",
+      "applicability": "已有稳定订阅历史且能对齐账单、现金和成本的业务。",
+      "capability_ids": [
+        "C05",
+        "C19",
+        "C21",
+        "C25"
+      ],
+      "eval_ids": [
+        "EV-COM-03-01",
+        "EV-COM-03-02"
+      ]
+    },
+    "MC-CRE-01": {
+      "method_id": "MC-CRE-01",
+      "title": "Jared：画像 × 购买角度 × 创意类型的批次探索",
+      "domain": "creative",
+      "creator": "Jared Robinson",
+      "version": "2026-11-27.1",
+      "sha256": "a749bd0c2d4e21553f2d35e5f9c93872fceb8b329b8345e63fc08e9f52642196",
+      "entry": "cards/MC-CRE-01.md",
+      "path_in_input": "method-cards/MC-CRE-01.md",
+      "original_sha256": "b68067da8c26af444d5d2c69eb7f9a449add67a9f36991bc2c4b20ca258ca9bd",
+      "source_ids": [
+        "YT-_-y0NZ30VKE"
+      ],
+      "intents": [
+        "creative",
+        "experiment"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "画像、角度与格式矩阵受素材产能限制",
+      "role": "CREATIVE_METHOD",
+      "brief_kind": "creative_brief",
+      "applicability": "需要系统化概念探索的 DTC 创意团队",
+      "capability_ids": [
+        "C05",
+        "C06",
+        "C09",
+        "C10",
+        "C11",
+        "C19",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-CRE-01-01",
+        "EV-CRE-01-02"
+      ]
+    },
+    "MC-CRE-02": {
+      "method_id": "MC-CRE-02",
+      "title": "Sam Piliero：画像探索、有效方向迭代与自然内容转付费候选",
+      "domain": "creative",
+      "creator": "Sam Piliero（对 Hormozi 公开片段的归纳）",
+      "version": "2026-11-27.1",
+      "sha256": "4754da911b86ead65443527cf2d9d6d16da03a4c01da07281db557e1b136b0d2",
+      "entry": "cards/MC-CRE-02.md",
+      "path_in_input": "method-cards/MC-CRE-02.md",
+      "original_sha256": "31412b92bd654bee51b0d65968476d5eba5aeef56cdeb80150c3d90e2351c69c",
+      "source_ids": [
+        "YT-D-jpozVTfxQ"
+      ],
+      "intents": [
+        "creative",
+        "performance"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "探索与有效迭代分开；自然效果仅为候选",
+      "role": "CREATIVE_METHOD",
+      "brief_kind": "creative_brief",
+      "applicability": "已经找到部分方向但扩量受限的品牌; 有自然内容积累并愿意做付费验证的团队",
+      "capability_ids": [
+        "C05",
+        "C06",
+        "C09",
+        "C10",
+        "C11",
+        "C19",
+        "C25",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-CRE-02-01",
+        "EV-CRE-02-02"
+      ]
+    },
+    "MC-CRE-03": {
+      "method_id": "MC-CRE-03",
+      "title": "Nikhil：每广告独立 ABO 的创意探索与漏斗指标初筛",
+      "domain": "creative",
+      "creator": "D2C Decoded By Nikhil",
+      "version": "2026-11-27.1",
+      "sha256": "d0c9d7f7b819b051b1c22431603df653b9e52494f6d8d9102d7ef5b9843bf17e",
+      "entry": "cards/MC-CRE-03.md",
+      "path_in_input": "method-cards/MC-CRE-03.md",
+      "original_sha256": "1eae090f542cfcd6519319ad6eb5a47350d4b7f92122f510be30db931b06340b",
+      "source_ids": [
+        "YT-Qfv74ZtLa80"
+      ],
+      "intents": [
+        "experiment",
+        "strategy"
+      ],
+      "disposition": "PLAN_PARAMETER_BASIS",
+      "limitations": "独立组预算可编译；普通 ABO 不保证等分或随机",
+      "role": "META_AD_PLANNING",
+      "brief_kind": "test_hypothesis",
+      "applicability": "需要探索低消耗素材的账户; 希望更清晰地比较有限数量广告的团队",
+      "capability_ids": [
+        "C05",
+        "C10",
+        "C11",
+        "C16",
+        "C18",
+        "C19",
+        "C21",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-CRE-03-01",
+        "EV-CRE-03-02"
+      ]
+    },
+    "MC-CRE-04": {
+      "method_id": "MC-CRE-04",
+      "title": "Ben Heath：把概念探索与相似素材的细节实验分开",
+      "domain": "creative",
+      "creator": "Ben Heath",
+      "version": "2026-11-27.1",
+      "sha256": "cea3640730b9bd73844e87eab2fa38db2ff62ab98facbcd773a0629eabc81587",
+      "entry": "cards/MC-CRE-04.md",
+      "path_in_input": "method-cards/MC-CRE-04.md",
+      "original_sha256": "384c603ca0243cde20e872fbb6bde3a0a2b896461a8f35ed77e45331d7f69fbf",
+      "source_ids": [
+        "YT-onFwSud9C2Y"
+      ],
+      "intents": [
+        "experiment",
+        "creative"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "拆概念与同主体钩子，薄产能保留旧主体",
+      "role": "CREATIVE_METHOD",
+      "brief_kind": "creative_brief",
+      "applicability": "已找到有效主体、希望改进 Hook 或细节的团队; 制作资源有限但可持续迭代的品牌",
+      "capability_ids": [
+        "C09",
+        "C10",
+        "C11",
+        "C16",
+        "C19",
+        "C21",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-CRE-04-01",
+        "EV-CRE-04-02"
+      ]
+    },
+    "MC-CRE-05": {
+      "method_id": "MC-CRE-05",
+      "title": "Sarah Levinger：按客户心理任务审阅创意与补齐 Brief",
+      "domain": "creative",
+      "creator": "Sarah Levinger",
+      "version": "2026-11-27.1",
+      "sha256": "b97e34ea132f650ab813b6f8c70a89732cec9da8cb83febc71be2d7349bc59c3",
+      "entry": "cards/MC-CRE-05.md",
+      "path_in_input": "method-cards/MC-CRE-05.md",
+      "original_sha256": "027f5df8db5c0b4e98233bbe9303f80feef0168db9ad2fa172fb40675a8870d0",
+      "source_ids": [
+        "YT-po85BKDTG-Y"
+      ],
+      "intents": [
+        "creative",
+        "brand"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "心理任务作假设，须有 VOC 或产品证据",
+      "role": "CREATIVE_METHOD",
+      "brief_kind": "creative_brief",
+      "applicability": "需要完善消息匹配和创意 Brief 的 DTC 团队",
+      "capability_ids": [
+        "C05",
+        "C06",
+        "C09",
+        "C10",
+        "C19",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-CRE-05-01",
+        "EV-CRE-05-02"
+      ]
+    },
+    "MC-CRE-06": {
+      "method_id": "MC-CRE-06",
+      "title": "MikeMakesAds：从客户证据建立角度库与三类表达排期",
+      "domain": "creative",
+      "creator": "MikeMakesAds",
+      "version": "2026-11-27.1",
+      "sha256": "70275d2d4d623648be11144794748e7b7dcbdadabeaf4f148a3fd76eaf414b07",
+      "entry": "cards/MC-CRE-06.md",
+      "path_in_input": "method-cards/MC-CRE-06.md",
+      "original_sha256": "ae66124e7be43ba9ac2346193e1e61fde3960f7047ef387d438309bc1edf1980",
+      "source_ids": [
+        "YT-zv03UY4k5UE"
+      ],
+      "intents": [
+        "competitor",
+        "creative",
+        "brand"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "客户事实组成自有角度，不借竞品经济或复制文案",
+      "role": "CREATIVE_METHOD",
+      "brief_kind": "creative_brief",
+      "applicability": "需要稳定创意生产输入与可追溯角度积累的团队",
+      "capability_ids": [
+        "C06",
+        "C07",
+        "C09",
+        "C10",
+        "C19",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-CRE-06-01",
+        "EV-CRE-06-02"
+      ]
+    },
+    "MC-CRE-07": {
+      "method_id": "MC-CRE-07",
+      "title": "Motion：用广告组合与探索产能评价创意系统",
+      "domain": "creative",
+      "creator": "Motion (Creative Analytics)",
+      "version": "2026-11-27.1",
+      "sha256": "352b5a751ede8078bd7117c2433f0c955e546a4078d58f6845ac30f3f3066b24",
+      "entry": "cards/MC-CRE-07.md",
+      "path_in_input": "method-cards/MC-CRE-07.md",
+      "original_sha256": "b80b2159fd1c2683cf67645cb84496789feb528dd952bc0a32b1ec957a0e8999",
+      "source_ids": [
+        "YT-cSm2NPvKLHo"
+      ],
+      "intents": [
+        "performance",
+        "creative"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "区分组合贡献和探索，保留适用样本条件",
+      "role": "CREATIVE_METHOD",
+      "brief_kind": "creative_brief",
+      "applicability": "需要评价创意团队与广告组合健康的品牌或代理商",
+      "capability_ids": [
+        "C09",
+        "C10",
+        "C16",
+        "C19",
+        "C25",
+        "C27",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-CRE-07-01",
+        "EV-CRE-07-02"
+      ]
+    },
+    "MC-CRE-08": {
+      "method_id": "MC-CRE-08",
+      "title": "Dara Denney：较小月预算的每周多样创意 CBO 批次",
+      "domain": "creative",
+      "creator": "Dara Denney",
+      "version": "2026-11-27.1",
+      "sha256": "80c94911aba244ee600ef3f8fc80bf62d23cfe599fd759622a15cbc6a422f410",
+      "entry": "cards/MC-CRE-08.md",
+      "path_in_input": "method-cards/MC-CRE-08.md",
+      "original_sha256": "cd578f3d85d77e042c761c4f702292ec829f2702c3cd6c5f683a444bc6198ae6",
+      "source_ids": [
+        "YT-PVoC7H44A5w"
+      ],
+      "intents": [
+        "experiment",
+        "creative",
+        "strategy"
+      ],
+      "disposition": "CONDITIONAL_DECISION_METHOD",
+      "limitations": "周批次受花费和多样性约束，保留独立观察备选",
+      "role": "META_AD_PLANNING",
+      "brief_kind": "test_hypothesis",
+      "applicability": "符合预算和生产条件、侧重创意探索的较小 DTC 品牌",
+      "capability_ids": [
+        "C05",
+        "C09",
+        "C10",
+        "C11",
+        "C19",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-CRE-08-01",
+        "EV-CRE-08-02"
+      ]
+    },
+    "MC-MEA-01": {
+      "method_id": "MC-MEA-01",
+      "title": "按经营日历校准归因目标",
+      "domain": "diagnosis",
+      "creator": "启发：CTC / Jar Curry；字段及门槛为 MODERNLINC 设计",
+      "version": "2026-11-27.1",
+      "sha256": "b6b60c402744b781d2b8238b7f09e53adaad4d9a88ec43ff40f3486ada8db66a",
+      "entry": "cards/MC-MEA-01.md",
+      "path_in_input": "method-cards/MC-MEA-01.md",
+      "original_sha256": "f1cdc03d12e45a3c03d4b60debb15bbdec04f4e7b992b28ecf49d7e527977cda",
+      "source_ids": [
+        "YT-40ljbbRJm6M"
+      ],
+      "intents": [
+        "performance",
+        "commerce",
+        "strategy"
+      ],
+      "disposition": "CONDITIONAL_DECISION_METHOD",
+      "limitations": "经营日历分层，禁止迁移作者校准系数",
+      "role": "MEASUREMENT_METHOD",
+      "brief_kind": "attribution_scope",
+      "applicability": "已有有效测量且促销/自然渠道活动较强的业务。",
+      "capability_ids": [
+        "C05",
+        "C11",
+        "C19",
+        "C21",
+        "C25"
+      ],
+      "eval_ids": [
+        "EV-MEA-01-01",
+        "EV-MEA-01-02"
+      ]
+    },
+    "MC-MEA-02": {
+      "method_id": "MC-MEA-02",
+      "title": "增量实验适配与功效审查",
+      "domain": "diagnosis",
+      "creator": "启发：Michael Kaminsky / Recast；选择框架为 MODERNLINC 设计",
+      "version": "2026-11-27.1",
+      "sha256": "ca5d55c3cb595365e61af49eb31cd66d1587e5f7e10a6c23e7416108a29ce0ea",
+      "entry": "cards/MC-MEA-02.md",
+      "path_in_input": "method-cards/MC-MEA-02.md",
+      "original_sha256": "3f4f41d534c2dc4cf244bfdba7fefcf6eee8c7d746c27928dfa173f4561911a8",
+      "source_ids": [
+        "YT-XhMbeN7cH34"
+      ],
+      "intents": [
+        "performance",
+        "experiment"
+      ],
+      "disposition": "CONDITIONAL_DECISION_METHOD",
+      "limitations": "区分观察、随机试验与增量验证；无功效保留未知",
+      "role": "MEASUREMENT_METHOD",
+      "brief_kind": "attribution_scope",
+      "applicability": "有可用结果数据、预算与试验时间的营销测量任务。",
+      "capability_ids": [
+        "C11",
+        "C19",
+        "C21",
+        "C25",
+        "C27"
+      ],
+      "eval_ids": [
+        "EV-MEA-02-01",
+        "EV-MEA-02-02"
+      ]
+    },
+    "MC-MEA-03": {
+      "method_id": "MC-MEA-03",
+      "title": "IA 优化设置的受控比较",
+      "domain": "diagnosis",
+      "creator": "启发：CTC / Tony Chopp / McCay Rasmussen；证据限制与流程为 MODERNLINC 设计",
+      "version": "2026-11-27.1",
+      "sha256": "fed48ecbd727622911161c00eb99b5a72a06c592634e93eb048fc85ae30a914d",
+      "entry": "cards/MC-MEA-03.md",
+      "path_in_input": "method-cards/MC-MEA-03.md",
+      "original_sha256": "e8b296c8655dc1ba9e004407c9bfcba29275d417e3a12abbdac92a003c4edca6",
+      "source_ids": [
+        "YT-aR1yByVO3ac"
+      ],
+      "intents": [
+        "strategy",
+        "performance"
+      ],
+      "disposition": "RETRIEVABLE_REFERENCE",
+      "limitations": "IA 作为比较方法；当前没有 IA 计划参数编译路径",
+      "role": "MEASUREMENT_METHOD",
+      "brief_kind": "attribution_scope",
+      "applicability": "有实验能力且希望验证不同优化设置的广告账户。",
+      "capability_ids": [
+        "C11",
+        "C19",
+        "C21",
+        "C25"
+      ],
+      "eval_ids": [
+        "EV-MEA-03-01",
+        "EV-MEA-03-02"
+      ]
+    },
+    "MC-MEA-04": {
+      "method_id": "MC-MEA-04",
+      "title": "优化设置的多读数复核与回退候选",
+      "domain": "diagnosis",
+      "creator": "启发：Scalability School / Brad；监测合同为 MODERNLINC 设计",
+      "version": "2026-11-27.1",
+      "sha256": "7d08ea075d878eefbb194d972de09d3fac37a28675cd1e5bad9a7bfa3ef8c933",
+      "entry": "cards/MC-MEA-04.md",
+      "path_in_input": "method-cards/MC-MEA-04.md",
+      "original_sha256": "3a5c860599c4fd77a92a1dd466fff50c425dd3eed1def0da5d4cd55d15e39aa8",
+      "source_ids": [
+        "YT-o9jxZGLm3Qs"
+      ],
+      "intents": [
+        "performance"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "平台、店铺及 MTA 分读数；回退建议按原审批",
+      "role": "MEASUREMENT_METHOD",
+      "brief_kind": "attribution_scope",
+      "applicability": "已开始测试/部署新优化设置，且能取得跨周期经营数据的业务。",
+      "capability_ids": [
+        "C11",
+        "C19",
+        "C21",
+        "C25"
+      ],
+      "eval_ids": [
+        "EV-MEA-04-01",
+        "EV-MEA-04-02"
+      ]
+    },
+    "MC-MEA-05": {
+      "method_id": "MC-MEA-05",
+      "title": "经营瓶颈的证据分层诊断",
+      "domain": "diagnosis",
+      "creator": "启发：CTC Ecommerce Diagnostic Toolkit；本卡不复制或反推 GQ 公式",
+      "version": "2026-11-27.1",
+      "sha256": "53b16b09fe438be08ccedc05ee43dfb76c1dd7b91c497ecf2f260b314c3610a2",
+      "entry": "cards/MC-MEA-05.md",
+      "path_in_input": "method-cards/MC-MEA-05.md",
+      "original_sha256": "26ca5ec3ca77915593e8d50cb2281dfb9dcec1c7376548551df66a22216f2d30",
+      "source_ids": [
+        "YT-FBkEBZBAT3o"
+      ],
+      "intents": [
+        "performance",
+        "commerce"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "瓶颈按证据分类，无公式不计算 GQ 总分",
+      "role": "MEASUREMENT_METHOD",
+      "brief_kind": "attribution_scope",
+      "applicability": "启动前检查、投放异常的跨部门诊断。",
+      "capability_ids": [
+        "C05",
+        "C19",
+        "C25"
+      ],
+      "eval_ids": [
+        "EV-MEA-05-01",
+        "EV-MEA-05-02"
+      ]
+    },
+    "MC-STR-01": {
+      "method_id": "MC-STR-01",
+      "title": "V8：单一宽泛投放单元与批量多样创意轮换",
+      "domain": "strategy",
+      "creator": "V8 Media 访谈嘉宾及 Jandre de Beer",
+      "version": "2026-11-27.1",
+      "sha256": "3206060ebfccac24f3387030664f0d337d44545cdb5548b218af616611dc46f0",
+      "entry": "cards/MC-STR-01.md",
+      "path_in_input": "method-cards/MC-STR-01.md",
+      "original_sha256": "36c73fdd2de732344706fa7f814f8a85a3ba14e3b10345a8aaf06366d8ff13dd",
+      "source_ids": [
+        "YT-8Lipy8KEE0Q"
+      ],
+      "intents": [
+        "strategy",
+        "performance"
+      ],
+      "disposition": "CONDITIONAL_DECISION_METHOD",
+      "limitations": "集中预算与未探索素材的观察，不自动暂停",
+      "role": "META_AD_PLANNING",
+      "brief_kind": "test_hypothesis",
+      "applicability": "单产品或同类服务、需要减少结构复杂度的方案比较",
+      "capability_ids": [
+        "C06",
+        "C10",
+        "C11",
+        "C18",
+        "C19",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-STR-01-01",
+        "EV-STR-01-02"
+      ]
+    },
+    "MC-STR-02": {
+      "method_id": "MC-STR-02",
+      "title": "William Kast：主 Broad CBO 与业务条件驱动的例外分支",
+      "domain": "strategy",
+      "creator": "William Kast",
+      "version": "2026-11-27.1",
+      "sha256": "b275ab2883a3242fa22191ebb1d2f6c75fc22815255309699010e519c835d460",
+      "entry": "cards/MC-STR-02.md",
+      "path_in_input": "method-cards/MC-STR-02.md",
+      "original_sha256": "394e57b57681526ffbc5100e690caac3bc0018cbb13f7b2a69d3697dd395b842",
+      "source_ids": [
+        "YT-ATJcUcaAHIg"
+      ],
+      "intents": [
+        "strategy"
+      ],
+      "disposition": "PLAN_PARAMETER_BASIS",
+      "limitations": "同目标可共享系列预算，利润或促销目标不同则独立观察",
+      "role": "META_AD_PLANNING",
+      "brief_kind": "test_hypothesis",
+      "applicability": "需要集中结构但有目录/促销/长销售周期等明确例外的品牌",
+      "capability_ids": [
+        "C05",
+        "C06",
+        "C11",
+        "C14",
+        "C18",
+        "C19",
+        "C21",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-STR-02-01",
+        "EV-STR-02-02"
+      ]
+    },
+    "MC-STR-03": {
+      "method_id": "MC-STR-03",
+      "title": "Mason：Broad ABO 测试、分阶段扩量与毕业资格",
+      "domain": "strategy",
+      "creator": "Mason Littlejohn",
+      "version": "2026-11-27.1",
+      "sha256": "de4d98b6278136c1456f8eed9b33c8fab3261adc9d1a38a490a910c5ad4686d9",
+      "entry": "cards/MC-STR-03.md",
+      "path_in_input": "method-cards/MC-STR-03.md",
+      "original_sha256": "3e044d9cdbc6b9694accd8ed6707e99d360d154ddfff48cb2a963290b5559fbf",
+      "source_ids": [
+        "YT-w1JqdrQIYkA"
+      ],
+      "intents": [
+        "strategy",
+        "experiment"
+      ],
+      "disposition": "PLAN_PARAMETER_BASIS",
+      "limitations": "分组预算仅用客户上限，样本不足不可机械开组",
+      "role": "META_AD_PLANNING",
+      "brief_kind": "test_hypothesis",
+      "applicability": "素材探索因缺少消耗而受阻，且有足够预算和观测能力的账户",
+      "capability_ids": [
+        "C05",
+        "C11",
+        "C14",
+        "C16",
+        "C19",
+        "C21",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-STR-03-01",
+        "EV-STR-03-02"
+      ]
+    },
+    "MC-STR-04": {
+      "method_id": "MC-STR-04",
+      "title": "Mason：按获胜素材用途分配 Broad、低 CPC、兴趣与价值优化扩量池",
+      "domain": "strategy",
+      "creator": "Mason Littlejohn",
+      "version": "2026-11-27.1",
+      "sha256": "a8e791bc3de8f49561456aec0611f88b23ce091e054c070f2c0519c3060d0130",
+      "entry": "cards/MC-STR-04.md",
+      "path_in_input": "method-cards/MC-STR-04.md",
+      "original_sha256": "8f1d5d3616bccccac5e44f467dea358a20799370cefb0b5fca2b1ec844059555",
+      "source_ids": [
+        "YT-w1JqdrQIYkA"
+      ],
+      "intents": [
+        "strategy",
+        "performance"
+      ],
+      "disposition": "RETRIEVABLE_REFERENCE",
+      "limitations": "可记扩量候选；价值优化和分池资格逐项另核",
+      "role": "META_AD_PLANNING",
+      "brief_kind": "test_hypothesis",
+      "applicability": "已有获胜广告和预算余量，希望比较不同扩量路线的品牌",
+      "capability_ids": [
+        "C05",
+        "C06",
+        "C11",
+        "C14",
+        "C16",
+        "C18",
+        "C21",
+        "C25",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-STR-04-01",
+        "EV-STR-04-02"
+      ]
+    },
+    "MC-STR-05": {
+      "method_id": "MC-STR-05",
+      "title": "咔咔的老吴：合并投放、分群观察与三类业务拆分例外",
+      "domain": "strategy",
+      "creator": "咔咔的老吴",
+      "version": "2026-11-27.1",
+      "sha256": "1f527edbc357d8af6af6e246aedcc2c217c2a6e9322c25e965a123ee0f1a2621",
+      "entry": "cards/MC-STR-05.md",
+      "path_in_input": "method-cards/MC-STR-05.md",
+      "original_sha256": "4e3d50517df97f252576dd172133b3ee5db00b36bcedc362c3690f8b40c0cef7",
+      "source_ids": [
+        "YT-mOdMt6SjMQw"
+      ],
+      "intents": [
+        "strategy",
+        "performance"
+      ],
+      "disposition": "CONDITIONAL_DECISION_METHOD",
+      "limitations": "合并与分群观察，保留业务必要时拆分",
+      "role": "META_AD_PLANNING",
+      "brief_kind": "test_hypothesis",
+      "applicability": "考虑从冷暖多 Campaign 转向集中架构的 DTC 或单服务账户",
+      "capability_ids": [
+        "C05",
+        "C06",
+        "C11",
+        "C16",
+        "C18",
+        "C21",
+        "C25",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-STR-05-01",
+        "EV-STR-05-02"
+      ]
+    },
+    "MC-TRK-01": {
+      "method_id": "MC-TRK-01",
+      "title": "按业务动作核查浏览器事件，并独立保留服务器验收状态",
+      "domain": "tracking",
+      "creator": "Jamie Stenton（浏览器测试流程）；MODERNLINC补充独立服务器验收边界",
+      "version": "2026-11-27.1",
+      "sha256": "d42aa813976bda8b2e0161d00968e242c0dba629066af6ef31b386f7229c5f72",
+      "entry": "cards/MC-TRK-01.md",
+      "path_in_input": "method-cards/MC-TRK-01.md",
+      "original_sha256": "cac1c87ef056051c358e1ac0b7456f4c44025cca8e2049ba0e7e9241e0e8b5ca",
+      "source_ids": [
+        "YT-rRaXstLeHjY",
+        "OFF-20261127-01",
+        "OFF-20261127-03",
+        "OFF-20261127-04"
+      ],
+      "intents": [
+        "tracking"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "浏览器、服务器、事件去重及购买定义分别保留",
+      "role": "MEASUREMENT_METHOD",
+      "brief_kind": "event_semantics",
+      "applicability": "新接入上线前核查; 结账或追踪变更后核查; 疑似错报/漏报且能取得具名证据的账户",
+      "capability_ids": [
+        "C04",
+        "C20",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-TRK-01-A",
+        "EV-TRK-01-B",
+        "EV-TRK-01-C"
+      ]
+    },
+    "MC-TRK-02": {
+      "method_id": "MC-TRK-02",
+      "title": "先清点追踪接入，再分别验收字段覆盖、匹配质量和去重",
+      "domain": "tracking",
+      "creator": "TrackingFixes（多接入排查与自定义基础设施思路）；MODERNLINC补充证据分层与官方范围核对",
+      "version": "2026-11-27.1",
+      "sha256": "f60c3351208a4f3c715ba56fb07dca818343360ff984fc75e7e5f6f45d646505",
+      "entry": "cards/MC-TRK-02.md",
+      "path_in_input": "method-cards/MC-TRK-02.md",
+      "original_sha256": "d7439681535a48859daed81bb9c7a901f4caa475706f2393554090c462f6bdcc",
+      "source_ids": [
+        "YT-nVfpE5YnMtU",
+        "OFF-20261127-01",
+        "OFF-20261127-02",
+        "OFF-20261127-03",
+        "OFF-20261127-05",
+        "OFF-20261127-06"
+      ],
+      "intents": [
+        "tracking",
+        "performance"
+      ],
+      "disposition": "CREATIVE_OR_DIAGNOSTIC_WORKFLOW",
+      "limitations": "覆盖、EMQ、双端和去重独立验收",
+      "role": "MEASUREMENT_METHOD",
+      "brief_kind": "measurement_requirement",
+      "applicability": "Shopify多应用/多标签接入审计; 准备迁移追踪架构前的证据核查; 把营销标题或评分承诺误当技术验收的纠偏",
+      "capability_ids": [
+        "C04",
+        "C20",
+        "C30"
+      ],
+      "eval_ids": [
+        "EV-TRK-02-A",
+        "EV-TRK-02-B",
+        "EV-TRK-02-C"
+      ]
+    }
+  }
+}

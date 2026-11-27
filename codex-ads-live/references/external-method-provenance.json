@@ -1,0 +1,26 @@
+{
+  "schema": "external-method-provenance-v1",
+  "sources": {
+    "R21": {
+      "repository": "coreyhaines31/marketingskills",
+      "commit": "8fd2fcade2fd6629026e9dfe6d133b55b36968b9",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591"
+    },
+    "R22": {
+      "repository": "hyperfx-ai/marketing-skills",
+      "commit": "463e5026e5db09123f99e668622bf5e3879c08bf",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_sha256": "41ece28f69f54b9bada72aba8a948d42c4a3c265bd464ccac4bb7a784f7f0a86"
+    },
+    "R25": {
+      "repository": "gomarble-ai/marketing-agent",
+      "commit": "3e58349a6d29076c474a3c3b32b5afe2a3b8cdcd",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_sha256": "0661b71c655f4bc9b5b01c758cfbaa48b3b1ded6952722e2cc2015c1ffdebc19"
+    }
+  }
+}

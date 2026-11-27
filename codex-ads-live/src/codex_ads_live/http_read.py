@@ -173,11 +173,12 @@ class GraphReadTransport:
                  time_remaining=None):
         from .first_launch_graph import ActivationReadPlan
         from .metric_adapter import METRIC_PLAN_TYPES
+        from .native_insights import NativeInsightsPlan, ReportRunPlan
         from .first_launch_preview import PreviewReadPlan
         from .first_launch_readback import CreationReadPlan
         from .write_snapshots import SnapshotPlan
         if (type(plan) not in (ReadPlan, PageLiveReadPlan, SnapshotPlan, CreationReadPlan, PreviewReadPlan,
-                               ActivationReadPlan, *METRIC_PLAN_TYPES)
+                               ActivationReadPlan, NativeInsightsPlan, ReportRunPlan, *METRIC_PLAN_TYPES)
                 or type(binding) not in (ReadBinding, _PageCollectorBinding)):
             fail('READ_CONNECTION_CONTRACT')
         if not finite_number(timeout) or not 1 <= timeout <= 30: fail('HTTP_TIMEOUT_BUDGET')
@@ -199,12 +200,26 @@ class GraphReadTransport:
         self.retry_rate_limit = None
 
     def get(self, request):
+        if type(request) is not dict or request.get('method') != 'GET':
+            fail('READ_REQUEST_CONTRACT')
+        return self._exchange(request)
+
+    def submit_report(self, request):
+        from .native_insights import ReportRunPlan
+        if (type(self.plan) is not ReportRunPlan or self.plan.action != 'SUBMIT'
+                or self.halted or request != self.plan.request()):
+            fail('READ_REQUEST_CONTRACT')
+        self.halted = True
+        status, report, _ = self._request(request)
+        return status, report
+
+    def _exchange(self, request):
         if self.halted: fail('EXPLICIT_CONNECTION_REVIEW_REQUIRED')
         try:
-            status, body, hold = self._get(request)
+            status, body, hold = self._request(request)
             if hold is not None and self.retry_rate_limit is not None and self.retry_rate_limit(hold):
                 # Retry just this fixed GET, including its original in-memory cursor.
-                status, body, _ = self._get(request)
+                status, body, _ = self._request(request)
             if not 200 <= status < 300 or 'error' in body:
                 self.halted = True
             return status, body
@@ -217,7 +232,7 @@ class GraphReadTransport:
             self.halted = True
             raise InputError('CREDENTIAL_OR_TRANSPORT_FAILURE') from None
 
-    def _get(self, request):
+    def _request(self, request):
         if type(request) is not dict or set(request) != {'method', 'path', 'params'} or type(request['params']) is not dict:
             fail('READ_REQUEST_CONTRACT')
         expected = self.plan.request(request['params'].get('after'))
@@ -225,7 +240,9 @@ class GraphReadTransport:
         self.binding.validate(self.plan, self.clock())
         params = {key: json.dumps(value, separators=(',', ':')) if type(value) in (dict, list, bool) else value
                   for key, value in expected['params'].items()}
-        path = expected['path'] + '?' + urlencode(params)
+        method = expected['method']
+        encoded = urlencode(params)
+        path = expected['path'] + ('?' + encoded if method == 'GET' and encoded else '')
         with self.broker.lease(self.binding) as credential:
             if type(credential) is not str or not re.fullmatch(r'[A-Za-z0-9._~+/=-]{1,8192}', credential):
                 fail('CREDENTIAL_FORMAT_INVALID')
@@ -243,7 +260,11 @@ class GraphReadTransport:
                 if self.time_remaining is not None:
                     budget = min(budget,self.time_remaining())
                 arm_http_deadline(connection,budget)
-                connection.request('GET', path, headers=headers)
+                if method == 'POST':
+                    headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                    connection.request(method, path, body=encoded, headers=headers)
+                else:
+                    connection.request(method, path, headers=headers)
                 response = connection.getresponse()
                 if 300 <= response.status < 400: fail('HTTP_REDIRECT_REFUSED')
                 body = {} if response.status==429 and self.record_rate_limit is not None else read_json_response(response)

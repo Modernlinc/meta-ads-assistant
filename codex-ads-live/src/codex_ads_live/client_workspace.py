@@ -9,7 +9,7 @@ from uuid import uuid4
 from pathlib import Path
 from zoneinfo import ZoneInfoNotFoundError
 
-from . import __version__, business_profile
+from . import WORKSPACE_RUNTIME_VERSIONS, __version__, business_profile
 from .connection import blank_intent, check_connection, load_intent, preview, utcnow, validate_intent
 from .credential_record import RecordGuard, read_record
 from .http_read import ACCOUNT_SCOPE_ERRORS
@@ -87,7 +87,7 @@ def asset_reconfirmation_pending(profile,key):
 
 
 def validate_profile(p, *, version='client-profile-v2'):
-    accepted = (*PROFILE_KEYS,'page_bindings','business_profiles') if version=='client-profile-v2' else PROFILE_KEYS
+    accepted = (*PROFILE_KEYS,'page_bindings','business_profiles','connection_onboarding','shopify_read_binding') if version=='client-profile-v2' else PROFILE_KEYS
     object_only(p, accepted, PROFILE_KEYS)
     if p['schema'] != version:
         fail('WORKSPACE_SCHEMA_MIGRATION_REQUIRED')
@@ -111,6 +111,12 @@ def validate_profile(p, *, version='client-profile-v2'):
     for kind, identifier in p['defaults'].items():
         if identifier is not None and asset_key(kind, identifier) not in assets:
             fail('WORKSPACE_DEFAULT_NOT_MAPPED')
+    if 'shopify_read_binding' in p:
+        from .shopify_transport import validate_binding
+        validate_binding(p['shopify_read_binding'])
+    if 'connection_onboarding' in p:
+        from .workspace_connect import validate_state
+        validate_state(p['connection_onboarding'])
     business_profiles = p.get('business_profiles',{})
     if type(business_profiles) is not dict or len(business_profiles)>100:
         fail('WORKSPACE_BUSINESS_PROFILE_SCOPE')
@@ -352,7 +358,7 @@ def prepare_asset_connection(directory, output, *, kind='ACCOUNT', identifier=No
     with journal.locked(existing_only=True):
         profile = load(journal)
         if (not profile['app_id'] or not profile['business_id'] or profile['adapter']!='v27.0'
-                or profile['skill_version']!=__version__):
+                or profile['skill_version'] not in WORKSPACE_RUNTIME_VERSIONS):
             fail('WORKSPACE_CONNECTION_PROFILE_REQUIRED')
         target = identifier if identifier is not None else profile['defaults'][kind]
         if target is None:
@@ -516,7 +522,7 @@ def page_context(directory, identifier, record_directory):
     if asset_reconfirmation_pending(profile,key):
         fail(ASSET_RECONFIRMATION_REQUIRED)
     binding = profile.get('page_bindings',{}).get(identifier)
-    if binding is None or key not in profile['assets'] or profile['adapter']!='v27.0' or profile['skill_version']!=__version__:
+    if binding is None or key not in profile['assets'] or profile['adapter']!='v27.0' or profile['skill_version'] not in WORKSPACE_RUNTIME_VERSIONS:
         fail('WORKSPACE_PAGE_REVIEW_REQUIRED')
     record_directory = record_directory or journal_for(directory).directory/'credential-record'
     intent = page_intent(profile,identifier,binding)
@@ -649,7 +655,7 @@ def health_check(directory,task,identifier=None,*,clock=utcnow,record_directory=
             raise
         return result('RECONFIGURATION','VERSION_MISMATCH','REVIEW_PROFILE_MIGRATION')
     identifier = identifier if identifier is not None else p['defaults'][kind]
-    if p['adapter']!='v27.0' or p['skill_version']!=__version__:
+    if p['adapter']!='v27.0' or p['skill_version'] not in WORKSPACE_RUNTIME_VERSIONS:
         return result('RECONFIGURATION','VERSION_MISMATCH','REVIEW_ADAPTER_OR_PROFILE_VERSION')
     if not p['app_id'] or not p['business_id']:
         return result('ONBOARDING','BLOCKED','COMPLETE_APP_AND_BUSINESS_MAPPING')
@@ -730,7 +736,7 @@ def refresh_account(directory, identifier, output, *, clock=utcnow, record_direc
     key = asset_key('ACCOUNT',identifier)
     if asset_reconfirmation_pending(p,key):
         fail(ASSET_RECONFIRMATION_REQUIRED)
-    if not b or identifier not in b['accounts'] or b['auth_status']=='AUTH_REQUIRED' or key not in p['assets'] or p['adapter']!='v27.0' or p['skill_version']!=__version__:
+    if not b or identifier not in b['accounts'] or b['auth_status']=='AUTH_REQUIRED' or key not in p['assets'] or p['adapter']!='v27.0' or p['skill_version'] not in WORKSPACE_RUNTIME_VERSIONS:
         fail('WORKSPACE_BINDING_SCOPE')
     intent = blank_intent()
     intent.update(app_id=p['app_id'],principal_id=b['principal_id'],account_id=identifier,
@@ -960,7 +966,7 @@ def monitor_scope(profile,connection,clock):
     key = asset_key('ACCOUNT',account)
     record = profile['binding'] or {}
     check = profile['checks'].get(key) or {}
-    if (profile['skill_version']!=__version__ or profile['adapter']!='v27.0'
+    if (profile['skill_version'] not in WORKSPACE_RUNTIME_VERSIONS or profile['adapter']!='v27.0'
             or profile['app_id']!=connection['app_id'] or account not in record.get('accounts',[])
             or record.get('auth_status')!='CURRENT' or record['principal_id']!=connection['principal_id']
             or connection['credential_source']!='OS_REFERENCE' or record['secret_ref']!=connection['credential_reference']
@@ -1059,10 +1065,13 @@ def business_context(profile, identifier, clock):
     return dict(account_id=identifier,dispatchable=False,**result)
 
 
-def draft_review_scope(profile, account, *, compatible_versions=()):
+def draft_review_scope(profile, account, *, compatible_versions=(), host_draft=False):
     account = business_account(profile,account)
-    if (profile['adapter']!='v27.0' or profile['skill_version'] not in (__version__, *compatible_versions)
-            or not profile['app_id'] or not profile['business_id']):
+    route = profile.get('connection_onboarding') or {}
+    host_account = host_draft and route.get('route')=='host-connector' and any(
+        row['account_id']==account for row in ((route.get('discovery') or {}).get('accounts') or []))
+    if (profile['adapter']!='v27.0' or profile['skill_version'] not in (*WORKSPACE_RUNTIME_VERSIONS, *compatible_versions)
+            or (not host_account and (not profile['app_id'] or not profile['business_id']))):
         fail('WORKSPACE_DRAFT_REVIEW_PROFILE_REQUIRED')
     key = asset_key('ACCOUNT',account)
     recorded = profile['checks'].get(key,{})
@@ -1097,7 +1106,7 @@ def set_business(directory, input_path, previous_sha256=None):
         raw = handle.read(16001)
     if len(raw)>16000:
         fail('BUSINESS_PROFILE_INPUT_FILE')
-    value = business_profile.validate(strict_json(raw.decode('utf-8')))
+    value = business_profile.validate(strict_json(raw.decode('utf-8-sig')))
     if previous_sha256 is not None:
         pattern(previous_sha256,r'[0-9a-f]{64}','BUSINESS_PROFILE_PREVIOUS_HASH')
     def change(profile):
@@ -1378,7 +1387,7 @@ def page_live_scope(profile, connection, *, include_check=True):
     key = asset_key('PAGE',page_id)
     binding = profile.get('page_bindings',{}).get(page_id)
     if (binding is None or key not in profile['assets'] or profile['adapter']!='v27.0'
-            or profile['skill_version']!=__version__ or connection!=page_intent(profile,page_id,binding)):
+            or profile['skill_version'] not in WORKSPACE_RUNTIME_VERSIONS or connection!=page_intent(profile,page_id,binding)):
         fail('WORKSPACE_PAGE_LIVE_SCOPE_CHANGED')
     scope = dict(client=profile['client_id'],business=profile['business_id'],asset=profile['assets'][key],binding=binding,
                  adapter=profile['adapter'],skill=profile['skill_version'])
@@ -1523,7 +1532,7 @@ def add_commands(sub):
         'public-ad-observations':'在原工作区规范化公开广告样本',
         'first-launch-check':'核对首投草案仍对应原工作区及已选账户、主页',
         'first-launch-media':'审阅受管素材上传或只读核对原上传',
-        'first-launch-update':'审阅、执行或恢复同一首投已记录对象的具名调整',
+        'first-launch-update':'审阅、执行或恢复已记录和已读取的具名广告调整',
         'first-launch-host':'导出原计划的本机受控连接范围，或核对已运行的本机批准服务',
         'first-launch-handoff':'从普通安装接续同一首投的客户后台操作与回读',
         'first-launch-progress':'沿同一首投草案留存具名对象回读并准备下一步',
@@ -1551,6 +1560,8 @@ def add_commands(sub):
     first_launch.add_argument('--page-id')
     first_launch.add_argument('--select-creative', action='append', nargs=3, metavar=('CONCEPT', 'VARIANT', 'ASSET_SHA256'),
                               help='将素材评语和创意选择摘要冻结到首投计划')
+    first_launch.add_argument('--selection-file', action='append', type=Path, default=[],
+                              help='导入创意对照页中保存的选择')
     first_launch.add_argument('--output',type=Path,help='默认保存在工作区的 first-launch-plan 目录')
     commands['first-launch-check'].add_argument('--plan-dir',type=Path)
     media = commands['first-launch-media']
@@ -1564,7 +1575,11 @@ def add_commands(sub):
     from .first_launch_update import ACTIONS
     update.add_argument('--action', choices=ACTIONS)
     update.add_argument('--plan-dir', type=Path)
+    update.add_argument('--existing-ad-snapshot', type=Path, help='存量广告的完整 native-inventory get ad 回执')
+    update.add_argument('--existing-page')
+    update.add_argument('--affected-ads-snapshot', type=Path, help='广告组或系列的完整 native-inventory list ad 回执')
     update.add_argument('--budget-minor', type=int)
+    update.add_argument('--change-file', type=Path, help='具名出价、受众、停止时间或已审阅 Creative 的明确变更值')
     update.add_argument('--packet', type=Path)
     update.add_argument('--mode', choices=('plan','observe','dispatch','recover'), default='plan')
     host_command = commands['first-launch-host']
@@ -1599,6 +1614,8 @@ def add_commands(sub):
     activation.add_argument('--start-at',required=True)
     activation.add_argument('--end-at',required=True)
     activation.add_argument('--maximum-spend-minor',type=int,required=True)
+    activation.add_argument('--parent-budget', nargs=3, metavar=('OWNER', 'SCHEDULE', 'AMOUNT_MINOR'),
+                            help='已有父级的具名预算范围，经受管服务再次核对')
     activation.add_argument('--output',type=Path)
     activation_action = commands['first-launch-activation']
     activation_action.add_argument('--plan-dir',type=Path)
@@ -1626,6 +1643,9 @@ def add_commands(sub):
     launch_evidence.add_argument('--since', required=True)
     launch_evidence.add_argument('--until', required=True)
     launch_evidence.add_argument('--execute-read', action='store_true')
+    for selection in ('first-launch-progress', 'first-launch-preview', 'first-launch-activation-review',
+                      'first-launch-activation', 'first-launch-delivery', 'first-launch-evidence', 'first-launch-update'):
+        commands[selection].add_argument('--ad-id', help='选择同一批次中已有回读的广告；省略时沿原入口')
     commands['onboard'].add_argument('--preparation',type=Path,required=True)
     from .workspace_onboarding import SCOPES
     onboarding = commands['onboarding-report']
@@ -1779,19 +1799,23 @@ def run_command(args, *, first_launch_provider=None, first_launch_preview_provid
         from . import first_launch_plan
         if name=='first-launch-plan':
             return first_launch_plan.prepare(root,args.output,account_id=args.account_id,page_id=args.page_id,
-                                             creative_selection=args.select_creative)
+                                             creative_selection=args.select_creative, selection_files=args.selection_file)
         return first_launch_plan.check(root,args.plan_dir)
     if name=='first-launch-progress':
         from .first_launch_progress import progress
         return progress(root,args.plan_dir,reserve=args.reserve,readback=args.readback,checkpoint=args.checkpoint,
                         dispatch_stage=args.dispatch_approved,recover_stage=args.recover_host,
-                        provider=first_launch_provider)
+                        provider=first_launch_provider,ad_id=args.ad_id)
     if name=='first-launch-media':
         from .first_launch_media import run
         return run(root,args.plan_dir,args.file,args.kind,args.packet,args.mode)
     if name=='first-launch-update':
         from .first_launch_update import run
-        return run(root,args.plan_dir,args.action,args.budget_minor,args.packet,args.mode)
+        from .operator_review import load_input
+        change = load_input(args.change_file) if args.change_file is not None else None
+        return run(root,args.plan_dir,args.action,args.budget_minor,args.packet,args.mode,ad_id=args.ad_id,change=change,
+                   existing_snapshot=args.existing_ad_snapshot,existing_page=args.existing_page,
+                   affected_snapshot=args.affected_ads_snapshot)
     if name=='first-launch-host':
         from .first_launch_local_host import LocalFirstLaunchHost, scope_from_launch
         from .first_launch_progress import progress
@@ -1811,11 +1835,17 @@ def run_command(args, *, first_launch_provider=None, first_launch_preview_provid
     if name=='first-launch-preview':
         from .first_launch_preview import preview
         return preview(root,args.plan_dir,creative_fallback=args.creative_fallback,fetch=args.fetch,
-                       output=args.output,provider=first_launch_preview_provider)
+                       output=args.output,provider=first_launch_preview_provider,ad_id=args.ad_id)
     if name=='first-launch-activation-review':
         from .first_launch_activation import prepare
+        parent_budget = None
+        if args.parent_budget is not None:
+            owner, schedule, amount = args.parent_budget
+            if not re.fullmatch(r'[1-9][0-9]{0,8}', amount):
+                fail('META_WRITE_MINOR_UNITS')
+            parent_budget = dict(owner=owner, schedule=schedule, budget_minor=int(amount))
         return prepare(root,args.plan_dir,args.preview_observation,args.start_at,args.end_at,
-                       args.maximum_spend_minor,args.output)
+                       args.maximum_spend_minor,args.output,ad_id=args.ad_id,parent_budget=parent_budget)
     if name=='first-launch-activation':
         from .first_launch_progress import progress
         if args.review is None and args.mode != 'recover':
@@ -1828,7 +1858,7 @@ def run_command(args, *, first_launch_provider=None, first_launch_preview_provid
             from .first_launch_activation import read_review
             from .first_launch_activation_host import _guard_valid
             from .first_launch_local_host import LocalFirstLaunchHost, scope_from_launch
-            launch = progress(root,args.plan_dir)
+            launch = progress(root,args.plan_dir,ad_id=args.ad_id)
             if launch.get('manual_activation_attempt') is not None:
                 fail('FIRST_LAUNCH_ACTIVATION_MANUAL_ATTEMPT_REQUIRES_RECOVERY')
             if launch.get('activation_attempt') is not None:
@@ -1839,7 +1869,7 @@ def run_command(args, *, first_launch_provider=None, first_launch_preview_provid
             host = LocalFirstLaunchHost(scope_from_launch(launch))
             guard = host.current_guard(review)
             _guard_valid(review, guard, utcnow())
-            latest = progress(root,args.plan_dir)
+            latest = progress(root,args.plan_dir,ad_id=args.ad_id)
             if latest.get('manual_activation_attempt') is not None or latest.get('activation_attempt') is not None:
                 fail('FIRST_LAUNCH_ACTIVATION_RECOVER_ORIGINAL_ONLY')
             if read_review(latest,args.review) != review:
@@ -1848,15 +1878,16 @@ def run_command(args, *, first_launch_provider=None, first_launch_preview_provid
             return dict(status='LOCAL_ACTIVATION_AWAITING_INDEPENDENT_APPROVAL',
                         review=review, guard=asdict(guard), dispatchable=False, spend_authorized=False)
         return progress(root, args.plan_dir, activation_review=args.review, activation_mode=args.mode,
-                        activation_provider=first_launch_activation_provider)
+                        activation_provider=first_launch_activation_provider,ad_id=args.ad_id)
     if name=='first-launch-delivery':
         from .first_launch_delivery import delivery_review
         return delivery_review(root,args.plan_dir,args.run_receipt,args.since,args.until,
                                activation_review_path=args.activation_review, manual_before=args.manual_before,
-                               manual_after=args.manual_after, manual_ad=args.manual_ad, evidence_path=args.evidence)
+                               manual_after=args.manual_after, manual_ad=args.manual_ad,
+                               evidence_path=args.evidence,ad_id=args.ad_id)
     if name=='first-launch-evidence':
         from .first_launch_evidence import run
-        return run(root,args.plan_dir,args.since,args.until,args.execute_read)
+        return run(root,args.plan_dir,args.since,args.until,args.execute_read,ad_id=args.ad_id)
     if name=='add':
         return map_asset(root,args.kind,args.id,args.evidence_ref)
     if name=='default':

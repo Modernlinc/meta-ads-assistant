@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from urllib.parse import parse_qsl, urlsplit
 import re
 from zoneinfo import ZoneInfoNotFoundError
 from .timezones import load_zone
@@ -23,17 +24,22 @@ OPERATIONS = (*SNAPSHOT_OPERATIONS, 'CREATE_CREATIVE')
 CREATIVE_CTAS = ('LEARN_MORE', 'SHOP_NOW')
 SUPPORTED_CURRENCIES = ('USD', 'EUR', 'JPY')
 WEBSITE_CONVERSION_OBJECTIVES = {'PURCHASE': 'OUTCOME_SALES', 'LEAD': 'OUTCOME_LEADS'}
-OPTIONAL_PARAMETERS = {'CREATE_ADSET': ('promoted_object',),
-                       'CREATE_CREATIVE': ('description', 'video', 'media_scope_sha256')}
+OPTIONAL_PARAMETERS = {'CREATE_CAMPAIGN': ('spend_cap', 'daily_budget', 'lifetime_budget', 'bid_strategy',
+                                               'is_adset_budget_sharing_enabled'),
+                       'CREATE_ADSET': ('promoted_object', 'start_time', 'end_time', 'lifetime_budget',
+                                        'daily_budget', 'bid_strategy', 'is_dynamic_creative'),
+                       'CREATE_CREATIVE': ('description', 'video', 'media_scope_sha256', 'url_tags', 'carousel','dynamic_media')}
 CREATE_EDGES = {'CREATE_CAMPAIGN': 'campaigns', 'CREATE_ADSET': 'adsets',
                 'CREATE_AD': 'ads', 'CREATE_CREATIVE': 'adcreatives'}
 PARAMETERS = {
-    'CREATE_CAMPAIGN': ('name', 'objective', 'buying_type', 'special_ad_categories', 'is_adset_budget_sharing_enabled', 'status'),
+    'CREATE_CAMPAIGN': ('name', 'objective', 'buying_type', 'special_ad_categories', 'is_adset_budget_sharing_enabled', 'status',
+                        'spend_cap', 'daily_budget', 'lifetime_budget', 'bid_strategy'),
     'CREATE_ADSET': ('name', 'campaign_id', 'daily_budget', 'billing_event', 'optimization_goal', 'bid_strategy',
-                     'destination_type', 'targeting', 'status', 'promoted_object'),
+                     'destination_type', 'targeting', 'status', 'promoted_object', 'start_time', 'end_time', 'lifetime_budget',
+                     'is_dynamic_creative'),
     'CREATE_AD': ('name', 'adset_id', 'creative', 'status'),
     'CREATE_CREATIVE': ('name', 'image_hash', 'destination_url', 'primary_text', 'headline', 'description',
-                        'call_to_action', 'video', 'media_scope_sha256'),
+                        'call_to_action', 'video', 'media_scope_sha256', 'url_tags', 'carousel','dynamic_media'),
     'SET_ADSET_DAILY_BUDGET': ('daily_budget',), 'SET_STATUS': ('status',),
 }
 CONTEXT = ('currency', 'timezone', 'observed_at', 'account_snapshot_sha256', 'target_snapshot_sha256',
@@ -74,8 +80,36 @@ def _choice(value, allowed, code):
     if value is not None and (type(value) is not str or value not in allowed): fail(code)
 
 
-def validate_targeting(target):
-    object_only(target, ('geo_locations', 'age_min', 'age_max'), ('geo_locations', 'age_min', 'age_max'))
+GEO_AGE_KEYS = ('geo_locations', 'age_min', 'age_max')
+AUDIENCE_KEYS = ('custom_audiences', 'excluded_custom_audiences')
+PLACEMENT_FIELDS = {
+    'facebook': frozenset(('feed', 'story', 'reels')),
+    'instagram': frozenset(('stream', 'story', 'reels')),
+}
+PLACEMENT_KEYS = ('publisher_platforms', *(platform + '_positions' for platform in PLACEMENT_FIELDS))
+ADVANCED_TARGETING_KEYS = (*AUDIENCE_KEYS, 'flexible_spec', *PLACEMENT_KEYS)
+
+
+def _target_id_rows(values, *, returned=False):
+    if type(values) is not list or not 1 <= len(values) <= 10:
+        fail('META_WRITE_TARGETING_AUDIENCES')
+    result = []
+    for value in values:
+        fields = ('id', 'name') if returned else ('id',)
+        object_only(value, fields, ('id',))
+        identifier = value['id']
+        if identifier is None:
+            fail('META_WRITE_NUMERIC_ID')
+        _nullable_id(identifier)
+        result.append(identifier)
+    if len(result) != len(set(result)):
+        fail('META_WRITE_TARGETING_AUDIENCES')
+    return sorted(result)
+
+
+def validate_targeting(target, *, advanced=False):
+    fields = (*GEO_AGE_KEYS, *ADVANCED_TARGETING_KEYS) if advanced else GEO_AGE_KEYS
+    object_only(target, fields, GEO_AGE_KEYS)
     object_only(target['geo_locations'], ('countries',), ('countries',))
     countries = target['geo_locations']['countries']
     if type(countries) is not list or not 1 <= len(countries) <= 10 or any(type(x) is not str or not re.fullmatch('[A-Z]{2}', x) for x in countries):
@@ -83,15 +117,71 @@ def validate_targeting(target):
     if len(set(countries)) != len(countries): fail('META_WRITE_COUNTRY_CODES')
     if any(type(target[key]) is not int or not 18 <= target[key] <= 65 for key in ('age_min', 'age_max')) or target['age_min'] > target['age_max']:
         fail('META_WRITE_AGE_PROFILE')
+    audiences = [set(_target_id_rows(target[key])) if key in target else set() for key in AUDIENCE_KEYS]
+    if audiences[0] & audiences[1]:
+        fail('META_WRITE_TARGETING_AUDIENCE_OVERLAP')
+    if 'flexible_spec' in target:
+        groups = target['flexible_spec']
+        if type(groups) is not list or len(groups) != 1:
+            fail('META_WRITE_TARGETING_INTEREST_GROUP')
+        object_only(groups[0], ('interests',), ('interests',))
+        _target_id_rows(groups[0]['interests'])
+    platforms = target.get('publisher_platforms', [])
+    if type(platforms) is not list or any(type(platform) is not str or platform not in PLACEMENT_FIELDS for platform in platforms):
+        fail('META_WRITE_TARGETING_PLACEMENT')
+    if len(platforms) != len(set(platforms)):
+        fail('META_WRITE_TARGETING_PLACEMENT')
+    for platform, allowed in PLACEMENT_FIELDS.items():
+        key = platform + '_positions'
+        if (key in target) != (platform in platforms):
+            fail('META_WRITE_TARGETING_PLACEMENT')
+        if key in target:
+            value = target[key]
+            if (type(value) is not list or not value or any(type(position) is not str or position not in allowed for position in value)
+                    or len(value) != len(set(value))):
+                fail('META_WRITE_TARGETING_PLACEMENT')
+
+
+def advanced_targeting(target, *, returned=False):
+    """Compare selected IDs and configured placements without labels or order."""
+    if type(target) is not dict:
+        fail('META_WRITE_TARGETING_READBACK_REQUIRED')
+    result = {}
+    for key in AUDIENCE_KEYS:
+        if target.get(key):
+            result[key] = _target_id_rows(target[key], returned=returned)
+    groups = target.get('flexible_spec', [])
+    if groups:
+        if type(groups) is not list or len(groups) != 1 or type(groups[0]) is not dict or set(groups[0]) != {'interests'}:
+            if returned:
+                return dict(result, unexpected_interest_shape=True)
+            fail('META_WRITE_TARGETING_INTEREST_GROUP')
+        result['interests'] = _target_id_rows(groups[0]['interests'], returned=returned)
+    for key in PLACEMENT_KEYS:
+        if target.get(key):
+            values = target[key]
+            if type(values) is not list or any(type(value) is not str for value in values):
+                fail('META_WRITE_TARGETING_PLACEMENT')
+            result[key] = sorted(values)
+    return result
 
 
 def validate_adset_parameters(params):
     _nullable_id(params['campaign_id'])
+    if params.get('is_dynamic_creative') is not None and params['is_dynamic_creative'] is not True:
+        fail('META_DYNAMIC_ADSET_SCOPE')
+    start, end = params.get('start_time'), params.get('end_time')
+    if (start is None) != (end is None) or (start is not None and aware_time(start) >= aware_time(end)):
+        fail('META_WRITE_ADSET_WINDOW')
+    if params.get('daily_budget') is not None and params.get('lifetime_budget') is not None:
+        fail('META_WRITE_MUTUALLY_EXCLUSIVE_BUDGET')
+    if params.get('lifetime_budget') is not None and end is None:
+        fail('META_WRITE_ADSET_WINDOW')
     for key, allowed in dict(billing_event=('IMPRESSIONS',), optimization_goal=('LINK_CLICKS', 'OFFSITE_CONVERSIONS'),
                              bid_strategy=('LOWEST_COST_WITHOUT_CAP',), destination_type=('WEBSITE',)).items():
-        _choice(params[key], allowed, 'META_WRITE_ADSET_PROFILE_NOT_IMPLEMENTED')
+        _choice(params.get(key), allowed, 'META_WRITE_ADSET_PROFILE_NOT_IMPLEMENTED')
     if params['targeting'] is not None:
-        validate_targeting(params['targeting'])
+        validate_targeting(params['targeting'], advanced=True)
     promoted = params.get('promoted_object')
     if promoted is not None:
         if params['optimization_goal'] == 'LINK_CLICKS':
@@ -119,6 +209,46 @@ def missing_website_event_fields(params):
             if promoted.get(key) is None]
 
 
+def validate_url_tags(tags, destination=None):
+    if type(tags) is not str or len(tags) > 512 or not tags:
+        fail('META_WRITE_URL_TAGS_FORMAT')
+    try:
+        pairs = parse_qsl(tags, strict_parsing=True, keep_blank_values=True, max_num_fields=8)
+    except ValueError:
+        fail('META_WRITE_URL_TAGS_FORMAT')
+    if not pairs or any(not re.fullmatch(r'utm_[a-z_]{1,24}', key)
+                        or not re.fullmatch(r'[A-Za-z0-9_.-]{1,80}|\{\{(?:campaign|adset|ad)\.(?:id|name)\}\}', value)
+                        for key, value in pairs):
+        fail('META_WRITE_URL_TAGS_FORMAT')
+    keys = {key for key, value in pairs}
+    if len(keys) != len(pairs):
+        fail('META_WRITE_URL_TAGS_DUPLICATED')
+    if destination is not None:
+        existing = {key.lower() for key, _ in parse_qsl(urlsplit(destination).query, keep_blank_values=True)}
+        if existing & keys:
+            fail('META_WRITE_URL_TAGS_DUPLICATED')
+
+
+def validate_carousel(cards, destination=None):
+    if type(cards) is not list or not 2 <= len(cards) <= 5:
+        fail('META_WRITE_CAROUSEL_CARD_COUNT')
+    used = set()
+    for card in cards:
+        fields = ('image_hash', 'link', 'name')
+        object_only(card, fields, fields)
+        image = card['image_hash']
+        if type(image) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', image) or image in used:
+            fail('META_WRITE_CAROUSEL_IMAGE_SCOPE')
+        used.add(image)
+        validate_https_destination(card['link'], 'META_WRITE_DESTINATION_URL')
+        if (len(card['link']) > 1000 or any(c.isspace() for c in card['link'])
+                or (destination is not None and urlsplit(card['link']).hostname != urlsplit(destination).hostname)):
+            fail('META_WRITE_CAROUSEL_DESTINATION_SCOPE')
+        title = card['name']
+        if type(title) is not str or not 1 <= len(title.strip()) <= 120 or not title.isprintable():
+            fail('META_WRITE_CAROUSEL_CARD_NAME')
+
+
 def validate_creative_parameters(params):
     image = params['image_hash']
     if image is not None and (type(image) is not str or not re.fullmatch('[A-Za-z0-9_-]{1,128}', image)):
@@ -135,10 +265,25 @@ def validate_creative_parameters(params):
             fail('META_WRITE_VIDEO_MEDIA_REFERENCE')
         _nullable_id(video['video_id'])
     url = params['destination_url']
+    cards = params.get('carousel')
+    dynamic = params.get('dynamic_media')
+    if dynamic is not None:
+        from .dynamic_creative import build
+
+        if any(value is not None for value in (video,image,media_scope,cards)):
+            fail('META_WRITE_CREATIVE_MEDIA_MODES_CONFLICT')
+        if all(params.get(key) is not None for key in ('destination_url','primary_text','headline','description','call_to_action')):
+            build(params)
+    if cards is not None:
+        if any(value is not None for value in (video, image, media_scope)):
+            fail('META_WRITE_CREATIVE_MEDIA_MODES_CONFLICT')
+        validate_carousel(cards, url)
     if url is not None:
         validate_https_destination(url, 'META_WRITE_DESTINATION_URL')
         if len(url) > 1000 or '\\' in url or any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in url):
             fail('META_WRITE_DESTINATION_URL')
+    if params.get('url_tags') is not None:
+        validate_url_tags(params['url_tags'], url)
     for key, limit in (('primary_text', 2000), ('headline', 120), ('description', 500)):
         value = params[key]
         if value is not None and (type(value) is not str or (key != 'description' and not value.strip()) or len(value) > limit
@@ -150,17 +295,28 @@ def validate_creative_parameters(params):
 def creative_request_parameters(params, page_id):
     url = params['destination_url']
     video = params.get('video')
+    result = dict(name=params['name'])
+    if params.get('url_tags') is not None:
+        result['url_tags'] = params['url_tags']
+    if params.get('dynamic_media') is not None:
+        from .dynamic_creative import build
+
+        return dict(result, object_story_spec={'page_id':page_id}, asset_feed_spec=build(params))
     if video is not None:
         video_data = dict(video_id=video['video_id'], image_hash=video['thumbnail_hash'],
                           message=params['primary_text'], title=params['headline'],
                           call_to_action=dict(type=params['call_to_action'], value={'link': url}))
         if params['description'] is not None:
             video_data['link_description'] = params['description']
-        return dict(name=params['name'], object_story_spec=dict(page_id=page_id, video_data=video_data))
-    link_data = dict(image_hash=params['image_hash'], link=url, message=params['primary_text'],
-                     name=params['headline'], description=params['description'],
+        return dict(result, object_story_spec=dict(page_id=page_id, video_data=video_data))
+    link_data = dict(link=url, message=params['primary_text'], name=params['headline'],
+                     description=params['description'],
                      call_to_action=dict(type=params['call_to_action'], value={'link': url}))
-    return dict(name=params['name'], object_story_spec=dict(page_id=page_id, link_data=link_data))
+    if params.get('carousel') is not None:
+        link_data.update(child_attachments=params['carousel'], multi_share_optimized=False)
+    else:
+        link_data['image_hash'] = params['image_hash']
+    return dict(result, object_story_spec=dict(page_id=page_id, link_data=link_data))
 
 
 def validate_draft(value):
@@ -182,7 +338,13 @@ def validate_draft(value):
     if expected is not None and value['target_level'] != expected: fail('META_WRITE_TARGET_LEVEL')
     creating = op.startswith('CREATE_')
     if creating and value['target_id'] is not None: fail('META_WRITE_SERVER_ASSIGNS_CREATED_ID')
-    ctx = value['context']; object_only(ctx, (*CONTEXT,PROPOSAL_COMPARISON), CONTEXT)
+    ctx = value['context']; object_only(ctx, (*CONTEXT,PROPOSAL_COMPARISON, 'parents_hold_budget', 'source_campaign_id'), CONTEXT)
+    if 'parents_hold_budget' in ctx and (op != 'CREATE_ADSET' or ctx['parents_hold_budget'] is not True):
+        fail('META_WRITE_BUDGET_SOURCE_SCOPE')
+    if 'source_campaign_id' in ctx:
+        if op != 'CREATE_CAMPAIGN' or ctx['source_campaign_id'] is None:
+            fail('META_WRITE_REBUILD_SOURCE_SCOPE')
+        _nullable_id(ctx['source_campaign_id'])
     if PROPOSAL_COMPARISON in ctx:
         comparison = ctx[PROPOSAL_COMPARISON]
         if op!='CREATE_AD' or type(comparison) is not str or not re.fullmatch('[a-f0-9]{64}',comparison):
@@ -219,16 +381,30 @@ def validate_draft(value):
         if type(name) is not str or not name.strip() or len(name) > 120 or any(ord(c) < 32 for c in name): fail('META_WRITE_NAME')
     if 'status' in params:
         _choice(params['status'], ('PAUSED',) if creating else ('ACTIVE', 'PAUSED'), 'META_WRITE_STATUS')
-    if 'daily_budget' in params: _minor(params['daily_budget'])
+    _minor(params.get('daily_budget'))
+    _minor(params.get('lifetime_budget'))
     if op == 'CREATE_CAMPAIGN':
+        _minor(params.get('spend_cap'))
         _choice(params['objective'], OBJECTIVES, 'META_WRITE_OBJECTIVE')
         _choice(params['buying_type'], ('AUCTION',), 'META_WRITE_BUYING_PROFILE')
         if params['special_ad_categories'] is not None and params['special_ad_categories'] != []:
             fail('META_WRITE_SPECIAL_CATEGORY_PROFILE_NOT_IMPLEMENTED')
-        if params['is_adset_budget_sharing_enabled'] is not None and params['is_adset_budget_sharing_enabled'] is not False:
+        owns_budget = params.get('daily_budget') is not None or params.get('lifetime_budget') is not None
+        if params.get('daily_budget') is not None and params.get('lifetime_budget') is not None:
+            fail('META_WRITE_MUTUALLY_EXCLUSIVE_BUDGET')
+        if owns_budget:
+            if (params.get('is_adset_budget_sharing_enabled') is not None or
+                    params.get('bid_strategy') != 'LOWEST_COST_WITHOUT_CAP'):
+                fail('META_WRITE_CAMPAIGN_BUDGET_PROFILE')
+        elif params.get('bid_strategy') is not None:
+            fail('META_WRITE_CAMPAIGN_BUDGET_PROFILE')
+        if params.get('is_adset_budget_sharing_enabled') not in (None, False):
             fail('META_WRITE_BUDGET_SHARING_PROFILE_NOT_IMPLEMENTED')
     elif op == 'CREATE_ADSET':
         validate_adset_parameters(params)
+        if ctx.get('parents_hold_budget') and any(params.get(key) is not None for key in
+                                                  ('daily_budget', 'lifetime_budget', 'bid_strategy')):
+            fail('META_WRITE_BUDGET_SOURCE_SCOPE')
     elif op == 'CREATE_AD':
         _nullable_id(params['adset_id'])
         if params['creative'] is not None:
@@ -245,7 +421,7 @@ def load_draft(path):
     if not path.is_file() or path.stat().st_size > 16000: fail('META_WRITE_DRAFT_FILE')
     raw = path.read_bytes()
     if len(raw) > 16000: fail('META_WRITE_DRAFT_TOO_LARGE')
-    return validate_draft(strict_json(raw.decode('utf-8')))
+    return validate_draft(strict_json(raw.decode('utf-8-sig')))
 
 
 def require_proposal_comparison(draft, comparison):
@@ -268,12 +444,19 @@ def review_draft(value, *, clock=utcnow):
     op = value['operation']; ctx = value['context']; params = value['parameters']; missing = []
     conversion = op == 'CREATE_ADSET' and params['optimization_goal'] == 'OFFSITE_CONVERSIONS'
     required = [('account_id', value['account_id']), ('target_level', value['target_level'])]
-    required += [('parameters.' + key, item) for key, item in params.items() if key != 'promoted_object']
-    if op == 'CREATE_CREATIVE' and params.get('video') is not None:
+    control_fields = ('spend_cap', 'start_time', 'end_time', 'lifetime_budget','is_dynamic_creative')
+    if op == 'CREATE_CAMPAIGN':
+        control_fields += ('daily_budget', 'bid_strategy', 'is_adset_budget_sharing_enabled')
+    elif op == 'CREATE_ADSET' and (ctx.get('parents_hold_budget') or params.get('lifetime_budget') is not None):
+        control_fields += ('daily_budget', 'bid_strategy')
+    required += [('parameters.' + key, item) for key, item in params.items()
+                 if key != 'promoted_object' and not (key in control_fields and item is None)]
+    if op == 'CREATE_CREATIVE' and any(params.get(key) is not None for key in ('video','carousel','dynamic_media')):
         required = [(key, item) for key, item in required if key != 'parameters.image_hash']
     if op == 'CREATE_CREATIVE':
         required = [(key, item) for key, item in required if key not in
-                    ('parameters.video', 'parameters.media_scope_sha256')]
+                    ('parameters.video', 'parameters.media_scope_sha256', 'parameters.url_tags', 'parameters.carousel',
+                     'parameters.dynamic_media')]
     context_required = ['currency', 'timezone', 'observed_at', 'account_snapshot_sha256']
     creating = op.startswith('CREATE_')
     if not creating:
@@ -285,6 +468,15 @@ def review_draft(value, *, clock=utcnow):
     if op == 'CREATE_CREATIVE': context_required += ['material_sha256', 'page_id']
     required += [('context.' + key, ctx[key]) for key in context_required]
     missing += [key for key, item in required if item is None]
+    if op == 'CREATE_CAMPAIGN' and not any(params.get(key) is not None for key in ('daily_budget', 'lifetime_budget')):
+        if params.get('is_adset_budget_sharing_enabled') is not False:
+            missing.append('parameters.is_adset_budget_sharing_enabled')
+    if op == 'CREATE_ADSET' and not ctx.get('parents_hold_budget'):
+        if not any(params.get(key) is not None for key in ('daily_budget', 'lifetime_budget')):
+            missing.append('parameters.daily_budget')
+        if params.get('bid_strategy') is None:
+            missing.append('parameters.bid_strategy')
+    missing = list(dict.fromkeys(missing))
     if conversion:
         missing += missing_website_event_fields(params)
     blockers = list(PERMANENT_BLOCKERS); now = clock(); aware_time(now.isoformat())
@@ -304,7 +496,8 @@ def review_draft(value, *, clock=utcnow):
     descendants = op == 'SET_ADSET_DAILY_BUDGET' or (op == 'SET_STATUS' and value['target_level'] in ('CAMPAIGN', 'ADSET'))
     if descendants: blockers.append('DESCENDANT_DELIVERY_IMPACT_REQUIRES_SEPARATE_REVIEW')
     request = None
-    mapped = {key: item for key, item in params.items() if key != 'promoted_object' or item is not None}
+    mapped = {key: item for key, item in params.items()
+              if (key != 'promoted_object' and key not in control_fields) or item is not None}
     if not missing:
         request = mapped_request(value, mapped)
         mapped = request['parameters']
@@ -402,6 +595,16 @@ def draft_schema():
                     items=dict(type='string', pattern='^[A-Z]{2}$')))), age_min=dict(type='integer', minimum=18, maximum=65),
                     age_max=dict(type='integer', minimum=18, maximum=65)))
     target['type'] = ['object', 'null']
+    target_ids = dict(type='array', minItems=1, maxItems=10,
+                      items=obj(dict(id={**identifier, 'type':'string'})))
+    target['properties'].update({key: target_ids for key in AUDIENCE_KEYS})
+    target['properties']['flexible_spec'] = dict(type='array', minItems=1, maxItems=1,
+                                                 items=obj(dict(interests=target_ids)))
+    target['properties']['publisher_platforms'] = dict(type='array', uniqueItems=True,
+                                                       items=dict(enum=sorted(PLACEMENT_FIELDS)))
+    for platform, positions in PLACEMENT_FIELDS.items():
+        target['properties'][platform + '_positions'] = dict(type='array', minItems=1, uniqueItems=True,
+                                                             items=dict(enum=sorted(positions)))
     creative = obj(dict(creative_id={**identifier, 'type': 'string'})); creative['type'] = ['object', 'null']
     video = obj(dict(video_id={**identifier, 'type': 'string'},
                      thumbnail_hash=dict(type='string', pattern='^[A-Za-z0-9_-]{1,128}$')))
@@ -412,6 +615,8 @@ def draft_schema():
                   buying_type=choice(('AUCTION',)), special_ad_categories=dict(type=['array', 'null'], maxItems=0),
                   is_adset_budget_sharing_enabled=dict(enum=[None, False]), status=choice(('PAUSED', 'ACTIVE')),
                   campaign_id=identifier, adset_id=identifier, daily_budget=amount, billing_event=choice(('IMPRESSIONS',)),
+                  spend_cap=amount, lifetime_budget=amount, start_time=dict(type=['string', 'null'], format='date-time'),
+                  end_time=dict(type=['string', 'null'], format='date-time'),
                   optimization_goal=choice(('LINK_CLICKS', 'OFFSITE_CONVERSIONS')), bid_strategy=choice(('LOWEST_COST_WITHOUT_CAP',)),
                   destination_type=choice(('WEBSITE',)), targeting=target, creative=creative, promoted_object=promoted,
                   video=video, media_scope_sha256=dict(type=['string', 'null'], pattern='^[a-f0-9]{64}$'),
@@ -420,12 +625,26 @@ def draft_schema():
                   primary_text=dict(type=['string', 'null'], minLength=1, maxLength=2000),
                   headline=dict(type=['string', 'null'], minLength=1, maxLength=120),
                   description=dict(type=['string', 'null'], maxLength=500),
-                  call_to_action=choice(CREATIVE_CTAS))
+                  call_to_action=choice(CREATIVE_CTAS), url_tags=dict(type=['string','null'], maxLength=512))
+    fields['carousel'] = dict(type=['array','null'], minItems=2, maxItems=5,
+                              items=obj(dict(image_hash={**fields['image_hash'], 'type':'string'},
+                                             link={**fields['destination_url'], 'type':'string'},
+                                             name={**fields['headline'], 'type':'string'})))
+    fields['is_dynamic_creative'] = dict(enum=[True,None])
+    fields['dynamic_media'] = obj(dict(
+        images=dict(type='array',minItems=2,maxItems=5,items={**fields['image_hash'],'type':'string'}),
+        alternate_primary_texts=dict(type='array',minItems=1,maxItems=4,items=dict(type='string',maxLength=1024)),
+        alternate_headlines=dict(type='array',minItems=1,maxItems=4,items=dict(type='string',maxLength=120))))
+    fields['dynamic_media']['type'] = ['object','null']
     variants = []
     for op in OPERATIONS:
         params = {key: fields[key] for key in PARAMETERS[op]}
         if op.startswith('CREATE_') and 'status' in params: params['status'] = choice(('PAUSED',))
         context_schema = obj(dict(context))
+        if op == 'CREATE_CAMPAIGN':
+            context_schema['properties']['source_campaign_id'] = {**identifier, 'type': 'string'}
+        if op == 'CREATE_ADSET':
+            context_schema['properties']['parents_hold_budget'] = {'const': True}
         if op=='CREATE_AD':
             context_schema['properties'][PROPOSAL_COMPARISON] = dict(type='string',pattern='^[a-f0-9]{64}$')
         parameters_schema = obj(params)

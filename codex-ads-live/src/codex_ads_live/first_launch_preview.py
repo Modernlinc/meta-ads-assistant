@@ -105,12 +105,13 @@ def _preview_frame(status, body):
             'width="420" height="740" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>')
 
 
-def preview(workspace, directory, *, creative_fallback=False, fetch=False, output=None, provider=None, clock=utcnow):
+def preview(workspace, directory, *, creative_fallback=False, fetch=False, output=None, provider=None,
+            ad_id=None, clock=utcnow):
     from .first_launch_progress import progress
 
     if output is not None and not fetch:
         fail('FIRST_LAUNCH_PREVIEW_OUTPUT_REQUIRES_FETCH')
-    launch = progress(workspace, directory)
+    launch = progress(workspace, directory, ad_id=ad_id)
     if launch['status'] != 'FIRST_LAUNCH_OBJECT_CHAIN_RECORDED':
         fail('FIRST_LAUNCH_OBJECT_CHAIN_REQUIRED')
     target = launch['preview_target']
@@ -130,7 +131,7 @@ def preview(workspace, directory, *, creative_fallback=False, fetch=False, outpu
         fail('FIRST_LAUNCH_PREVIEW_TRUSTED_HOST_NOT_CONFIGURED')
 
     def assert_current():
-        current = progress(workspace, directory)
+        current = progress(workspace, directory, ad_id=ad_id)
         keys = ('status', 'app_id', 'workspace_identity_sha256', 'object_chain_sha256')
         if any(current.get(key) != launch[key] for key in keys):
             fail('FIRST_LAUNCH_PREVIEW_SCOPE_CHANGED')

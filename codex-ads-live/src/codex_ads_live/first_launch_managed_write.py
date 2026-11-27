@@ -140,21 +140,96 @@ class _ManagedAttempt:
             fail('FIRST_LAUNCH_AUTHORITY_REVIEW_SCOPE_CHANGED')
         return permit
 
-    def verify_image(self, binding, form):
+    def verify_creation_assets(self, binding, form):
+        from urllib.parse import urlencode
+        from .first_launch_host import NATIVE_ID
+
+        fields = parse_qs(form, strict_parsing=True)
+        def parent(identifier, selection):
+            if type(identifier) is not str or not NATIVE_ID.fullmatch(identifier):
+                fail('FIRST_LAUNCH_MANAGED_PARENT_ID')
+            result = self._get(f'/v27.0/{identifier}?' + urlencode(dict(fields=selection)))
+            if (result.get('id'), result.get('account_id')) != (identifier, binding.account_id):
+                fail('FIRST_LAUNCH_MANAGED_PARENT_SCOPE')
+            return result
+
+        if binding.operation == 'CREATE_CAMPAIGN':
+            source = self.row.get('source_campaign_id')
+            if source:
+                parent(source, 'id,account_id')
+            return
+        if binding.operation == 'CREATE_AD':
+            existing = parent(fields['adset_id'][0], 'id,account_id,campaign_id,status,is_dynamic_creative')
+            expected = self.row.get('expected_campaign_id')
+            if (existing.get('status') not in ('ACTIVE', 'PAUSED')
+                    or (expected is not None and existing.get('campaign_id') != expected)):
+                fail('FIRST_LAUNCH_MANAGED_ADSET_PARENT_SCOPE')
+            feed = self.row.get('creative_asset_feed_sha256')
+            if (existing.get('is_dynamic_creative') is True) != (feed is not None):
+                fail('META_DYNAMIC_ADSET_SCOPE')
+            if feed is not None:
+                from .dynamic_creative import project_feed
+
+                creative = json.loads(fields['creative'][0])
+                checked = parent(creative['creative_id'],'id,account_id,asset_feed_spec')
+                if digest(project_feed(checked.get('asset_feed_spec'))) != feed:
+                    fail('META_DYNAMIC_CREATIVE_SCOPE_CHANGED')
+            return
+        if binding.operation == 'CREATE_ADSET':
+            from .meta_write_mapping import (AUDIENCE_KEYS, advanced_targeting, adset_parent_objective,
+                                             validate_targeting)
+
+            targeting = json.loads(fields['targeting'][0])
+            validate_targeting(targeting, advanced=True)
+            if binding.account_id != self.profile['account_id']:
+                fail('FIRST_LAUNCH_AUTHORITY_REVIEW_SCOPE_CHANGED')
+            campaign = parent(fields['campaign_id'][0], 'id,account_id,status,objective,daily_budget,lifetime_budget')
+            optimization = fields['optimization_goal'][0]
+            promoted = json.loads(fields['promoted_object'][0]) if 'promoted_object' in fields else None
+            objective = adset_parent_objective(dict(optimization_goal=optimization, promoted_object=promoted))
+            if campaign.get('status') not in ('ACTIVE', 'PAUSED') or campaign.get('objective') != objective:
+                fail('FIRST_LAUNCH_MANAGED_CAMPAIGN_OBJECTIVE_OR_STATE')
+            has_budget = any(campaign.get(key) not in (None, '', 0, '0') for key in ('daily_budget','lifetime_budget'))
+            own_budget = bool({'daily_budget', 'lifetime_budget'} & fields.keys())
+            if has_budget == own_budget:
+                fail('FIRST_LAUNCH_MANAGED_CAMPAIGN_BUDGET_LAYER')
+            from .native_audience import observe
+
+            configured = advanced_targeting(targeting)
+            for key in AUDIENCE_KEYS:
+                for identifier in configured.get(key, ()):
+                    if not observe(self._get, binding.account_id, identifier)['usable']:
+                        fail('META_WRITE_EXISTING_AUDIENCE_NOT_READY')
+            return
         if binding.operation != 'CREATE_CREATIVE':
             return
         from .first_launch_media import read_media
-        story = parse_qs(form, strict_parsing=True)['object_story_spec'][0]
-        story = json.loads(story)
+        story = json.loads(fields['object_story_spec'][0])
         video = story.get('video_data')
         approved = match_creative_media(self.profile, binding, self.row.get('media_scope_sha256'), video)
+        if 'asset_feed_spec' in fields:
+            from .dynamic_creative import validate_feed
+
+            if approved is not None:
+                fail('META_WRITE_CREATIVE_MEDIA_MODES_CONFLICT')
+            feed = validate_feed(json.loads(fields['asset_feed_spec'][0]))
+            for asset in feed['images']:
+                read_media(binding.account_id, {'image_hash':asset['hash']}, self._get)
+            return
         if video is not None:
             if (approved.get('video_id') != video.get('video_id')
                     or read_media(binding.account_id, approved, self._get)['status'] != 'READY'):
                 fail('FIRST_LAUNCH_MANAGED_VIDEO_NOT_READY')
             image = video['image_hash']
         else:
-            image = story['link_data']['image_hash']
+            link = story['link_data']
+            if 'child_attachments' in link:
+                if approved is not None:
+                    fail('FIRST_LAUNCH_MANAGED_CAROUSEL_SCOPE')
+                for card in link['child_attachments']:
+                    read_media(binding.account_id, {'image_hash': card['image_hash']}, self._get)
+                return
+            image = link['image_hash']
             if approved is not None and approved.get('image_hash') != image:
                 fail('FIRST_LAUNCH_MANAGED_IMAGE_MISMATCH')
         read_media(binding.account_id, {'image_hash': image}, self._get)
@@ -231,6 +306,98 @@ class _ManagedAttempt:
         return dict(acknowledged=type(reply) is dict and reply.get('success') is True)
 
 
+    def mutate_rule(self):
+        from .native_rules import get_rule, mutation_request, numeric
+
+        scope = self.scope
+        verb = scope['action']
+        named_id = scope['rule_id']
+        key = self.row['key']
+        if key != digest(scope):
+            fail('NATIVE_RULE_REVIEW_SCOPE_CHANGED')
+        wire = mutation_request(scope)
+        target = digest([scope['account_id'], named_id or 'RULE_CREATE'])
+        prefix = 'rule-target-' + target + '-'
+        for prior in STATE.glob(prefix + '*.json'):
+            other = _read(prior, trust=True)['attempt_id']
+            receipt = STATE / ('receipt-' + other + '.json')
+            if not receipt.exists() or _read(receipt, trust=True)['status'] == 'OUTCOME_UNKNOWN':
+                fail('NATIVE_RULE_TARGET_REQUIRES_ORIGINAL_RECOVERY')
+        grant_sha = digest([key, self.attempt_id, 'ads_management'])
+
+        def recheck():
+            self._assert_current()
+            if named_id is not None:
+                observed = get_rule(scope['account_id'], named_id, self._get)
+                if digest(observed) != scope['before_sha256']:
+                    fail('NATIVE_RULE_ORIGINAL_STATE_CHANGED')
+                if observed['status'] == 'DELETED' or (verb in ('rename','reconfigure') and observed['status'] != 'DISABLED'):
+                    fail('NATIVE_RULE_MUTATION_STATE_REFUSED')
+            return aware_time(self.row['approved_at']), self.deadline
+
+        @contextmanager
+        def claim():
+            self._assert_current()
+            _write(STATE / (prefix + self.attempt_id + '.json'), dict(attempt_id=self.attempt_id))
+            _write(_claim_key(self.row), dict(attempt_id=self.attempt_id, review_sha256=key,
+                                             consumed_at=utcnow().isoformat()))
+            yield ScopedGraphGrant(key, self.attempt_id, grant_sha, self._scopes,
+                                   self.deadline.isoformat(), 'Bearer ' + self._token)
+
+        reply = _send_scoped_post(wire['path'], wire['body'], method=wire['method'],
+                                  clock=utcnow, expires_at=self.deadline, recheck=recheck,
+                                  claim=claim, binding_sha256=key, attempt_id=self.attempt_id,
+                                  write_grant_sha256=grant_sha)
+        result = dict(attempt_id=self.attempt_id, rule_id=named_id, status='OUTCOME_UNKNOWN',
+                      platform='META_NATIVE')
+        if reply is not None and verb == 'create' and reply.get('id') is not None:
+            result.update(rule_id=numeric(reply['id']), status='ACKNOWLEDGED_READBACK_REQUIRED')
+        elif reply is not None and verb != 'create' and reply.get('success') is True:
+            result['status'] = 'ACKNOWLEDGED_READBACK_REQUIRED' if verb != 'delete' else 'DELETE_ACKNOWLEDGED'
+        return result
+
+
+    def create_audience(self):
+        from .native_audience import create_request, seed_review
+        from .native_rules import numeric
+
+        scope = self.scope
+        key = self.row['key']
+        if key != digest(scope):
+            fail('NATIVE_AUDIENCE_REVIEW_SCOPE_CHANGED')
+        wire = create_request(scope)
+        signature = digest([scope['account_id'], scope['seed_id'], scope['country'], scope['percent']])
+        target = 'audience-create-' + signature + '.json'
+        target_file = STATE / target
+        if target_file.exists():
+            fail('NATIVE_AUDIENCE_SAME_SEED_COUNTRY_RATIO_ALREADY_ATTEMPTED')
+        grant_sha = digest([key, self.attempt_id, 'ads_management'])
+
+        def recheck():
+            self._assert_current()
+            eligibility = seed_review(scope, self._get)
+            if eligibility['creation_preview'] != 'READY':
+                fail('NATIVE_AUDIENCE_SEED_OR_ELIGIBILITY_INSUFFICIENT')
+            return aware_time(self.row['approved_at']), self.deadline
+
+        @contextmanager
+        def claim():
+            self._assert_current()
+            _write(target_file, dict(attempt_id=self.attempt_id))
+            _write(_claim_key(self.row), dict(attempt_id=self.attempt_id, review_sha256=key,
+                                             consumed_at=utcnow().isoformat()))
+            yield ScopedGraphGrant(key, self.attempt_id, grant_sha, self._scopes,
+                                   self.deadline.isoformat(), 'Bearer ' + self._token)
+
+        reply = _send_scoped_post(wire['path'], wire['body'], clock=utcnow, expires_at=self.deadline,
+                                  recheck=recheck, claim=claim, binding_sha256=key, attempt_id=self.attempt_id,
+                                  write_grant_sha256=grant_sha)
+        result = dict(status='OUTCOME_UNKNOWN', attempt_id=self.attempt_id, audience_id=None)
+        if type(reply) is dict and reply.get('id') is not None:
+            result.update(status='AUDIENCE_ACKNOWLEDGED_READ_BACK_BEFORE_USE', audience_id=numeric(reply['id']))
+        return result
+
+
 def recover_update(profile, row, attempt_id):
     from .first_launch_authority import IDENTITY
     from .first_launch_update import current_value, observe
@@ -302,7 +469,7 @@ def execute_approved(profile, row, attempt_id):
             form = row['approved_form']
             _check_form(binding, form)
             attempt.open()
-            sender = GraphCreationProvider(attempt, None, pre_send=attempt.verify_image)
+            sender = GraphCreationProvider(attempt, None, pre_send=attempt.verify_creation_assets)
             object_id = sender.send_paused_creation(binding, attempt.current_permit(binding), attempt_id, form)
             result = dict(object_id=object_id)
         elif row['kind'] == 'media':
@@ -311,6 +478,12 @@ def execute_approved(profile, row, attempt_id):
         elif row['kind'] == 'update':
             attempt.open()
             result = attempt.update_object()
+        elif row['kind'] == 'rule':
+            attempt.open()
+            result = attempt.mutate_rule()
+        elif row['kind'] == 'audience':
+            attempt.open()
+            result = attempt.create_audience()
         else:
             review = row['scope']
             if row['kind'] != 'activate' or review['review_blockers'] or review['preview_kind'] != 'AD':

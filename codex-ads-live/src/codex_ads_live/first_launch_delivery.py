@@ -22,12 +22,20 @@ def _stored_control_window(attempt):
 
 
 def delivery_review(workspace, directory, receipt, since, until, *, activation_review_path=None,
-                    manual_before=None, manual_after=None, manual_ad=None, evidence_path=None):
+                    manual_before=None, manual_after=None, manual_ad=None, evidence_path=None, ad_id=None):
     explicit_manual = any(path is not None for path in (manual_before, manual_after, manual_ad))
-    activation_review_path, before, after, ad_path = activation_paths(
-        workspace, directory, review=activation_review_path,
-        before=manual_before, after=manual_after, ad=manual_ad)
-    launch = resume_manual(workspace, directory, (activation_review_path, before, after, ad_path))
+    if ad_id is None:
+        activation_review_path, before, after, ad_path = activation_paths(
+            workspace, directory, review=activation_review_path,
+            before=manual_before, after=manual_after, ad=manual_ad)
+        launch = resume_manual(workspace, directory, (activation_review_path, before, after, ad_path))
+    else:
+        from .first_launch_progress import progress
+
+        if explicit_manual:
+            fail('FIRST_LAUNCH_BATCH_REVIEW_MANUAL_INPUT_UNSUPPORTED')
+        before, after, ad_path = None, None, None
+        launch = progress(workspace, directory, ad_id=ad_id)
     if launch['status'] != 'FIRST_LAUNCH_OBJECT_CHAIN_RECORDED':
         fail('FIRST_LAUNCH_OBJECT_CHAIN_REQUIRED')
     attempt = launch.get('activation_attempt')

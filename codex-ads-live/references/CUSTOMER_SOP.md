@@ -1,43 +1,117 @@
-# 账户接通流程
+# 首次接入 Meta 与已有工作区接续
 
-本流程的完成标志是**从已安装的 Skill 读取指定 Meta 广告账户，并核对账户 ID、币种、时区和状态**。首次只想确认能否连接，走 A；希望持续复用同一客户工作区，直接走 B。两者都只申请本次账户读取所需的授权。
+完成安装后可直接说「用现有报表解释 CPM 为什么变高」「核对订单退款与广告费」。助手自行处理工作方法；只有使用真实平台数据时才需要相应身份和只读授权。[客户使用说明](../methods/ADAPTATION.md)
 
-## 1. 在 Meta 确认主体和资产
-
-| 需要什么 | 在哪里核对；这次用什么值 |
-|---|---|
-| 广告账户 ID | 登录 Ads Manager，在账户选择器点开本次广告账户，核对账户名称及 ID。工具填纯数字，去掉接口前缀 `act_`。同一人可见多个账户时，以客户指定的那个为准。 |
-| App ID | 打开 Meta for Developers 的「我的应用」，选择客户已有且归属明确、能使用 Marketing API 的 App，在应用面板读取 App ID。若还没有，应用负责人在「创建应用」按当前向导选与广告管理相符的用途，添加 Marketing API 能力并确认归属。只为核对一次已有账户时，无需再新建广告账户。 |
-| App 角色与账户访问 | 本版首次自检使用该 App 开发者身份的 **User Access Token**。请同时核对本人在这个 App 的开发者身份和指定广告账户的读取权。若只有广告账户的操作权限，请由客户已有且获准的 App 开发者办理，或由应用负责人在应用面板的角色页核对并按公司流程分配角色。App ID、广告账户 ID、Page ID、Business ID 和人员 ID 是不同编号。 |
-| App Secret Proof | 应用管理员在 App Settings → Advanced 的 Security 区域查看 Require App Secret。已开启或不确定时，保留安全设置；本版对应的自检停在本地预览，请实施方使用支持该校验的已批准路径。 |
-| 权限与使用场景 | 首次账户读取申请 `ads_read`。客户使用自己的 App 操作自己的账户，按该 App 的权限级别办理。服务商用其 App 管理他人账户时，Meta 要求相关权限具备 Advanced Access；管理员在 App Review → Permissions and Features 核对。生产广告主还需按应用面板核对 Marketing API Access Tier。不要用员工临时开发者身份代替面向外部客户所需的审核。 |
-
-[广告账户与人员任务](https://developers.facebook.com/docs/business-management-apis/business-asset-management/guides/ad-accounts) · [应用面板](https://developers.facebook.com/apps/) · [Marketing API 授权与访问级别](https://developers.facebook.com/documentation/ads-commerce/marketing-api/get-started/authorization) · [App Secret Proof](https://developers.facebook.com/docs/graph-api/guides/secure-requests/)
-
-## 2. 取得这个 App 下本人的只读授权
-
-1. 在 Meta 官方 Graph API Explorer 登录。右上选择**第 1 步核过的 App**。选择用户访问口令（User Access Token），在权限列表选择 `ads_read`，生成口令，在 Meta 弹窗核对登录者、App 和批准范围。下拉找不到正确 App 或权限不可申请时，先请管理员核对角色、使用场景及审核状态。
-2. 在这个 App 和这枚 User Token 下，选择 GET。与本安装件核对时，API 版本选择 v27.0，查询 `/me?fields=id`。返回的 `id` 就是本流程的 `principal_id`。Graph Explorer 默认选择的其他 App、个人主页网址中的编号以及 Business ID 都不能替代它。Explorer 这次读用户 ID 是为了确定身份，后面还需由 Skill 读取实际广告账户。
-3. 操作人保管令牌，只在自己控制的终端隐藏输入或本机钥匙串密码框中使用。Token、密码和 App Secret 不发给 Codex，不写入 JSON 或命令行，不在截图中显示。本版会核对 Meta 返回的令牌到期和数据访问到期时间。请使用有明确有效期的个人用户令牌；系统用户令牌和无期限令牌都不适用于此入口。Skill 的自检不会代办 OAuth、续期或扩大授权；如此前授权含更多权限，回执按 Meta 实际返回的范围记录。另行使用服务商登录授权流程时，由其完成对应的用户同意与审核。
-
-[Graph API Explorer](https://developers.facebook.com/tools/explorer/) · [Meta Explorer 使用指南](https://developers.facebook.com/docs/graph-api/guides/explorer) · [Token 元数据](https://developers.facebook.com/docs/graph-api/reference/debug_token/)
-
-## 3. 在已安装项目内选择一种接入方式
-
-在自己的 Mac 终端执行，第一行替换成实际项目绝对路径。所有命令示例都以该项目为当前目录。下面使用的新目录应尚不存在；已有客户目录保留，补跑时为新回执另取名。没有终端经验时，打开已安装的项目后输入「使用 $codex-ads-live，帮我准备本机只读连接模板，指出要由我本人确认的字段。停在登录或读取钥匙串之前」，再由本人操作需要授权的部分。
+在已安装项目的 Codex 聊天中说「使用 $codex-ads-live，检查这个项目的 Meta 接入状态。从当前步骤继续，登录、授权和实际读取由我确认。」先使用原项目和工作区。终端示例以 macOS 为主。Windows 有 [PowerShell 与凭据管理器步骤](WINDOWS_CLIENT.md)，实机历史状态为 `NOT_RUN_NO_WINDOWS_HOST`，本轮验收已获用户豁免（`PASS_BY_USER_WAIVER`）。
 
 ```sh
 cd "/你的项目绝对路径"
 RUN="$PWD/.agents/skills/codex-ads-live/run.py"
 W="$PWD/.codex-ads-live/client"
-APP="填实际App数字ID"
-PERSON="填该App下的本人数字ID"
-ACCOUNT="填广告账户纯数字ID"
+python3 "$RUN" workspace-connect --workspace "$W"
 ```
 
-在允许向 Meta 做无凭据连通性检查时，可先执行 `python3 "$RUN" network-check`。出现 `META_HTTPS_REACHABLE` 说明此时可连接 Meta；账户验证还在后面。Mac 使用既有 HTTPS 系统代理时，可用 `python3 "$RUN" --macos-system-proxy network-check`；需要代理的后续网络命令同样把该选项放在子命令之前。
+已有工作区路径和例子不同时，沿用原路径。只有返回 `INITIALIZE_WORKSPACE` 时用 `workspace-connect --workspace "$W" --start`，再读取 `CHOOSE_ROUTE`。命令中的 APP、BUSINESS、PERSON、ACCOUNT 等示例变量需要换成当事人核过的实际编号。广告账户填纯数字。输出目录用新名称。
 
-### A．本人临时输入，完成一次只读连接
+## 1. 按客户当前状态选路线
+
+先看已有工作区是否能复用；首次按表从上往下选符合本次工作的第一条。一个任务选一条路线。
+
+| 你的状态 | 选择与本人操作 | 回到 Skill 后的第一步 |
+| --- | --- | --- |
+| 工作区已有接入，最近换项目或重开了聊天 | 沿原路线和具名资产继续。项目负责人确认当前任务，也核对到期或权限变化。 | `workspace-connect --workspace "$W"`。按回执的原路线和步骤继续。 |
+| 已有工作区，Token 过期、角色撤销或读取失败 | 沿原路线恢复。由本人通过原 App 或原宿主重新授权；企业管理员核对系统用户和资产。 | 先读取旧状态，再按第 5 节处理。 |
+| 官方宿主已授权，而且本次只需在该宿主查账户或生成本地草案 | 选 `host-connector`。本人检查原宿主授权并允许它列出账户。 | `workspace-connect --workspace "$W" --route host-connector`。 |
+| 企业明确要求以系统用户定期读取具名广告数据 | 选 `system-user`。业务管理员分配资产和 Employee 系统用户，App 开发者办理独立检查身份。 | `workspace-connect --workspace "$W" --route system-user`。 |
+| 有自有 App 和本 App 下的 User Token，尚未选账户 | 选 `user-graph`。开发者确认 Token 的身份、有限有效期和 `ads_read` 及具名账户权限。 | 登记 App 和业务资产组合，再检查原凭据引用。 |
+| 有自有 App，暂无可用 Token | 选 `user-graph`。由该 App 的开发者用官方入口取得本人 User Token。 | 登记已有 App。按 `ENROLL_USER_REFERENCE` 继续。 |
+| 没有 App 或 Token，当前宿主没有可用的官方授权，且确实要接通原生读取 | 选 `user-graph`。由客户管理员建立或取得企业自有 App，添加与广告管理相符的 Marketing API 用例。 | `workspace-connect --workspace "$W" --route user-graph`。按 `PREPARE_APP` 继续。 |
+
+仅准备品牌、素材或策略时可先做本地任务。已在可用宿主读取的客户可以继续原宿主连接器。
+
+## 2. 自有 App 与个人用户（user-graph）
+
+1. **确定业务身份。** 去 Meta for Developers 的「我的应用」选该企业拥有的 App。App 负责人可在需要时用「创建应用」及广告管理用例开启 Marketing API。去业务设置确认该 App 和具名广告账户的资产归属，并在应用的角色设定与广告账户分配页面核对操作者分别有相应权限。记录 App ID 与业务资产组合 ID。App 角色、资产角色和账户编号各有用途。[Meta 应用面板](https://developers.facebook.com/apps/) · [Marketing API 授权](https://developers.facebook.com/documentation/ads-commerce/marketing-api/get-started/authorization)
+
+   ```sh
+   python3 "$RUN" workspace-connect --workspace "$W" --route user-graph --app-id "$APP" --business-id "$BUSINESS"
+   ```
+
+   预期 `ENROLL_USER_REFERENCE`。已登记客户按原工作区返回的最新步骤走。
+
+2. **本人取得 User Token。** 在 Graph API Explorer 右上确认选择的是第 1 步的 App，选择用户访问口令及 `ads_read`，在 Meta 自己的窗口同意。用官方调试工具核 App、用户、权限和有限有效期。需要 `principal_id` 时，在相同 App 和身份下查 GET `/me?fields=id`，使用返回的纯数字。App 缺失时由负责人检查 App 角色；权限不可用时去 App Review → Permissions and Features 查看本任务的访问要求，不在别的 App 上生成 Token。[Graph API Explorer](https://developers.facebook.com/tools/explorer/) · [Access Token Debugger](https://developers.facebook.com/tools/debug/accesstoken/)
+
+3. **登记非秘密引用，由本人录入系统凭据。** 已有匹配登记时执行 `credential-status --record-dir "$W/credential-record"`。首次执行下列命令。Spotlight 打开“钥匙串访问”，选自己的登录钥匙串，新增通用密码项目。对照返回的 `service_or_target` 和 `account_label` 填服务/名称与账户。本人在系统密码输入框内输入口令。Windows 按 [凭据管理器说明](WINDOWS_CLIENT.md)。回到 `workspace-connect` 预期 `DISCOVER_ACCOUNTS`，只表示登记可用。[Apple 钥匙串访问](https://support.apple.com/guide/keychain-access/welcome/mac)
+
+   ```sh
+   python3 "$RUN" credential-prepare --app-id "$APP" --principal-id "$PERSON" --platform macos --output "$W/credential-record"
+   ```
+
+4. **发现并选择具名账户。** 让 App 管理员先核对 App 安全设置。只有本人确认该 App 无需 App Secret Proof，且批准本次读取时，才在本人终端执行发现命令并照提示确认。对每个已观察账户检查名称、ID、币种与分页覆盖。知道目标账户时只选同一账户，填写对应归属记录的引用（例为 `EV_ACCOUNT_OWNER`）。`CHECK_NAMED_ACCOUNT` 是选定后的下一步。若缺页可在获准范围内重试，只有已看到的 ID 可选。Proof 必须启用或尚不确定时按原安全设置保留预览，由负责人选择已支持的另一条授权路线。[Meta 安全请求](https://developers.facebook.com/docs/graph-api/guides/secure-requests/)
+
+   ```sh
+   python3 "$RUN" workspace-connect --workspace "$W" --discover --proof-not-required
+   python3 "$RUN" workspace-connect --workspace "$W" --select-account "$ACCOUNT" --ownership-evidence EV_ACCOUNT_OWNER
+   ```
+
+5. **预览并完成具名读取。** 只有在开发者身份、归属和 Proof 条件都已核实后使用下面的确认参数。预览时核 App、人员、账户，且返回 `READY_FOR_LOCAL_SCOPE_CONFIRMATION`。绑定后由本人在终端完成这一次具名范围确认。核对 `RESULT.json` 和 `RECEIPT.json` 的 `NAMED_ACCOUNT_READ_PASSED`、`real_account_read_verified`、账户 ID、币种、时区和回执时间。完成后直接在同一工作区准备业务资料。不同权限入口不要混用，Page 与写广告分别办理。
+
+   ```sh
+   python3 "$RUN" workspace-connection-prepare --workspace "$W" --id "$ACCOUNT" --app-developer-confirmed --asset-owner-confirmed --appsecret-proof NOT_REQUIRED_CONFIRMED --output "$PWD/工作区连接计划"
+   python3 "$RUN" workspace-bind --workspace "$W" --intent "$PWD/工作区连接计划/intent.json"
+   python3 "$RUN" workspace-refresh --workspace "$W" --id "$ACCOUNT" --output "$PWD/工作区只读回执"
+   python3 "$RUN" connection-review --run-dir "$PWD/工作区只读回执"
+   ```
+
+## 3. 已配置的 Meta 官方宿主连接器（host-connector）
+
+1. 工作区选择 `host-connector`；看到 `CONNECT_IN_OFFICIAL_HOST` 后在支持该连接器的原宿主办理。本人与 Meta 核对已连接账户、所授权限和有效期。在该宿主发起「列出我有权读取的广告账户」，明确记录实际覆盖、时间与来源。[官方连接器配置](https://www.facebook.com/business/help/1456422242197840) · [Meta Ads MCP 指南](https://developers.facebook.com/documentation/ads-commerce/ads-ai-connectors/ads-mcp-server/ads-mcp-server-get-started)
+2. 让助手从宿主实际返回结果写入 `meta-host-account-list-v1`。顶层字段为 `schema`、`source`、`observed_at`、`accounts`、`coverage`（`COMPLETE` 或 `PARTIAL`）和 `pages_read`。`source` 包含 `provider: META_OFFICIAL_ADS_MCP`、实际 `host` 和具名 `ref`（如 `EV_HOST_LIST`）。账户每条包括 `account_id`、`currency`、`account_status` 和可选名称。保留未知为空。回执不放凭据。通过 `--host-receipt` 导入后，如果有结果会返回 `SELECT_ACCOUNT`。
+3. 用 `--select-account` 和归属引用选择已看到的同一账户。`HOST_ACCOUNT_READY` 表示本地保存了宿主回执，后续真实查询在原宿主做。请在原宿主核同一账户 ID、币种、时区和实际报表，保留原宿主的回执。若宿主权限失效，重新在该宿主取得回执再导入；没有可用连接器时，返回路线表判断是否符合自有 App 路线。
+
+   ```sh
+   python3 "$RUN" workspace-connect --workspace "$W" --route host-connector
+   python3 "$RUN" workspace-connect --workspace "$W" --host-receipt "$PWD/host-accounts.json"
+   python3 "$RUN" workspace-connect --workspace "$W" --select-account "$ACCOUNT" --ownership-evidence EV_ACCOUNT_OWNER
+   ```
+
+## 4. 企业独立报表（system-user）
+
+1. 业务管理员在 Business Settings → Users → System Users 选择或新增 Employee 系统用户，并分配具名广告账户和 App 所需访问。为系统用户生成有限期、仅 `ads_read` 的 Token。请同一 App 的开发者另备检查用 User Token，在 Meta 核对该身份有权确认原应用及组合的员工系统用户。两个身份的编号与口令分别处理。[Meta 系统用户授权](https://developers.facebook.com/docs/business-management-apis/system-users/guides/permissions) · [安装应用与生成令牌](https://developers.facebook.com/docs/business-management-apis/system-users/install-apps-and-generate-tokens/)
+2. 登记 App、业务组合与两个不同人员，看到 `SYSTEM_USER_CONFIGURATION` 时完成下列两项非秘密登记，由本人按第 2 节的钥匙串方法分别录入两个凭据。返回 `DISCOVER_SYSTEM_ACCOUNTS` 后，经批准执行 `--discover --proof-not-required`，只使用对应 App 已核实的 Proof 条件。选择已观察到的同一账户。若返回身份、员工或许可错误，到原业务组合核对分配。
+3. `SYSTEM_USER_READ_READY` 是可继续检查的状态。批准实际读取后运行 `native-inventory get account`，核 `NATIVE_INVENTORY_OBSERVED`、`COMPLETE` 和 `NATIVE-INVENTORY.json` 中的账号、币种、时区。报表从 `native-insights` 设明确日期。若续期、换身份或失去权限，重新核对两条登记和业务资产，回到发现、选择与具名验证。
+
+   ```sh
+   python3 "$RUN" workspace-connect --workspace "$W" --route system-user --app-id "$APP" --business-id "$BUSINESS"
+   python3 "$RUN" credential-prepare --app-id "$APP" --principal-id "$SYSTEM_ID" --platform macos --output "$W/system-credential-record"
+   python3 "$RUN" credential-prepare --app-id "$APP" --principal-id "$INSPECTOR_ID" --platform macos --output "$W/app-inspector-record"
+   python3 "$RUN" workspace-connect --workspace "$W" --discover --proof-not-required
+   python3 "$RUN" workspace-connect --workspace "$W" --select-account "$ACCOUNT" --ownership-evidence EV_ACCOUNT_OWNER
+   python3 "$RUN" native-inventory get account --workspace "$W" --account-id "$ACCOUNT" --output "$PWD/系统用户账户回执" --execute-read
+   ```
+
+## 5. 续接、权限和错误
+
+| 看到什么 | 接续操作 |
+| --- | --- |
+| `REUSE_WORKSPACE` | 保留原项目和计划，用 `workspace-route --workspace "$W" --task ads-analysis` 核目标。表明本地可接续；当前权限以新回执为准。 |
+| `RECONNECT`、`AUTH_REQUIRED`、`PERMISSION_REQUIRED` | 根据原路线核 App 与角色。用同一人、同一 App 重新授权时，可由本人在系统界面更新同一项凭据，回到 `workspace-refresh` 或原生读取；有新的登记目录时，从凭据登记、预览和绑定开始使用相应的 `--credential-record-dir`。涉及更换 App/业务的历史工作区按管理员确认的新范围办理。 |
+| `NO_OBSERVED_ACCOUNTS` 或 `PARTIAL` | 先核广告账户分配，保留已观察项。确需补读时按当前角色重试原发现命令。 |
+| `REVIEW_APP_PROOF`、终端确认取消或输入中断 | 保留已完成的本地登记。核真实安全设置，回到同一个步骤，重新确认原范围。未同意时没有具名读取回执。 |
+| Token、人物 ID 或资产不一致；网络中断或限流 | 回到具体出错步骤，按平台回执处理。保持原账号，只在本人同意后用新的输出目录重跑受影响的检查。 |
+
+**Meta 会分别管理这些事项**
+
+- **App 与 Marketing API 产品**负责确定客户使用哪个应用和提供哪些广告能力。已有符合本次用途的 App 可复用。
+- **App Review**核所请求权限或功能；**Business Verification**核业务主体。按控制台对应要求提交，广告素材本身还有独立审核。
+- **Standard / Advanced Access** 是具体权限和功能的访问级别；**Marketing API Access Tier** 另分 Limited / Full，影响调用限制等。按应用和账户用途查各项，不把一个层级当作另一个层级的证明。
+- **`ads_read`**用于所批准的只读广告任务。**`ads_management`**用于另行批准的管理用途。**Page** 按具体对象和读取类型核相应角色、权限和回执。一个广告账户口令、Page 口令、系统用户口令及宿主登录各有自己的范围。
+
+[权限与功能访问级别](https://developers.facebook.com/documentation/development/graph-api/overview/access-levels) · [App Review](https://developers.facebook.com/documentation/resp-plat-initiatives/individual-processes/app-review) · [公司验证](https://developers.facebook.com/documentation/development/release/business-verification) · [Marketing API Access Tier](https://developers.facebook.com/documentation/ads-commerce/marketing-api/get-started/authorization)
+
+Token 留在本人控制的官方窗口、系统凭据界面或安装件提示的隐藏输入中。Skill 保存非秘密引用并按本地记录指引客户。App 创建、批准、同意授权与续期由有权的人在对应入口完成。
+
+## 6. 补充：仅验证一个已知账号
 
 ```sh
 python3 "$RUN" connection-prepare --output "$PWD/账户连接计划"
@@ -72,55 +146,4 @@ python3 "$RUN" connection-check "$PWD/账户连接计划/intent.json" --output "
 python3 "$RUN" connection-review --run-dir "$PWD/账户只读回执"
 ```
 
-这条路线可以到此结束。临时输入仅用于这次会话。以后想复用工作区时按 B 保存资产和系统引用。
-
-### B．以后沿用同一个项目：工作区与 macOS 钥匙串
-
-1. **生成资产准备表。** 运行下列命令，用文本编辑器打开生成的 `客户准备/preparation.json`。在 `assets.app.id`、`assets.business_portfolio.id`、`assets.ad_account.id` 分别填实际数字字符串。各自的 `ownership_evidence_ref` 填指向本人真实归属或授权记录的内部编号，例如格式 `EV_ACCOUNT_OWNER`，对应凭据留在客户项目。未知的资产保留空值。还要用于广告草案时，再填写 `assets.facebook_page` 的 ID、同类证据编号及 `page_identity_type = FACEBOOK_PAGE`。按已知事实填写 `account_context.currency`、`account_context.timezone`。本次只读广告将 `requested_work.ads_read` 设为 true。保留模板的模式、授权和真实执行开关原值。
-
-```sh
-python3 "$RUN" prepare --output "$PWD/客户准备"
-```
-
-2. **建立或复用工作区。** 首次运行下面的初始化；若该工作区已经存在，需要补这份表时，只执行 `workspace-onboard --workspace "$W" --preparation "$PWD/客户准备/preparation.json"`（前面同样是 `python3 "$RUN"`）。已绑定的客户直接进入当前任务，不重复初始化。不存在已核实的 Business Portfolio 时，可先用 A 验证一个账户，等负责人确认工作区绑定所需的真实归属再走 B。
-
-```sh
-python3 "$RUN" workspace-init --workspace "$W" --preparation "$PWD/客户准备/preparation.json"
-python3 "$RUN" workspace-default --workspace "$W" --kind ACCOUNT --id "$ACCOUNT"
-python3 "$RUN" workspace-show --workspace "$W"
-```
-
-3. **在本机建只读凭据引用。** 已有与该 App、人员及用途一致的有效登记时，用第二条查看已有登记；首次才执行第一条。命令生成随机的 `conn_…`、`service_or_target` 和 `account_label`。此时只建了引用，口令另由本人录入。
-
-```sh
-python3 "$RUN" credential-prepare --app-id "$APP" --principal-id "$PERSON" --platform macos --output "$W/credential-record"
-python3 "$RUN" credential-status --record-dir "$W/credential-record"
-```
-
-4. **系统录入。** 本人用 Spotlight 打开“钥匙串访问”（Keychain Access），选自己的登录钥匙串，使用新建密码项目功能，建立通用密码项目（Generic Password）。项目名称／服务精确复制 `service_or_target`，账户精确复制 `account_label`，密码栏由本人粘贴这枚 User Token。保留系统访问控制；确认读取弹窗中的应用与本次操作一致时，可选择仅允许本次。不同 macOS 版本的菜单名称可能不同，先核条目种类与两个标签。[Apple 钥匙串访问说明](https://support.apple.com/en-gb/guide/mac-help/kychn002/26/mac/26)
-
-5. **预览、绑定、读取。** 下列确认参数仅在两项角色／归属已经核实、该 App 已确认无需 Proof 时使用。第一条生成 `intent.json`、`PREVIEW.json` 等文件。先看预览是否为 `READY_FOR_LOCAL_SCOPE_CONFIRMATION` 且三项编号均对，再执行后续命令。实际读取时仍需本人本次确认；系统引用绑定可以长期保留，实际 Token 有自己的期限。
-
-```sh
-python3 "$RUN" workspace-connection-prepare --workspace "$W" --id "$ACCOUNT" --app-developer-confirmed --asset-owner-confirmed --appsecret-proof NOT_REQUIRED_CONFIRMED --output "$PWD/工作区连接计划"
-python3 "$RUN" workspace-bind --workspace "$W" --intent "$PWD/工作区连接计划/intent.json"
-python3 "$RUN" workspace-refresh --workspace "$W" --id "$ACCOUNT" --output "$PWD/工作区只读回执"
-python3 "$RUN" connection-review --run-dir "$PWD/工作区只读回执"
-```
-
-6. **下次直接恢复。** 回到相同项目，重新设置本页开头的 `RUN` 和 `W` 后执行 `python3 "$RUN" workspace-route --workspace "$W" --task ads-analysis`。它给出已选资产及下一步，凭据过期、角色改变或换了目标时按本次情况修正。只读账户授权、Page 读取和真实写入各自办理；独立写批准以及用于建单和启用的凭据由管理员单独配置。
-
-## 4. 看回执，决定到哪里为止
-
-打开所选结果目录的 `RESULT.json` 和 `RECEIPT.json`。确认 `status = NAMED_ACCOUNT_READ_PASSED`、`real_account_read_verified = true`、返回的账户 ID 与目标一致；核对返回的币种、时区、账户状态及观察时间。诊断顺序是先读 Token 的 App、人员、权限和有效期，通过后再读指定账户的基础字段。合法的非活跃账户也可能可读，若状态受限，后续投递资格由账户管理员处理。[Meta 广告账户字段](https://developers.facebook.com/docs/marketing-api/reference/ad-account/)
-
-| 看到什么 | 可以怎么继续 |
-|---|---|
-| 预览显示阻断、Proof 必需或未知 | 按阻断项核对角色、资产、App 安全策略；没有匹配实现就停在预览。 |
-| 人员或 App 不符、广告读取权限缺失、Token 已过期／期限无法核实 | 回 Meta 核对同一 App、操作者和原授权范围。权限或令牌需变更时由本人决定。使用新输出目录保存下一次获准读取。 |
-| 本机引用找不到或访问被拒 | 检查当前 macOS 用户、登录钥匙串、通用密码种类、服务名和账户标签；再确认本机登记仍有效。 |
-| 账户 ID 不符、无资产访问、API 限流、网络中断 | 暂停当前步骤，保留该次回执及错误码；由负责人核对 ID 或任务权限，依平台提示等待或修复网络。再次只读前确认原范围。 |
-| 只有 Explorer 成功、模板生成或网络可达 | 在已安装项目内完成 A 或 B 的指定账户读取，保留实际返回。 |
-| 账户已可读，接下来要投放 | 先回到[使用说明](INSTALL_RUN.md)准备当前电商广告，再单独授权真实动作。正展示、实际花费及成交收入分别以各自的原始记录确认。 |
-
-账号或经营数据请保存在本机；公开教学素材仅使用另行获准的脱敏内容。
+这条路径需先核对自有 App、人物和具名账户。临时输入仅用于这次会话。需要日常接续时回到自有 App 路线，在同一项目保存具名账户与非秘密引用。

@@ -19,7 +19,7 @@ DIMENSIONS = {
     'conversion_point': {'VISUAL','SPOKEN','SUBTITLE','SCRIPT'},
     'human_feel': {'VISUAL'},
 }
-SECRET = re.compile(r'EAA[A-Za-z0-9]{35,}|sk-proj-|PRIVATE KEY|(?:access_token|app_secret|cookie)\s*[:=]', re.I)
+SECRET = re.compile(r'(?-i:EAA[A-Za-z0-9]{35,})|sk-proj-|PRIVATE KEY|(?:access_token|app_secret|cookie)\s*[:=]', re.I)
 
 
 def _value(path):
@@ -30,7 +30,7 @@ def _value(path):
     with path.open('rb') as handle:
         body = handle.read(192001)
     try:
-        text = body.decode('utf-8')
+        text = body.decode('utf-8-sig')
     except UnicodeError:
         fail('RESEARCH_INPUT_INVALID')
     if len(body) > 192000 or SECRET.search(text):
@@ -121,7 +121,10 @@ def _normalize_public(value):
             if row[key] is not None:_short(row[key])
         detail=row['detail']
         if detail is not None:
-            _fixed(detail,('ad_archive_id','page_id','source_url','observed_at','body'))
+            detail_required = ('ad_archive_id', 'page_id', 'source_url', 'observed_at', 'body')
+            object_only(detail, (*detail_required, 'additional_observations'), detail_required)
+            if 'additional_observations' in detail:
+                _public_detail(detail['additional_observations'])
             if any(detail[k]!=row[k] for k in ('ad_archive_id','page_id')):
                 fail('PUBLIC_OBSERVATION_DETAIL_MISMATCH')
             _public_url(detail['source_url'], detail['ad_archive_id'])
@@ -132,6 +135,50 @@ def _normalize_public(value):
                 own_account_metrics=False,source_type='PUBLIC_AD_OBSERVATIONS')
 
 
+
+def _public_detail(detail):
+    graph_fields = ('titles', 'descriptions', 'captions', 'publisher_platforms', 'snapshot_available')
+    host_fields = ('call_to_action', 'destination', 'media_observations')
+    object_only(detail, ('basis', *graph_fields, *host_fields), ('basis',))
+    if detail['basis'] not in ('GRAPH_ADS_ARCHIVE', 'HOST_PUBLIC_OBSERVATION'):
+        fail('PUBLIC_OBSERVATION_DETAIL_BASIS')
+    if detail['basis'] == 'GRAPH_ADS_ARCHIVE' and any(key in detail for key in host_fields):
+        fail('PUBLIC_OBSERVATION_DETAIL_BASIS')
+    for field in ('titles', 'descriptions', 'captions'):
+        if field in detail:
+            for value in _observations(detail[field], 8):
+                _short(value, 800)
+    if 'publisher_platforms' in detail:
+        for platform in _observations(detail['publisher_platforms'], 16):
+            if type(platform) is not str or not re.fullmatch('[a-z_]{2,40}', platform):
+                fail('PUBLIC_OBSERVATION_DETAIL_PLATFORMS')
+    if 'snapshot_available' in detail and type(detail['snapshot_available']) is not bool:
+        fail('PUBLIC_OBSERVATION_DETAIL_SNAPSHOT')
+    if 'call_to_action' in detail:
+        _short(detail['call_to_action'], 140)
+    if 'destination' in detail:
+        validate_https_destination(detail['destination'], 'PUBLIC_OBSERVATION_DESTINATION')
+    if 'media_observations' in detail:
+        for item in _observations(detail['media_observations'], 8):
+            _fixed(item, ('evidence_ref', 'asset_sha256', 'observation'))
+            _ref(item['evidence_ref'])
+            if type(item['asset_sha256']) is not str or not SHA.fullmatch(item['asset_sha256']):
+                fail('PUBLIC_OBSERVATION_DETAIL_MEDIA')
+            _short(item['observation'], 800)
+
+
+def _usable_public_fact(row):
+    detail = row.get('detail') or {}
+    extra = detail.get('additional_observations') or {}
+    snippets = [text for text in (row['body'], detail.get('body')) if text]
+    snippets.extend(text for key in ('titles', 'descriptions', 'captions') for text in extra.get(key, []))
+    snippets.extend(item['observation'] for item in extra.get('media_observations', []))
+    if extra.get('call_to_action'):
+        snippets.append('行动按钮：' + extra['call_to_action'])
+    if extra.get('destination'):
+        snippets.append('观察到的目的地：' + extra['destination'])
+    return ' · '.join(dict.fromkeys(snippets))[:2400] if snippets else None
+
 def public_observations(workspace,account,path):
     if path is None:fail('PUBLIC_OBSERVATION_INPUT_REQUIRED')
     document = _value(path)
@@ -141,7 +188,7 @@ def public_observations(workspace,account,path):
     ws=journal_for(workspace,existing_only=True)
     with ws.locked(existing_only=True):
         profile=load(ws)
-        scope=draft_review_scope(profile,account)
+        scope=draft_review_scope(profile,account,host_draft=True)
         return dict(normalized,account_id=scope['account_id'],workspace_identity_sha256=workspace_identity(profile),
                     evidence_sha256=digest(normalized),network_used=False)
 
@@ -175,9 +222,29 @@ def _apply(state, update):
         if not variants:fail('RESEARCH_CONCEPT_VARIANT_REQUIRED')
         names=set()
         for variant in variants:
-            _fixed(variant,('id','brief'))
+            keys = ('id', 'brief')
+            object_only(variant, (*keys, 'copy', 'storyboard'), keys)
             names.add(_ref(variant['id']))
             _short(variant['brief'])
+            if 'copy' in variant:
+                from .meta_write_mapping import CREATIVE_CTAS
+
+                copy = variant['copy']
+                _fixed(copy, ('primary_text', 'headline', 'description', 'call_to_action'))
+                for field, limit in (('primary_text', 2000), ('headline', 120), ('description', 500)):
+                    _short(copy[field], limit)
+                if copy['call_to_action'] not in CREATIVE_CTAS:
+                    fail('RESEARCH_VARIANT_CALL_TO_ACTION')
+            if 'storyboard' in variant:
+                last_time = -1
+                for beat in _observations(variant['storyboard'], 12):
+                    _fixed(beat, ('start_ms', 'visual', 'script'))
+                    offset = beat['start_ms']
+                    if type(offset) is not int or not last_time < offset <= 600_000:
+                        fail('RESEARCH_STORYBOARD_ORDER')
+                    _short(beat['visual'], 500)
+                    _short(beat['script'], 800)
+                    last_time = offset
         if len(names)!=len(variants) or entry['state'] not in ('AVAILABLE','USED'):
             fail('RESEARCH_CONCEPT_STATE')
         previous=data['concepts'].get(name)
@@ -265,17 +332,43 @@ def _record(workspace_journal, profile, account_id, update=None):
 
 def freeze_selection(workspace_journal, profile, account_id, concept_id, variant_id, asset_sha256):
     state = _record(workspace_journal, profile, account_id)
+    return _frozen(state, concept_id, variant_id, asset_sha256)
+
+
+def _frozen(state, concept_id, variant_id, asset_sha256, *, allow_used=False):
     concept = state['concepts'].get(_ref(concept_id))
+    if type(asset_sha256) is not str or not SHA.fullmatch(asset_sha256):
+        fail('RESEARCH_MATERIAL_HASH_REQUIRED')
     review = state['reviews'].get(asset_sha256)
-    if (concept is None or concept['state'] != 'AVAILABLE' or review is None
+    if (concept is None or (concept['state'] != 'AVAILABLE' and not allow_used) or review is None
             or review['concept_id'] != concept_id):
         fail('RESEARCH_PLAN_SELECTION_MISMATCH')
     variant = next((row for row in concept['variants'] if row['id'] == _ref(variant_id)), None)
     if variant is None:
         fail('RESEARCH_PLAN_VARIANT_MISMATCH')
-    return dict(concept_id=concept_id, variant_id=variant_id, asset_sha256=asset_sha256,
-                review_sha256=digest(review), brief_sha256=digest(variant),
-                source_sha256=digest([state['sources'][key] for key in concept['source_ids']]))
+    binding = dict(concept_id=concept_id, variant_id=variant_id, asset_sha256=asset_sha256,
+                   review_sha256=digest(review), brief_sha256=digest(variant),
+                   source_sha256=digest([state['sources'][key] for key in concept['source_ids']]))
+    if 'copy' in variant:
+        binding['creative_copy'] = variant['copy']
+    return binding
+
+
+def selection_from_file(journal, profile, account, path):
+    packet = _value(path)
+    _fixed(packet, ('schema', 'workspace_identity_sha256', 'account_id', 'selection'))
+    if (packet['schema'] != 'creative-comparison-choice-v1' or packet['account_id'] != account
+            or packet['workspace_identity_sha256'] != workspace_identity(profile)
+            or type(packet['selection']) is not dict):
+        fail('CREATIVE_COMPARE_CHOICE_SCOPE')
+    selection = packet['selection']
+    keys = ('concept_id', 'variant_id', 'asset_sha256')
+    if not selection.keys() >= set(keys):
+        fail('CREATIVE_COMPARE_CHOICE_SCOPE')
+    args = tuple(selection[key] for key in keys)
+    if freeze_selection(journal, profile, account, *args) != selection:
+        fail('CREATIVE_COMPARE_CHOICE_STALE')
+    return args
 
 
 def import_public_sources(document, profile, account_id, product):
@@ -287,10 +380,10 @@ def import_public_sources(document, profile, account_id, product):
     if digest(normalized) != document.get('evidence_sha256'):
         fail('PUBLIC_OBSERVATION_RECEIPT_MISMATCH')
     return [
-        dict(id='LIB-' + digest([row['page_id'], row['ad_archive_id'], row['observed_at'], row['body']])[:40],
+        dict(id='LIB-' + digest([row['page_id'], row['ad_archive_id'], row['observed_at'], fact])[:40],
              kind='PUBLIC_OBSERVATION', url=row['source_url'], observed_at=row['observed_at'], product=product,
-             fact=row['body'])
-        for row in normalized['records'] if row['body'] is not None
+             fact=fact)
+        for row in normalized['records'] if (fact := _usable_public_fact(row)) is not None
     ]
 
 
@@ -302,7 +395,7 @@ def run_research(workspace, account, path, *, public_path=None, product=None):
     ws = journal_for(workspace, existing_only=True)
     with ws.locked(existing_only=True):
         profile = load(ws)
-        account_scope = draft_review_scope(profile, account)
+        account_scope = draft_review_scope(profile, account, host_draft=True)
         if raw_public is not None:
             if update is not None:
                 _fixed(update, ('brand','sources','concepts','learning','reviews'))
@@ -315,3 +408,120 @@ def run_research(workspace, account, path, *, public_path=None, product=None):
                     business_profile=account_scope['business_profile'],
                     available_concepts=[r for r in current['concepts'].values() if r['state']=='AVAILABLE'],
                     network_used=False,write_authorized=False)
+
+
+
+def _comparison_frames(media_reports, known_assets):
+    from hashlib import sha256
+    from .local_paths import checked_path
+
+    frames = {}
+    for path in media_reports:
+        path = checked_path(path, link_error='RESEARCH_PATH_LINK', volume_error='WORKSPACE_VOLUME_NOT_MOUNTED')
+        report = _value(path)
+        asset = report.get('media_sha256')
+        if (report.get('status') not in ('LOCAL_MEDIA_EVIDENCE', 'LOCAL_MEDIA_PARTIAL')
+                or type(asset) is not str or asset not in known_assets or asset in frames):
+            fail('CREATIVE_COMPARE_MEDIA_SCOPE')
+        samples = []
+        for frame in _observations(report.get('frames'), 3):
+            _fixed(frame, ('timestamp_ms', 'path', 'sha256'))
+            name, timestamp = frame['path'], frame['timestamp_ms']
+            if type(name) is not str or not re.fullmatch(r'frame-[0-9]{2}\.png', name):
+                fail('CREATIVE_COMPARE_FRAME_PATH')
+            if type(timestamp) is not int or timestamp < 0:
+                fail('CREATIVE_COMPARE_FRAME_TIMESTAMP')
+            source = checked_path(path.parent / name, link_error='RESEARCH_PATH_LINK',
+                                  volume_error='WORKSPACE_VOLUME_NOT_MOUNTED')
+            if not source.is_file() or source.stat().st_size > 2_000_000:
+                fail('CREATIVE_COMPARE_FRAME_INVALID')
+            with source.open('rb') as stream:
+                data = stream.read(2_000_001)
+            if (len(data) > 2_000_000 or not data.startswith(b'\x89PNG\r\n\x1a\n')
+                    or sha256(data).hexdigest() != frame['sha256']):
+                fail('CREATIVE_COMPARE_FRAME_INVALID')
+            samples.append((timestamp, data))
+        frames[asset] = samples
+    return frames
+
+def compare_concepts(workspace, account, concept_ids, output, *, media_reports=()):
+    from html import escape
+    from .meta_write_mapping import _write_new
+    from .monitor_tools import new_directory
+
+    chosen = [_ref(value) for value in concept_ids]
+    if not 2 <= len(chosen) <= 10 or len(set(chosen)) != len(chosen):
+        fail("CREATIVE_COMPARE_SELECTION")
+    current = run_research(workspace, account, None)
+    research = current["research"]
+    rows = []
+    for ref in chosen:
+        concept = research["concepts"].get(ref)
+        if concept is None:
+            fail("CREATIVE_COMPARE_CONCEPT_NOT_FOUND")
+        reviews = sorted((row for row in research["reviews"].values() if row["concept_id"] == ref),
+                         key=lambda row: row["asset_sha256"])
+        rows.append(dict(concept_id=ref, hypothesis=concept["hypothesis"], state=concept["state"],
+                         evidence_refs=concept["source_ids"], variants=concept["variants"],
+                         media=[dict(asset_sha256=row["asset_sha256"], comments=row["comments"])
+                                for row in reviews]))
+    known_assets = {media["asset_sha256"] for row in rows for media in row["media"]}
+    if len(media_reports) > 12:
+        fail('CREATIVE_COMPARE_MEDIA_LIMIT')
+    frames = _comparison_frames(media_reports, known_assets)
+    root = new_directory(output)
+    for row in rows:
+        for media in row["media"]:
+            asset = media["asset_sha256"]
+            samples = []
+            for index, (timestamp, data) in enumerate(frames.get(asset, [])):
+                filename = f'frame-{asset}-{index}.png'
+                if not (root / filename).exists():
+                    with (root / filename).open('xb') as stem:
+                        stem.write(data)
+                samples.append(dict(file=filename, timestamp_ms=timestamp))
+            if media_reports:
+                media["frames"] = samples
+
+    result = dict(status="CREATIVE_CONCEPTS_COMPARED", account_id=research["account_id"],
+                  source_sha256=current["source_sha256"], concepts=rows, network_used=False, write_authorized=False)
+    for row in rows:
+        for media in row['media']:
+            choices = []
+            if row['state'] == 'AVAILABLE':
+                for variant in row['variants']:
+                    selection = _frozen(research, row['concept_id'], variant['id'], media['asset_sha256'])
+                    name = f'choice-{digest(selection)}.json'
+                    _write_new(root, name, dict(schema='creative-comparison-choice-v1',
+                        workspace_identity_sha256=research['workspace_identity_sha256'],
+                        account_id=research['account_id'], selection=selection))
+                    choices.append(dict(file=name, variant=variant['id']))
+            media['choices'] = choices
+    _write_new(root, "comparison.json", result)
+    with (root / "comparison.html").open("x", encoding="utf-8") as page:
+        page.write('<!doctype html><html lang="zh"><meta charset="utf-8">'
+                   '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src \'self\'">'
+                   '<title>创意概念对照</title><h1>创意概念对照</h1>')
+        for row in rows:
+            page.write(f'<section><h2>{escape(row["concept_id"])}</h2><p>{escape(row["hypothesis"])}</p><ul>')
+            for variant in row["variants"]:
+                page.write(f'<li><h3>{escape(variant["id"])}</h3><p>{escape(variant["brief"])}</p>')
+                for value in variant.get('copy', {}).values():
+                    page.write(f'<p>{escape(value)}</p>')
+                for beat in variant.get('storyboard', []):
+                    page.write(f'<p>{beat["start_ms"]} ms · {escape(beat["visual"])} · {escape(beat["script"])}</p>')
+                page.write('</li>')
+            page.write(f'</ul><p>素材评审 {len(row["media"])} 项</p>')
+            for media in row["media"]:
+                for sample in media.get("frames", []):
+                    filename = escape(sample["file"])
+                    timestamp = sample["timestamp_ms"]
+                    page.write(f'<figure><img width="320" src="{filename}" alt="素材帧 {timestamp} ms">'
+                               f'<figcaption>{timestamp} ms</figcaption></figure>')
+                for axis, comment in media["comments"].items():
+                    if comment["state"] == "OBSERVED":
+                        page.write(f'<p>{escape(axis)}：{escape(comment["comment"])}</p>')
+                for choice in media['choices']:
+                    page.write(f'<p><a href="{choice["file"]}" download>保存 {escape(choice["variant"])} 的选择</a></p>')
+            page.write('</section>')
+    return result

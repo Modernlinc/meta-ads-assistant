@@ -37,10 +37,13 @@ def evidence_plan(launch, since, until):
     ids = dict(ad_id=ad['id'], **{key: ad[key] for key in ('account_id','campaign_id','adset_id','creative_id')})
     if any(type(value) is not str or not ID.fullmatch(value) for value in ids.values()):
         fail('FIRST_LAUNCH_EVIDENCE_IDS_INVALID')
+    dynamic = any(row['readback']['object'].get('asset_feed_sha256') for row in launch['stages']
+                  if row.get('readback') and row['readback']['object']['id'] == ids['creative_id'])
+    creative_fields = 'id,account_id,object_story_spec' + (',asset_feed_spec' if dynamic else '')
     return dict(plan_sha256=launch['plan_sha256'], workspace_identity_sha256=launch['workspace_identity_sha256'],
                 ids=ids, since=start.isoformat(), until=stop.isoformat(),
                 creative_route='/v27.0/' + ad['id'] + '?' + urlencode(
-                    dict(fields='id,account_id,status,effective_status,creative{id,account_id,object_story_spec}')),
+                    dict(fields='id,account_id,status,effective_status,creative{'+creative_fields+'}')),
                 activities_route='/v27.0/act_' + ad['account_id'] + '/activities',
                 activities_params=dict(fields='object_id,event_type,event_time', limit=50,
                                        since=start.isoformat(), until=(stop+timedelta(days=1)).isoformat()),
@@ -66,9 +69,16 @@ def _creative(body, ids):
             data = spec[branches[0]]
             from .first_launch_media import IMAGE_HASH
             image, video = data.get('image_hash'), data.get('video_id')
-            media.update(kind='IMAGE' if branches[0] == 'link_data' else 'VIDEO',
+            kind = 'CAROUSEL' if isinstance(data.get('child_attachments'), list) else 'IMAGE' if branches[0] == 'link_data' else 'VIDEO'
+            media.update(kind=kind,
                          image_hash=image if type(image) is str and IMAGE_HASH.fullmatch(image) else None,
                          video_id=video if type(video) is str and ID.fullmatch(video) else None)
+        if not branches and creative.get('asset_feed_spec') is not None:
+            from .dynamic_creative import project_feed
+
+            feed = project_feed(creative['asset_feed_spec'])
+            media.update(kind='DYNAMIC_MANUAL_ASSETS', asset_feed_sha256=digest(feed),
+                         image_hashes=[row['hash'] for row in feed['images']])
     enum = re.compile(r'[A-Z_]{2,40}')
     statuses = {key: value if type(value) is str and enum.fullmatch(value) else None
                 for key in ('status','effective_status') for value in [body.get(key)]}
@@ -114,8 +124,8 @@ def fetch(plan, get, *, clock=utcnow):
     return dict(status='FIRST_LAUNCH_EVIDENCE_RETURNED', evidence=evidence, evidence_sha256=digest(evidence))
 
 
-def run(workspace, directory, since, until, execute):
-    launch = progress(workspace, directory)
+def run(workspace, directory, since, until, execute, *, ad_id=None):
+    launch = progress(workspace, directory, ad_id=ad_id)
     plan = evidence_plan(launch, since, until)
     if not execute:
         return dict(status='FIRST_LAUNCH_EVIDENCE_PREVIEW', plan=plan, network_used=False,

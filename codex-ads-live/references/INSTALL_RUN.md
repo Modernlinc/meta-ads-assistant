@@ -1,8 +1,15 @@
 # 使用说明
 
+首次安装回读成功后，打开同一项目，在 Codex 输入「帮我比较这轮 Meta 新素材怎么测试」。如需账户数据，由本人按 [Meta 接入向导](CUSTOMER_SOP.md) 完成必要授权。[自然语言使用说明](../methods/ADAPTATION.md)
+
 第一次使用先完成安装和账户读取。准备广告时，向 Codex 提供商品图、落地页、投放地区、购买目标、账户币种、预算上限、开始和停止时间。Codex 会沿原工作区核对还缺什么。
 
-## 安装到自己的项目
+## 选择电脑和安装步骤
+
+- Windows 提供[PowerShell 安装、凭据与恢复步骤](WINDOWS_CLIENT.md)，原生宿主待验收（`NOT_RUN_NO_WINDOWS_HOST`）。本轮实机验收已获用户豁免（`PASS_BY_USER_WAIVER`）。
+- macOS 客户按下面步骤操作。
+
+## macOS 安装到自己的项目
 
 1. 在 Mac 上打开 Codex，选择准备用于这个客户的现有项目文件夹。若是新客户，可先在 Finder 建立专用项目文件夹再打开。记住它的绝对路径。
 2. 将本套文件中的 `codex-ads-live.zip` 解压。打开终端，在解压后**能同时看到 `install.py`、`run.py` 和 `SKILL.md` 的目录**执行下面的命令。先将示例路径替换为实际路径，保留引号。
@@ -26,11 +33,11 @@ python3 .agents/skills/codex-ads-live/run.py --version
 
 看到 `PROJECT_INSTALL_VERIFIED`，记下最后一条显示的版本。打开相同项目，在 Codex 输入「使用 $codex-ads-live，只检查本项目的安装位置，告诉我加载的是哪个 SKILL.md」。路径应指向项目内的 `.agents/skills/codex-ads-live/SKILL.md`。找不到时，先核对项目路径，再重新打开该项目。[Python macOS 下载](https://www.python.org/downloads/macos/) · [Codex Skill](https://developers.openai.com/codex/skills/)
 
-已有 V1.6R1 项目时，先在独立目录安装 V1.6R2。日常配置可按 `python3 install.py --help` 的 `--upgrade-from` 预览分阶段接续。该步骤只接续可移植配置。若需恢复原媒体尝试，请用 R2 的 `run.py` 明确指定原 `--workspace`、原 `--plan-dir` 和原媒体请求包。受管端也须按[管理员更新步骤](FIRST_LAUNCH_LOCAL_AUTHORITY.md)切换到 R2，并使用原状态目录。
+已有安装时，保留原项目并在独立目录预览升级。以 `python3 install.py --help` 的 `--upgrade-from` 核对分阶段接续步骤和回执。该步骤只接续可移植配置。恢复原媒体尝试时，明确指定原 `--workspace`、原 `--plan-dir` 和原媒体请求包。管理员按对应[受管端更新步骤](FIRST_LAUNCH_LOCAL_AUTHORITY.md)核对受管程序和原状态目录。回退时重新打开保留的旧项目，并由管理员核对它对应的受管程序和状态。
 
 ## 查到自己的广告账户
 
-打开[账户接通流程](CUSTOMER_SOP.md)。想快速验证自有账户，可用本人终端临时输入；希望日后在同一个工作区持续使用，可以直接选钥匙串方式。两条路径择一即可。账户读通的标志是本次指定账户返回 `NAMED_ACCOUNT_READ_PASSED`，同时 ID、币种、时区与 Meta 里的目标一致。
+打开[账户接通流程](CUSTOMER_SOP.md)。想快速验证自有账户，可用本人终端临时输入；长期使用时按电脑选 macOS 钥匙串或 Windows 凭据管理器。两条路径择一即可。账户读通的标志是本次指定账户返回 `NAMED_ACCOUNT_READ_PASSED`，同时 ID、币种、时区与 Meta 里的目标一致。
 
 ## 准备和核对第一条电商广告
 
@@ -55,3 +62,7 @@ python3 .agents/skills/codex-ads-live/run.py --version
 回到上次的客户项目，输入「使用 $codex-ads-live，继续上次的广告，用原工作区和原 Ad。先告诉我已有决定、数据区间、上次读取时间和下一次复核日期。」默认首投保存在工作区的 `first-launch-plan`；此前手动选择过计划目录时，指定原路径。日常只处理当前任务的目标、权限变化和到期项，无需每次重新盘点全公司资产。
 
 报告为零、没有返回数据、权限失效是三种不同结果。若整日数据超出批准的小时窗口，只能报告该日汇总，待补能归属到窗口的记录。发送中断或返回结果不明时，恢复原计划先查原动作及对象，避免重复建单。
+
+图片和视频审阅、策略比较、店铺 CSV 对账以及多账户复盘，见[运营工作流](OPERATOR_V1.md)。
+
+需要核对 Codex 桌面选择和调用时，按 [macOS 桌面短验收](MACOS_CODEX_ACCEPTANCE.md) 保留实际回执。

@@ -284,7 +284,7 @@
     },
     "skill_version": {
       "type": "string",
-      "pattern": "^[0-9][0-9a-z.]{0,24}$"
+      "pattern": "^[0-9][0-9a-z.]{0,24}(?:\\+[0-9a-z][0-9a-z.-]{0,32})?$"
     },
     "page_bindings": {
       "type": "object",
@@ -342,6 +342,214 @@
       },
       "additionalProperties": {
         "$ref": "workspace-business-profile.schema.json"
+      }
+    },
+    "connection_onboarding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route",
+        "discovery"
+      ],
+      "properties": {
+        "route": {
+          "enum": [
+            "user-graph",
+            "host-connector",
+            "system-user"
+          ]
+        },
+        "discovery": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "observed_at",
+                "record_sha256",
+                "state",
+                "pages_read",
+                "accounts",
+                "error_code"
+              ],
+              "properties": {
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "record_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "state": {
+                  "enum": [
+                    "COMPLETE",
+                    "PARTIAL",
+                    "FAILED"
+                  ]
+                },
+                "pages_read": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                "accounts": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "account_id",
+                      "currency",
+                      "account_status"
+                    ],
+                    "properties": {
+                      "account_id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,39}$"
+                      },
+                      "currency": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "account_status": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 999
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      }
+                    }
+                  }
+                },
+                "error_code": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[A-Z0-9_]{1,100}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "host_source": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "provider",
+                    "host",
+                    "ref"
+                  ],
+                  "properties": {
+                    "provider": {
+                      "const": "META_OFFICIAL_ADS_MCP"
+                    },
+                    "host": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "ref": {
+                      "type": "string",
+                      "pattern": "^EV_[A-Z0-9_]{1,80}$"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "route": {
+                "const": "host-connector"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "discovery": {
+                "if": {
+                  "type": "object"
+                },
+                "then": {
+                  "required": [
+                    "host_source"
+                  ]
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "discovery": {
+                "not": {
+                  "type": "object",
+                  "required": [
+                    "host_source"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "shopify_read_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "store",
+        "shop_id",
+        "timezone",
+        "currency",
+        "reference"
+      ],
+      "properties": {
+        "store": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,61}\\.myshopify\\.com$"
+        },
+        "shop_id": {
+          "type": "string",
+          "pattern": "^gid://shopify/Shop/[1-9][0-9]*$"
+        },
+        "timezone": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_+/.-]{1,100}$"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "reference": {
+          "type": "string",
+          "pattern": "^shop_[0-9a-f]{32}$"
+        }
       }
     }
   }

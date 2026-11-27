@@ -22,7 +22,7 @@ def _utc(value):
         fail('FIRST_LAUNCH_ACTIVATION_TIME_OUT_OF_RANGE')
 
 
-def _review(launch, preview, start_at, end_at, maximum_spend_minor):
+def _review(launch, preview, start_at, end_at, maximum_spend_minor, parent_budget=None):
     if launch['status'] != 'FIRST_LAUNCH_OBJECT_CHAIN_RECORDED':
         fail('FIRST_LAUNCH_OBJECT_CHAIN_REQUIRED')
     keys = ('schema', 'object_chain_sha256', 'kind', 'object_id', 'ad_format', 'observed_at', 'evidence_ref')
@@ -51,7 +51,26 @@ def _review(launch, preview, start_at, end_at, maximum_spend_minor):
         fail('FIRST_LAUNCH_ACTIVATION_SPEND_LIMIT_REQUIRED')
     _minor(maximum_spend_minor)
     context = launch['activation_context']
-    if context['currency'] is None or context['daily_budget_minor'] is None:
+    selected_budget = context.get('selected_budget')
+    existing = context.get('existing_budget_policy')
+    daily = context['daily_budget_minor']
+    if existing is not None:
+        if parent_budget is None:
+            fail('FIRST_LAUNCH_EXISTING_PARENT_ACTIVATION_REQUIRES_SEPARATE_GUARD')
+        keys = ('owner', 'schedule', 'budget_minor')
+        object_only(parent_budget, keys, keys)
+        if any(parent_budget[key] != value for key, value in existing.items()):
+            fail('FIRST_LAUNCH_EXISTING_PARENT_BUDGET_LAYER_MISMATCH')
+        amount = parent_budget['budget_minor']
+        if amount is None:
+            fail('FIRST_LAUNCH_ACTIVATION_BUDGET_CONTEXT_REQUIRED')
+        _minor(amount)
+        selected_budget = parent_budget
+        daily = amount if parent_budget['schedule'] == 'DAILY' else None
+    elif parent_budget is not None:
+        fail('FIRST_LAUNCH_EXISTING_PARENT_BUDGET_NOT_APPLICABLE')
+    budget_minor = selected_budget['budget_minor'] if selected_budget else daily
+    if context['currency'] is None or budget_minor is None:
         fail('FIRST_LAUNCH_ACTIVATION_BUDGET_CONTEXT_REQUIRED')
     _account_zone(context['timezone'])
     scope = launch['separate_activation_scope']
@@ -62,17 +81,25 @@ def _review(launch, preview, start_at, end_at, maximum_spend_minor):
                    creative_id=target['fallback_creative_id'], campaign_id=scope['campaign_id'],
                    adset_id=scope['adset_id'], parent_activation_included=False,
                    currency=context['currency'], timezone=context['timezone'],
-                   daily_budget_minor=context['daily_budget_minor'], maximum_spend_minor=maximum_spend_minor,
+                   daily_budget_minor=daily, maximum_spend_minor=maximum_spend_minor,
                    starts_at=start.isoformat(), ends_at=end.isoformat(),
                    preview_observation_sha256=digest(preview))
+    if selected_budget:
+        binding['selected_budget'] = selected_budget
     blockers = []
     if not is_ad:
         blockers.append('AD_PREVIEW_EVIDENCE_REQUIRED')
     if observed > start:
         blockers.append('PREVIEW_OBSERVED_AFTER_REQUESTED_START')
-    if context['daily_budget_minor'] > maximum_spend_minor:
-        blockers.append('DAILY_BUDGET_EXCEEDS_PROPOSED_TOTAL')
+    if budget_minor > maximum_spend_minor:
+        blockers.append('LIFETIME_BUDGET_EXCEEDS_PROPOSED_TOTAL'
+                        if selected_budget and selected_budget['schedule'] == 'LIFETIME'
+                        else 'DAILY_BUDGET_EXCEEDS_PROPOSED_TOTAL')
     budget = context['declared_budget']
+    if selected_budget and budget.get('protected_daily_spend') is not None:
+        approved_daily = Decimal(budget['protected_daily_spend']).scaleb(0 if context['currency'] == 'JPY' else 2)
+        if budget_minor > approved_daily:
+            blockers.append('BUDGET_MAY_EXCEED_PROTECTED_DAILY_LIMIT')
     if budget['currency'] not in (None, context['currency']):
         blockers.append('DECLARED_BUDGET_CURRENCY_MISMATCH')
     elif budget['maximum_test_spend'] is not None:
@@ -87,9 +114,10 @@ def _review(launch, preview, start_at, end_at, maximum_spend_minor):
                 dispatchable=False, network_used=False)
 
 
-def prepare(workspace, directory, observation_path, start_at, end_at, maximum_spend_minor, output=None):
-    review = _review(progress(workspace, directory), _read_plan_json(observation_path),
-                     start_at, end_at, maximum_spend_minor)
+def prepare(workspace, directory, observation_path, start_at, end_at, maximum_spend_minor, output=None, *,
+            ad_id=None, parent_budget=None):
+    review = _review(progress(workspace, directory, ad_id=ad_id), _read_plan_json(observation_path),
+                     start_at, end_at, maximum_spend_minor, parent_budget)
     if output is not None:
         _write_new(new_directory(output), 'activation-review.json', review)
     return review
@@ -100,8 +128,10 @@ def read_review(launch, path):
     if type(packet) is not dict or packet.get('schema') != REVIEW_SCHEMA or type(packet.get('binding')) is not dict:
         fail('FIRST_LAUNCH_ACTIVATION_REVIEW_REQUIRED')
     binding = packet['binding']
+    existing = launch.get('activation_context', {}).get('existing_budget_policy')
     current = _review(launch, packet.get('preview_observation'), binding.get('starts_at'),
-                      binding.get('ends_at'), binding.get('maximum_spend_minor'))
+                      binding.get('ends_at'), binding.get('maximum_spend_minor'),
+                      binding.get('selected_budget') if existing else None)
     if canonical(current) != canonical(packet):
         fail('FIRST_LAUNCH_ACTIVATION_REVIEW_MISMATCH')
     return current

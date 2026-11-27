@@ -28,12 +28,26 @@ def reported_os_build(system, release, version):
                 recorded_os_build_sha256=build)
 
 
+def windows_preflight():
+    """Identify native client builds separately from the edition's servicing status."""
+    observed = sys.getwindowsversion()
+    client = observed.product_type == 1
+    eligible_family = client and (observed.major, observed.minor) == (10, 0) and observed.build >= 17763
+    family = ('WINDOWS_11' if observed.build >= 22000 else 'WINDOWS_10') if eligible_family else 'UNVERIFIED'
+    return dict(family=family, build=observed.build, workstation=client, servicing_verified=False,
+                servicing_check='CHECK_WINVER_EDITION_AND_MICROSOFT_LIFECYCLE',
+                credential_backend='WINDOWS_CREDENTIAL_MANAGER_GENERIC_READ_ONLY',
+                network_route='DIRECT_HTTPS', managed_ad_host='MACOS_ONLY')
+
 def preflight():
     package = Path(__file__).resolve().parents[2]
     checks = {}
     checks['python'] = 'PASS' if sys.version_info >= (3, 12) else 'UPGRADE_REQUIRED'
     system = platform.system()
     checks['operating_system'] = 'IN_SCOPE' if system in ('Darwin', 'Windows') else 'OUTSIDE_V1_SUPPORTED_OS'
+    windows = windows_preflight() if system == 'Windows' else None
+    if windows is not None and windows['family'] == 'UNVERIFIED':
+        checks['operating_system'] = 'WINDOWS_CLIENT_BUILD_REVIEW_REQUIRED'
     zones = {}
     zone_sources = {}
     for name in ('UTC', 'America/Los_Angeles', 'Asia/Shanghai'):
@@ -71,6 +85,7 @@ def preflight():
         'network_used': False, 'environment_variables_collected': False,
         'global_config_changed': False, 'dependencies_installed': False,
         'writable_destination': 'NOT_TESTED_USE_PREPARE_NEW_DIRECTORY',
+        **({'windows': windows} if windows is not None else {}),
     }
 
 

@@ -1,12 +1,13 @@
 """Read one independently authorized object for a recorded creation attempt."""
 
 from dataclasses import dataclass
+from datetime import timezone
 import re
 
 from .first_launch_host import CREATION_READBACK_SCHEMA, HEX, NATIVE_ID, validate_creation_binding
 from .meta_write_mapping import OBJECTIVES, WEBSITE_CONVERSION_OBJECTIVES, utcnow
 from .read_adapter import error_category
-from .validation import fail, validate_https_destination
+from .validation import aware_time, fail, validate_https_destination
 from .write_snapshots import SnapshotPlan
 
 
@@ -17,9 +18,9 @@ LEVELS = {
     'CREATE_AD': 'AD',
 }
 READ_FIELDS = {
-    'CAMPAIGN': 'id,account_id,status,objective',
-    'ADSET': 'id,account_id,status,campaign_id,daily_budget,optimization_goal,promoted_object',
-    'CREATIVE': 'id,account_id,object_story_spec',
+    'CAMPAIGN': 'id,account_id,status,objective,spend_cap,daily_budget,lifetime_budget',
+    'ADSET': 'id,account_id,status,campaign_id,daily_budget,lifetime_budget,optimization_goal,promoted_object,start_time,end_time,targeting,is_dynamic_creative',
+    'CREATIVE': 'id,account_id,object_story_spec,url_tags,asset_feed_spec',
     'AD': 'id,account_id,status,campaign_id,adset_id,creative{id}',
 }
 
@@ -110,13 +111,35 @@ def _project(plan, page_id, status, body):
         if type(story) is not dict or story.get('page_id') != page_id:
             fail('FIRST_LAUNCH_GRAPH_READ_CREATIVE_MISMATCH')
         story_kind = [key for key in ('link_data', 'video_data') if type(story.get(key)) is dict]
+        if not story_kind and body.get('asset_feed_spec') is not None:
+            from .dynamic_creative import project_feed
+            from .journal import digest
+            from .meta_write_mapping import validate_url_tags
+
+            feed = project_feed(body['asset_feed_spec'])
+            url = feed['link_urls'][0]['website_url']
+            projected.update(page_id=page_id,destination_url=url,asset_feed_sha256=digest(feed))
+            if body.get('url_tags'):
+                validate_url_tags(body['url_tags'],url)
+                projected['url_tags'] = body['url_tags']
+            return 'CREATIVE_OBSERVED',projected
         if len(story_kind) != 1:
             fail('FIRST_LAUNCH_GRAPH_READ_CREATIVE_MISMATCH')
         creative = story[story_kind[0]]
         image = creative.get('image_hash')
-        if type(image) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', image):
+        cards = creative.get('child_attachments') if story_kind[0] == 'link_data' else None
+        if cards is not None:
+            from .meta_write_mapping import validate_carousel
+
+            if type(cards) is not list or any(type(card) is not dict for card in cards):
+                fail('FIRST_LAUNCH_GRAPH_READ_CREATIVE_IMAGE')
+            selected = [{key: card.get(key) for key in ('image_hash', 'link', 'name')} for card in cards]
+            validate_carousel(selected, creative.get('link'))
+            projected['carousel'] = selected
+            url = creative.get('link')
+        elif type(image) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', image):
             fail('FIRST_LAUNCH_GRAPH_READ_CREATIVE_IMAGE')
-        if story_kind[0] == 'video_data':
+        elif story_kind[0] == 'video_data':
             cta = creative.get('call_to_action')
             value = cta.get('value') if type(cta) is dict else None
             url = value.get('link') if type(value) is dict else None
@@ -129,6 +152,11 @@ def _project(plan, page_id, status, body):
                 or any(character.isspace() or ord(character) < 32 or ord(character) == 127 for character in url)):
             fail('FIRST_LAUNCH_GRAPH_READ_CREATIVE_URL')
         projected.update(page_id=page_id, destination_url=url)
+        if body.get('url_tags'):
+            from .meta_write_mapping import validate_url_tags
+
+            validate_url_tags(body['url_tags'], url)
+            projected['url_tags'] = body['url_tags']
         return 'CREATIVE_OBSERVED', projected
     state = body.get('status')
     if state not in ('PAUSED', 'DRAFT'):
@@ -139,6 +167,7 @@ def _project(plan, page_id, status, body):
         if objective not in OBJECTIVES:
             fail('FIRST_LAUNCH_GRAPH_READ_OBJECTIVE')
         projected['objective'] = objective
+        projected.update(_budget_fields(body, ('spend_cap', 'daily_budget', 'lifetime_budget')))
     else:
         projected['campaign_id'] = _native_id(body.get('campaign_id'))
         if plan.level == 'ADSET':
@@ -151,13 +180,34 @@ def _project(plan, page_id, status, body):
     return state, projected
 
 
+def _budget_fields(body, keys):
+    values = {}
+    for key in keys:
+        value = body.get(key)
+        if value in (None, 0, '0', ''):
+            continue
+        if type(value) is not str or not re.fullmatch(r'[1-9][0-9]{0,8}', value):
+            fail('FIRST_LAUNCH_GRAPH_READ_BUDGET_FORMAT')
+        values[key + '_minor'] = int(value)
+    return values
+
+
 def _adset_observation(body):
-    daily = body.get('daily_budget')
     goal = body.get('optimization_goal')
-    if (type(daily) is not str or not re.fullmatch(r'[1-9][0-9]{0,8}', daily)
-            or goal not in ('LINK_CLICKS', 'OFFSITE_CONVERSIONS')):
+    if goal not in ('LINK_CLICKS', 'OFFSITE_CONVERSIONS'):
         fail('FIRST_LAUNCH_GRAPH_READ_ADSET')
-    result = dict(daily_budget_minor=int(daily), optimization_goal=goal)
+    result = dict(optimization_goal=goal, **_budget_fields(body, ('daily_budget', 'lifetime_budget')))
+    if body.get('is_dynamic_creative') is True:
+        result['is_dynamic_creative'] = True
+    for key in ('start_time', 'end_time'):
+        if body.get(key) is not None:
+            result[key] = aware_time(body[key]).astimezone(timezone.utc).isoformat()
+    if body.get('targeting') is not None:
+        from .meta_write_mapping import advanced_targeting
+
+        chosen = advanced_targeting(body['targeting'], returned=True)
+        if chosen:
+            result['selected_targeting'] = chosen
     if goal == 'OFFSITE_CONVERSIONS':
         promoted = body.get('promoted_object')
         if type(promoted) is not dict or promoted.get('custom_event_type') not in tuple(WEBSITE_CONVERSION_OBJECTIVES):

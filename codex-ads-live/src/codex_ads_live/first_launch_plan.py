@@ -19,10 +19,40 @@ OPERATIONS = (
     ('CREATE_AD', 'ad-draft.json', {'adset_id': 'CREATE_ADSET', 'creative': 'CREATE_CREATIVE'}),
 )
 PAGE_OPERATIONS = ('CREATE_CREATIVE', 'CREATE_AD')
+COMPATIBLE_PROFILE_VERSIONS = ('0.1.0.dev1+v16r1', '0.1.0.dev1+v16r2', '0.1.0.dev2+v1', '0.1.0.dev3+v1r1')
 
 
 def stage_specs(plan):
-    """The first pair keeps the A3 filenames; further pairs share its parent objects."""
+    """Return persisted stage order, dependencies and selected source material."""
+    strategy = (plan.get('operator_intake') or {}).get('managed_strategy')
+    if strategy:
+        single = plan.get('creative_research')
+        chosen = plan.get('creative_research_batch') or ([single] if single is not None else [])
+        by_asset = {selection['asset_sha256']: selection for selection in chosen}
+        kinds = {'CAMPAIGN': ('campaign', {}), 'ADSET': ('adset', {'campaign_id': 'CAMPAIGN'}),
+                 'CREATIVE': ('creative', {}), 'AD': ('ad', {'adset_id': 'ADSET', 'creative': 'CREATIVE'})}
+        stages, indices, counts = [], {}, {}
+        for node in strategy['nodes']:
+            kind, identifier = node['kind'], node['id']
+            if node.get('remote_id') is not None:
+                indices[identifier] = (node['remote_id'], kind)
+                continue
+            stem, dependencies = kinds[kind]
+            index = counts.get(kind, 0) + 1
+            counts[kind] = index
+            filename = stem + '-draft' + (f'-{index}' if index > 1 else '') + '.json'
+            parents = {field: indices[ident][0] for field, parent in dependencies.items()
+                       for ident in node['depends_on'] if indices[ident][1] == parent}
+            if parents.keys() != dependencies.keys():
+                fail('FIRST_LAUNCH_STRATEGY_DEPENDENCY_INVALID')
+            selection = by_asset.get(node.get('asset_sha256'))
+            if kind == 'AD':
+                selection = stages[parents['creative']][3]
+            indices[identifier] = (len(stages), kind)
+            if kind in ('CREATIVE', 'AD') and selection is None:
+                fail('FIRST_LAUNCH_STRATEGY_ASSET_REQUIRED')
+            stages.append(('CREATE_' + kind, filename, parents, selection))
+        return stages
     batch = plan.get('creative_research_batch')
     result = [
         ('CREATE_CAMPAIGN', 'campaign-draft.json', {}, None),
@@ -44,8 +74,10 @@ def plan_directory(workspace, directory):
 
 def _plan(profile, selection):
     object_only(selection, ('account_id', 'page_id'), ('account_id', 'page_id'))
-    # Compatible R1 profiles keep their existing plan identity and ledger paths.
-    account_scope = draft_review_scope(profile, selection['account_id'], compatible_versions=('0.1.0.dev1+v16r1',))
+    # Existing profiles retain their plan identity and ledger paths.
+    host_only = (profile.get('connection_onboarding') or {}).get('route') == 'host-connector'
+    account_scope = draft_review_scope(profile, selection['account_id'],
+                                        compatible_versions=COMPATIBLE_PROFILE_VERSIONS, host_draft=host_only)
     account = account_scope['account_id']
     page = selection['page_id'] if selection['page_id'] is not None else profile['defaults']['PAGE']
     if page is None:
@@ -73,10 +105,11 @@ def _plan(profile, selection):
                 declared_goal=business.get('goal'), declared_result_type=result_type,
                 business_budget={key:business.get(key) for key in ('currency','maximum_test_spend','protected_daily_spend')},
                 supported_adset_profiles=['WEBSITE_LINK_CLICKS', 'WEBSITE_PURCHASE', 'WEBSITE_LEAD'],
-                notes=notes, dispatchable=False)
+                notes=notes + (['ORIGINAL_HOST_CONNECTOR_REQUIRED_FOR_NETWORK'] if host_only else []),
+                dispatchable=False, **({'local_draft_only': True} if host_only else {}))
 
 
-def _draft(plan, operation, selection=None):
+def _draft(plan, operation, selection=None, filename=None):
     draft = blank_draft(operation)
     draft['account_id'] = plan['account_id']
     context = plan['previously_observed_account_context']
@@ -87,6 +120,8 @@ def _draft(plan, operation, selection=None):
         draft['context']['page_id'] = plan['page_id']
     if operation in PAGE_OPERATIONS and selection is not None:
         draft['context']['material_sha256'] = selection['asset_sha256']
+        if operation == 'CREATE_CREATIVE' and 'creative_copy' in selection:
+            draft['parameters'].update(selection['creative_copy'])
     if 'status' in draft['parameters']:
         draft['parameters']['status'] = 'PAUSED'
     result_type = plan['declared_result_type']
@@ -97,6 +132,30 @@ def _draft(plan, operation, selection=None):
         if operation == 'CREATE_ADSET':
             params.update(optimization_goal='OFFSITE_CONVERSIONS', destination_type='WEBSITE',
                           promoted_object={'pixel_id': None, 'custom_event_type': result_type})
+    intake = plan.get('operator_intake')
+    if intake is not None:
+        draft['context']['currency'] = intake['currency']
+        if operation == 'CREATE_CREATIVE':
+            draft['parameters']['destination_url'] = intake['destination_url']
+        if operation == 'CREATE_ADSET' and result_type in WEBSITE_CONVERSION_OBJECTIVES:
+            draft['parameters']['promoted_object']['pixel_id'] = intake['dataset_id']
+        selected_parameters = intake.get('selected_launch_parameters', {}).get(operation)
+        strategy = intake.get('managed_strategy')
+        if strategy is not None:
+            creation_nodes = [node for node in strategy['nodes'] if node.get('remote_id') is None]
+            for spec, node in zip(stage_specs(plan), creation_nodes, strict=True):
+                if spec[1] == filename:
+                    selected_parameters = node.get('params')
+                    if operation == 'CREATE_CAMPAIGN' and selected_parameters.get('bid_strategy') is not None:
+                        draft['parameters']['is_adset_budget_sharing_enabled'] = None
+                    if operation == 'CREATE_ADSET' and strategy['budget_owner'] == 'CBO':
+                        draft['context']['parents_hold_budget'] = True
+                    # A rebuild uses a named source as reference, then creates a new paused chain.
+                    if operation == 'CREATE_CAMPAIGN' and strategy.get('source_campaign_id') is not None:
+                        draft['context']['source_campaign_id'] = strategy['source_campaign_id']
+                    break
+        if selected_parameters is not None:
+            draft['parameters'].update(selected_parameters)
     return draft
 
 
@@ -113,33 +172,55 @@ def _goal_conflicts(plan, operation, params):
     return []
 
 
-def prepare(workspace, output=None, *, account_id=None, page_id=None, creative_selection=None):
+def prepare(workspace, output=None, *, account_id=None, page_id=None, creative_selection=None,
+            selection_files=(), operator_intake=None):
     journal = journal_for(workspace, existing_only=True)
     with journal.locked(existing_only=True):
         profile = load(journal)
         plan = _plan(profile, dict(account_id=account_id, page_id=page_id))
-        if creative_selection:
-            from .creative_research import freeze_selection
-            if len(creative_selection) > 6:
+        selected = []
+        if creative_selection or selection_files:
+            from .creative_research import freeze_selection, selection_from_file
+            if len(creative_selection or ()) + len(selection_files) > 6:
                 fail('FIRST_LAUNCH_BATCH_LIMIT')
-            selected = [freeze_selection(journal, profile, plan['account_id'], *args) for args in creative_selection]
+            account = plan['account_id']
+            options = [*(creative_selection or ()),
+                       *(selection_from_file(journal, profile, account, path) for path in selection_files)]
+            selected = [freeze_selection(journal, profile, account, *args) for args in options]
             if len({item['asset_sha256'] for item in selected}) != len(selected):
                 fail('FIRST_LAUNCH_BATCH_DUPLICATE_ASSET')
             if len(selected) == 1:
                 plan['creative_research'] = selected[0]
             else:
                 plan['creative_research_batch'] = selected
+        if operator_intake is not None:
+            scope = draft_review_scope(profile, plan['account_id'], compatible_versions=COMPATIBLE_PROFILE_VERSIONS,
+                                       host_draft=plan.get('local_draft_only',False))
+            goal = plan['declared_result_type']
+            if (operator_intake['profile_sha256'] != digest(scope)
+                    or operator_intake['goal'] != goal
+                    or operator_intake['creatives_sha256'] != digest(selected)
+                    or (operator_intake['account_id'], operator_intake['page_id']) !=
+                    (plan['account_id'], plan['page_id'])):
+                fail('BUYER_INTAKE_CHANGED_REFRESH_BEFORE_PLAN')
+            plan['operator_intake'] = operator_intake
         plan['plan_id'] = uuid4().hex
         root = new_directory(plan_directory(workspace, output))
         files = [_write_new(root, 'first-launch-plan.json', plan)]
         for operation, filename, _, selection in stage_specs(plan):
-            files.append(_write_new(root, filename, _draft(plan, operation, selection)))
+            files.append(_write_new(root, filename, _draft(plan, operation, selection, filename)))
         result = dict(status=PREPARED, plan_file='first-launch-plan.json',
                       draft_files=[row['path'] for row in files[1:]], notes=plan['notes'],
                       object_selection=dict(account='EXISTING_MAPPED', page='EXISTING_MAPPED',
-                                            campaign='CREATE_PAUSED', adset='CREATE_PAUSED',
+                                            campaign=('EXISTING_NAMED_PARENT' if
+                                                      (operator_intake or {}).get('managed_strategy', {}).get('mode') == 'APPEND'
+                                                      else 'CREATE_PAUSED'),
+                                            adset=('PREVIEW_BY_GROUP' if (operator_intake or {}).get('managed_strategy')
+                                                   else 'CREATE_PAUSED'),
                                             creative='CREATE_FROM_EXISTING_IMAGE_OR_APPROVED_MEDIA',
-                                            ad='CREATE_PAUSED', budget_owner='ADSET'),
+                                            ad='CREATE_PAUSED', budget_owner=(
+                                                'CAMPAIGN' if (operator_intake or {}).get('managed_strategy', {}).get(
+                                                    'budget_owner') == 'CBO' else 'ADSET')),
                       network_used=False, dispatchable=False)
         _write_new(root, 'RECEIPT.json', dict(result, files=files, plan_sha256=digest(plan)))
     return dict(result, plan_directory=str(root), plan_sha256=digest(plan))
@@ -147,13 +228,13 @@ def prepare(workspace, output=None, *, account_id=None, page_id=None, creative_s
 
 def _read_plan_json(path):
     path = checked_path(path, link_error='FIRST_LAUNCH_PLAN_PATH_LINK', volume_error='WORKSPACE_VOLUME_NOT_MOUNTED')
-    if not path.is_file() or path.stat().st_size > 16_000:
+    if not path.is_file() or path.stat().st_size > 128_000:
         fail('FIRST_LAUNCH_PLAN_FILES_REQUIRED')
     with path.open('rb') as source:
-        data = source.read(16_001)
-    if len(data) > 16_000:
+        data = source.read(128_001)
+    if len(data) > 128_000:
         fail('FIRST_LAUNCH_PLAN_FILES_REQUIRED')
-    return strict_json(data.decode('utf-8'))
+    return strict_json(data.decode('utf-8'), max_chars=128_000)
 
 
 def current_plan(profile, root):
@@ -163,9 +244,11 @@ def current_plan(profile, root):
             or receipt.get('status') != PREPARED or receipt.get('plan_sha256') != digest(plan)):
         fail('FIRST_LAUNCH_PLAN_RECEIPT_MISMATCH')
     current = _plan(profile, plan.get('selection'))
-    stable_fields = ('account_id', 'page_id', 'workspace_scope_sha256')
-    if any(current[key] != plan.get(key) for key in stable_fields):
+    stable_fields = ('account_id', 'page_id', 'workspace_scope_sha256', 'local_draft_only')
+    if any(current.get(key) != plan.get(key) for key in stable_fields):
         fail('FIRST_LAUNCH_WORKSPACE_SCOPE_CHANGED')
+    if 'operator_intake' in plan:
+        current['operator_intake'] = plan['operator_intake']
     if 'creative_research' in plan:
         current['creative_research'] = plan['creative_research']
     if 'creative_research_batch' in plan:
@@ -175,7 +258,7 @@ def current_plan(profile, root):
 
 def scoped_draft(root, current, operation, filename, selection=None):
     draft = load_draft(root/filename)
-    expected = _draft(current, operation, selection)
+    expected = _draft(current, operation, selection, filename)
     if (draft['operation'], draft['account_id'], draft['context']['page_id']) != (
             operation, expected['account_id'], expected['context']['page_id']):
         fail('FIRST_LAUNCH_DRAFT_SCOPE_CHANGED')
@@ -188,6 +271,46 @@ def scoped_draft(root, current, operation, filename, selection=None):
     if selection is not None and operation in PAGE_OPERATIONS:
         if draft['context']['material_sha256'] != expected['context']['material_sha256']:
             fail('FIRST_LAUNCH_RESEARCH_ASSET_CHANGED')
+        if operation == 'CREATE_CREATIVE' and any(draft['parameters'][key] != value
+                for key, value in selection.get('creative_copy', {}).items()):
+            fail('FIRST_LAUNCH_RESEARCH_COPY_CHANGED')
+        if operation == 'CREATE_CREATIVE' and expected['parameters'].get('dynamic_media') is not None and (
+                draft['parameters'].get('dynamic_media') != expected['parameters']['dynamic_media']):
+            fail('META_DYNAMIC_CREATIVE_SCOPE_CHANGED')
+    for field in ('parents_hold_budget', 'source_campaign_id'):
+        if draft['context'].get(field) != expected['context'].get(field):
+            fail('FIRST_LAUNCH_STRATEGY_CONTEXT_CHANGED')
+    if operation == 'CREATE_CAMPAIGN' and draft['parameters'].get('spend_cap') is not None:
+        from decimal import Decimal
+        budget = current['business_budget']
+        declared = budget['maximum_test_spend']
+        if declared is None or budget['currency'] is None:
+            fail('FIRST_LAUNCH_CAMPAIGN_CAP_REQUIRES_DECLARED_LIMIT')
+        minor = Decimal(declared).scaleb(0 if budget['currency'] == 'JPY' else 2)
+        if draft['parameters']['spend_cap'] > minor:
+            fail('FIRST_LAUNCH_CAMPAIGN_CAP_EXCEEDS_DECLARED_LIMIT')
+    intake = current.get('operator_intake')
+    if intake is not None:
+        params = draft['parameters']
+        if 'managed_strategy' in intake and operation in ('CREATE_CAMPAIGN', 'CREATE_ADSET'):
+            scoped_parameters = {key: value for key, value in expected['parameters'].items()
+                                 if key != 'campaign_id'}
+            if any(params.get(key) != value for key, value in scoped_parameters.items()):
+                fail('BUYER_SELECTED_STRATEGY_FIELDS_CHANGED')
+        elif any(params.get(key) != value for key, value in
+                 intake.get('selected_launch_parameters', {}).get(operation, {}).items()):
+            fail('BUYER_SELECTED_STRATEGY_FIELDS_CHANGED')
+        if draft['context']['currency'] not in (None, intake['currency']):
+            fail('BUYER_PLAN_CURRENCY_CHANGED')
+        if operation == 'CREATE_CREATIVE' and params['destination_url'] not in (None, intake['destination_url']):
+            fail('BUYER_PLAN_DESTINATION_CHANGED')
+        if operation == 'CREATE_ADSET':
+            limits = [n for n in (intake['budget_minor'], intake['protected_daily_minor']) if n is not None]
+            if params.get('daily_budget') is not None and params['daily_budget'] > min(limits):
+                fail('BUYER_PLAN_DAILY_BUDGET_ABOVE_CASE_CAP')
+            promoted = params.get('promoted_object') or {}
+            if promoted.get('pixel_id') not in (None, intake['dataset_id']):
+                fail('BUYER_PLAN_DATASET_CHANGED')
     return draft
 
 
@@ -206,8 +329,10 @@ def check(workspace, directory=None, *, clock=utcnow):
             conflicts = _goal_conflicts(current, operation, draft['parameters'])
             stages[operation if len(specs) == 4 else filename] = dict(file=filename, status=report['status'], review_sha256=report['review_sha256'],
                 missing_fields=report['missing_fields'], blockers=[*report['blockers'], *conflicts], dependencies={
-                    field: dict(operation=specs[predecessor][0], state='NOT_PROVIDED' if draft['parameters'][field] is None
-                                else 'DECLARED_ID_REQUIRES_VERIFIED_READBACK')
+                    field: (dict(operation='VERIFY_EXISTING_PARENT', object_id=predecessor, state='REQUIRES_VERIFIED_READBACK')
+                            if type(predecessor) is str else dict(operation=specs[predecessor][0],
+                                state='NOT_PROVIDED' if draft['parameters'][field] is None
+                                else 'DECLARED_ID_REQUIRES_VERIFIED_READBACK'))
                     for field, predecessor in dependencies.items()})
     return dict(status='WORKSPACE_FIRST_LAUNCH_DRAFTS_CHECKED', stages=stages, notes=current['notes'],
                 confirmed_native_dependencies=False, network_used=False, dispatchable=False)

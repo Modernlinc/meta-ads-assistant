@@ -73,7 +73,7 @@ def load_intent(path):
     from .local_paths import checked_path
     path = checked_path(path, link_error='CONNECTION_INTENT_SYMLINK', volume_error='CONNECTION_VOLUME_NOT_MOUNTED')
     if not path.is_file() or path.stat().st_size > 16000: fail('CONNECTION_INTENT_FILE')
-    return validate_intent(strict_json(path.read_text(encoding='utf-8')))
+    return validate_intent(strict_json(path.read_text(encoding='utf-8-sig')))
 
 
 def account_plan(intent): return ReadPlan('account', intent['account_id'], account_id=intent['account_id'])

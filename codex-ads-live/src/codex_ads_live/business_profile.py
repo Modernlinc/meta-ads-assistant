@@ -13,7 +13,7 @@ ACCOUNT_ID = r'[1-9][0-9]{0,39}'
 MONEY = r'[0-9]{1,9}(?:\.[0-9]{1,3})?'
 EVIDENCE_REF = r'EV_[A-Z0-9_]{1,80}'
 SECRET_PATTERN = re.compile(
-    r'EAA[A-Za-z0-9]{40,}|\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}|PRIVATE KEY'
+    r'(?-i:EAA[A-Za-z0-9]{40,})|\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}|PRIVATE KEY'
     r'|(?:access[_ -]?token|app[_ -]?secret|cookie|password|authorization)\s*[:=]'
     r'|\bbearer\s+[A-Za-z0-9._~-]{12,}', re.I)
 TEXT_LIMITS = {'offer_summary': 240, 'goal': 240, 'result_definition': 300}

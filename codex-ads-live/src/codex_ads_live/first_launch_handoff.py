@@ -74,6 +74,9 @@ def _parent_handoff(launch, review, before_path, after_path, ad_path, clock):
     scope = {key: binding[key] for key in (
         'account_id', 'campaign_id', 'adset_id', 'ad_id', 'currency',
         'daily_budget_minor', 'maximum_spend_minor', 'starts_at', 'ends_at')}
+    policy = binding.get('selected_budget')
+    if policy is not None:
+        scope['selected_budget'] = policy
     scope['review_sha256'] = review['review_sha256']
     parent_template = dict(schema='first-launch-parent-before-v1', **scope, observed_at=None,
                            evidence_ref=None, campaign_configured_status=None, adset_configured_status=None,
@@ -117,7 +120,8 @@ def _parent_handoff(launch, review, before_path, after_path, ad_path, clock):
     _reference(after['control_evidence_ref'])
     cap = after['enforceable_spend_cap_minor']
     stop = aware_time(after['enforceable_stop_at'])
-    if type(cap) is not int or not binding['daily_budget_minor'] <= cap <= binding['maximum_spend_minor']:
+    planned_minor = policy['budget_minor'] if policy is not None else binding['daily_budget_minor']
+    if type(cap) is not int or not planned_minor <= cap <= binding['maximum_spend_minor']:
         fail('FIRST_LAUNCH_HANDOFF_SPEND_CONTROL_MISMATCH')
     if not max(after_at, start) < stop <= end:
         fail('FIRST_LAUNCH_HANDOFF_STOP_CONTROL_MISMATCH')

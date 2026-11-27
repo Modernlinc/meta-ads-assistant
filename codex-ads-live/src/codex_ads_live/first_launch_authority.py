@@ -33,6 +33,8 @@ READ_PURPOSES = {
     'media': ['one_approved_media_readback'],
     'delivery-evidence': ['named_ad_creative', 'scoped_account_activity_filter'],
     'maintenance': ['named_object_controls', 'update_readback'],
+    'rules': ['account_rule_list', 'named_rule_and_history'],
+    'audiences': ['named_audience_lookup', 'named_lookalike_seed'],
 }
 LIMIT = 65536
 
@@ -99,7 +101,7 @@ def _eligibility_ref(value):
 
 
 def _record(kind, key):
-    if kind not in ('read', 'create', 'activate', 'media', 'media-reuse', 'update') or type(key) is not str or not HEX.fullmatch(key):
+    if kind not in ('read', 'create', 'activate', 'media', 'media-reuse', 'update', 'rule', 'audience') or type(key) is not str or not HEX.fullmatch(key):
         fail('FIRST_LAUNCH_AUTHORITY_OPERATION_REFUSED')
     return STATE / f'{kind}-{key}.json'
 
@@ -179,6 +181,19 @@ def _respond(profile, request):
             fail('FIRST_LAUNCH_AUTHORITY_ATTEMPT_MISMATCH')
         from .first_launch_managed_write import recover_update
         return recover_update(profile, row, request['attempt_id'])
+    if action == 'receipt' and kind in ('rule','audience'):
+        row = _read(_record(kind, key), trust=True)
+        if (row['profile_sha256'] != digest(profile) or request['attempt_id'] != _expected_attempt(row)):
+            fail('FIRST_LAUNCH_AUTHORITY_ATTEMPT_MISMATCH')
+        receipt = STATE / ('receipt-' + request['attempt_id'] + '.json')
+        if receipt.exists():
+            return _read(receipt, trust=True)
+        claim = _claim_key(row)
+        if not claim.exists():
+            _write(claim, dict(attempt_id=request['attempt_id'], classification='NOT_SENT'))
+            _write(receipt, dict(status='NOT_SENT', attempt_id=request['attempt_id']))
+            return _read(receipt, trust=True)
+        return dict(status='OUTCOME_UNKNOWN', attempt_id=request['attempt_id'])
     if action == 'receipt':
         if kind not in ('create', 'media') or type(request['attempt_id']) is not str or not HEX.fullmatch(request['attempt_id']):
             fail('FIRST_LAUNCH_AUTHORITY_OPERATION_REFUSED')
@@ -198,7 +213,7 @@ def _respond(profile, request):
         fail('FIRST_LAUNCH_AUTHORITY_OPERATION_REFUSED')
     row = _usable_record(profile, kind, key)
     if action == 'execute':
-        if kind not in ('create', 'activate', 'media', 'update') or request['attempt_id'] != _expected_attempt(row):
+        if kind not in ('create', 'activate', 'media', 'update', 'rule', 'audience') or request['attempt_id'] != _expected_attempt(row):
             fail('FIRST_LAUNCH_AUTHORITY_ATTEMPT_MISMATCH')
         from .first_launch_managed_write import execute_approved
         return execute_approved(profile, row, request['attempt_id'])
@@ -206,7 +221,7 @@ def _respond(profile, request):
                   scope_sha256=key, principal_id=profile['principal_id'])
     if kind == 'read':
         result['reference'] = profile['read_reference']
-    elif kind in ('media', 'update'):
+    elif kind in ('media', 'update', 'rule', 'audience'):
         result['attempt_id'] = _expected_attempt(row)
         if kind == 'media':
             result['generation'] = row.get('generation', 0)
@@ -227,8 +242,8 @@ def _expected_attempt(row):
         return digest(['first-launch-media-attempt-v1', row['key'], row['profile_sha256']])
     if row['kind'] == 'media-reuse':
         return digest(['first-launch-media-reuse-v1', row['key'], row['profile_sha256'], row['origin']['attempt_id']])
-    if row['kind'] == 'update':
-        return digest(['first-launch-update-attempt-v1', row['key'], row['profile_sha256']])
+    if row['kind'] in ('update', 'rule', 'audience'):
+        return digest(['first-launch-' + row['kind'] + '-attempt-v1', row['key'], row['profile_sha256']])
     fail('FIRST_LAUNCH_AUTHORITY_OPERATION_REFUSED')
 
 
@@ -408,6 +423,21 @@ def _approve(profile, args):
         _check_form(binding, request['form'])
         key = binding.sha256
         details = dict(binding=scope, form=request['form'], planned_fields=request['expected_object'])
+        if binding.operation == 'CREATE_CAMPAIGN' and request.get('source_campaign_id') is not None:
+            source = request['source_campaign_id']
+            if type(source) is not str or not NATIVE_ID.fullmatch(source):
+                fail('FIRST_LAUNCH_SOURCE_CAMPAIGN_REQUIRED')
+            details['source_campaign_id'] = source
+        if binding.operation == 'CREATE_AD':
+            expected = request['expected_object']['campaign_id']
+            if type(expected) is not str or not NATIVE_ID.fullmatch(expected):
+                fail('FIRST_LAUNCH_EXPECTED_CAMPAIGN_REQUIRED')
+            details['expected_campaign_id'] = expected
+            if 'creative_asset_feed_sha256' in request:
+                feed = request['creative_asset_feed_sha256']
+                if type(feed) is not str or not HEX.fullmatch(feed):
+                    fail('META_DYNAMIC_CREATIVE_SCOPE_CHANGED')
+                details['creative_asset_feed_sha256'] = feed
         if binding.operation == 'CREATE_CREATIVE':
             from urllib.parse import parse_qs
             story = strict_json(parse_qs(request['form'], strict_parsing=True)['object_story_spec'][0])
@@ -417,6 +447,28 @@ def _approve(profile, args):
                 details['managed_media'] = dict(scope_sha256=media_scope, receipt=receipt)
         permit = asdict(CreationPermit(key, evidence, digest([digest(profile), 'ads_management', key]),
                                      digest([scope, evidence]), now.isoformat(), expires.isoformat()))
+    elif kind == 'audience':
+        from .native_audience import create_request
+
+        scope = packet['native_audience_scope']
+        profile = _service_profile(profile, scope)
+        wire = create_request(scope)
+        key = digest(scope)
+        if packet['scope_sha256'] != key:
+            fail('NATIVE_AUDIENCE_REVIEW_SCOPE_CHANGED')
+        details = dict(scope=scope, request=wire, permission='ads_management',
+                       only_uses_existing_named_seed=True, no_list_upload=True)
+    elif kind == 'rule':
+        from .native_rules import mutation_request
+
+        scope = packet['native_rule_scope']
+        profile = _service_profile(profile, scope)
+        wire = mutation_request(scope)
+        key = digest(scope)
+        if packet['scope_sha256'] != key:
+            fail('NATIVE_RULE_REVIEW_SCOPE_CHANGED')
+        details = dict(scope=scope, request=wire, account_wide_for_selected_entity_type=scope['action']=='create',
+                       irreversible=scope['action']=='delete', permission='ads_management')
     elif kind == 'update':
         from .first_launch_update import request as update_request
         scope = packet['update_scope']
@@ -458,6 +510,9 @@ def _approve(profile, args):
                evidence_ref=evidence, approved_at=confirmed.isoformat(), expires_at=expires.isoformat())
     if kind == 'create':
         row['approved_form'] = request['form']
+        for key in ('source_campaign_id', 'expected_campaign_id','creative_asset_feed_sha256'):
+            if key in details:
+                row[key] = details[key]
         if binding.operation == 'CREATE_CREATIVE' and media_scope is not None:
             row['media_scope_sha256'] = media_scope
     if path.exists():
@@ -512,7 +567,7 @@ def main(argv=None):
     enroll = commands.add_parser('register-plan')
     enroll.add_argument('--from-packet', type=Path, required=True)
     approve = commands.add_parser('approve')
-    approve.add_argument('kind', choices=('read', 'create', 'activate', 'media', 'media-reuse', 'update'))
+    approve.add_argument('kind', choices=('read', 'create', 'activate', 'media', 'media-reuse', 'update', 'rule', 'audience'))
     approve.add_argument('--packet', type=Path, required=True)
     approve.add_argument('--media-file', type=Path)
     approve.add_argument('--read-purpose', choices=tuple(READ_PURPOSES), default='launch')

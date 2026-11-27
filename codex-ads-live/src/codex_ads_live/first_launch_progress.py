@@ -19,7 +19,7 @@ from .first_launch_plan import OPERATIONS, _goal_conflicts, _read_plan_json, cur
 from .first_launch_preview import PREVIEW_FORMAT
 from .journal import Journal, canonical, digest
 from .local_paths import checked_path
-from .meta_write_mapping import mapped_request, review_draft, utcnow
+from .meta_write_mapping import advanced_targeting, mapped_request, review_draft, utcnow
 from .validation import InputError, aware_time, fail, object_only
 
 
@@ -63,9 +63,49 @@ def _validate_record(record, reservation):
         fail('FIRST_LAUNCH_READBACK_OBJECT_MISMATCH')
 
 
+def _selected_rows(rows, ad_id, external=None):
+    if type(ad_id) is not str or not REMOTE_ID.fullmatch(ad_id):
+        fail('FIRST_LAUNCH_BATCH_AD_NOT_RECORDED')
+    by_id = {row['readback']['object']['id']: row for row in rows if _ready(row)}
+    chosen = by_id.get(ad_id)
+    if chosen is None or chosen['reservation']['operation'] != 'CREATE_AD':
+        fail('FIRST_LAUNCH_BATCH_AD_NOT_RECORDED')
+    ad = chosen['readback']['object']
+    chain = []
+    for field, kind in (('campaign_id', 'CAMPAIGN'), ('adset_id', 'ADSET'), ('creative_id', 'CREATIVE')):
+        row = by_id.get(ad[field])
+        if row is None and external and ad[field] in external.get(kind, ()):
+            continue
+        if row is None or row['reservation']['operation'] != 'CREATE_' + kind:
+            fail('FIRST_LAUNCH_BATCH_AD_DEPENDENCY_NOT_RECORDED')
+        chain.append(row)
+    return [*chain, chosen]
+
+
+def _validate_selected_attempt(activation, rows, plan_sha):
+    validate_activation_attempt(activation, digest(rows))
+    observed = activation['observation']
+    ad = rows[-1]['readback']['object']
+    if observed is not None and (observed['ad_id'], observed['account_id']) != (ad['id'], ad['account_id']):
+        fail('FIRST_LAUNCH_ACTIVATION_READBACK_MISMATCH')
+    effect = activation.get('guard_effect')
+    if effect is not None and any(effect[key] != ad[field] for key, field in (
+        ('ad_id', 'id'), ('account_id', 'account_id'), ('campaign_id', 'campaign_id'),
+        ('adset_id', 'adset_id'), ('creative_id', 'creative_id')
+    )):
+        fail('FIRST_LAUNCH_ACTIVATION_EFFECT_MISMATCH')
+    frozen = activation.get('frozen_review')
+    if frozen is not None and any(frozen['binding'].get(key) != value for key, value in (
+        ('plan_sha256', plan_sha), ('ad_id', ad['id']), ('account_id', ad['account_id']),
+        ('campaign_id', ad['campaign_id']), ('adset_id', ad['adset_id']), ('creative_id', ad['creative_id'])
+    )):
+        fail('FIRST_LAUNCH_ACTIVATION_FROZEN_REVIEW_MISMATCH')
+
+
 def _validate_state(value, plan_sha, levels=LEVELS):
     keys = ('schema', 'plan_sha256', 'stages', 'checkpoint')
-    object_only(value, (*keys, 'activation_attempt', 'manual_activation_attempt', 'batch_configuration_sha256'), keys)
+    object_only(value, (*keys, 'activation_attempt', 'manual_activation_attempt', 'batch_configuration_sha256',
+                        'batch_activation_attempts'), keys)
     if value['schema'] != SCHEMA or value['plan_sha256'] != plan_sha:
         fail('FIRST_LAUNCH_PROGRESS_PLAN_CHANGED')
     rows = value['stages']
@@ -122,24 +162,15 @@ def _validate_state(value, plan_sha, levels=LEVELS):
     if 'activation_attempt' in value:
         if len(rows) != len(levels) or not _ready(rows[-1]):
             fail('FIRST_LAUNCH_ACTIVATION_CHAIN_REQUIRED')
-        activation = value['activation_attempt']
-        validate_activation_attempt(activation, digest(rows))
-        observed = activation['observation']
-        ad = rows[-1]['readback']['object']
-        if observed is not None and (observed['ad_id'], observed['account_id']) != (ad['id'], ad['account_id']):
-            fail('FIRST_LAUNCH_ACTIVATION_READBACK_MISMATCH')
-        effect = activation.get('guard_effect')
-        if effect is not None and any(effect[key] != ad[field] for key, field in (
-            ('ad_id', 'id'), ('account_id', 'account_id'), ('campaign_id', 'campaign_id'),
-            ('adset_id', 'adset_id'), ('creative_id', 'creative_id')
-        )):
-            fail('FIRST_LAUNCH_ACTIVATION_EFFECT_MISMATCH')
-        frozen = activation.get('frozen_review')
-        if frozen is not None and any(frozen['binding'].get(key) != value for key, value in (
-            ('plan_sha256', plan_sha), ('ad_id', ad['id']), ('account_id', ad['account_id']),
-            ('campaign_id', ad['campaign_id']), ('adset_id', ad['adset_id']), ('creative_id', ad['creative_id'])
-        )):
-            fail('FIRST_LAUNCH_ACTIVATION_FROZEN_REVIEW_MISMATCH')
+        _validate_selected_attempt(value['activation_attempt'], rows, plan_sha)
+    if 'batch_activation_attempts' in value:
+        attempts = value['batch_activation_attempts']
+        if type(attempts) is not dict or len(levels) <= len(LEVELS) or len(rows) != len(levels) or not _ready(rows[-1]):
+            fail('FIRST_LAUNCH_ACTIVATION_CHAIN_REQUIRED')
+        if rows[-1]['readback']['object']['id'] in attempts:
+            fail('FIRST_LAUNCH_ACTIVATION_SOURCE_CONFLICT')
+        for ad_id, attempt in attempts.items():
+            _validate_selected_attempt(attempt, _selected_rows(rows, ad_id), plan_sha)
     checkpoint = value['checkpoint']
     if checkpoint is not None:
         keys = ('decision', 'evidence_ref', 'next_review_on')
@@ -157,32 +188,69 @@ def _validate_state(value, plan_sha, levels=LEVELS):
             fail('FIRST_LAUNCH_CHECKPOINT_DATE')
 
 
+def _external_parents(plan):
+    strategy = (plan.get('operator_intake') or {}).get('managed_strategy', {})
+    result = {}
+    for node in strategy.get('nodes', ()):
+        if node.get('remote_id') is not None:
+            result.setdefault(node['kind'], []).append(node['remote_id'])
+    return result
+
+
 def _stage(root, plan, position, prior):
     operation, filename, dependencies, selection = stage_specs(plan)[position]
     draft = scoped_draft(root, plan, operation, filename, selection)
     params = draft['parameters']
     ids = [row['readback']['object']['id'] for row in prior]
     for key, predecessor in dependencies.items():
-        bound = {'creative_id':ids[predecessor]} if key == 'creative' else ids[predecessor]
+        resolved = predecessor if type(predecessor) is str else ids[predecessor]
+        bound = {'creative_id': resolved} if key == 'creative' else resolved
         if params[key] is not None and params[key] != bound:
             fail('FIRST_LAUNCH_DEPENDENCY_CONFLICT')
         params[key] = bound
     expected = {'account_id':plan['account_id']}
     if operation == 'CREATE_CAMPAIGN':
         expected.update(objective=params['objective'], configured_status='PAUSED')
+        for field in ('spend_cap', 'daily_budget', 'lifetime_budget'):
+            if params.get(field) is not None:
+                expected[field + '_minor'] = params[field]
     elif operation == 'CREATE_ADSET':
-        expected.update(campaign_id=params['campaign_id'], daily_budget_minor=params['daily_budget'],
-                        optimization_goal=params['optimization_goal'], configured_status='PAUSED')
+        expected.update(campaign_id=params['campaign_id'], optimization_goal=params['optimization_goal'],
+                        configured_status='PAUSED')
+        if not draft['context'].get('parents_hold_budget'):
+            by_lifetime = params.get('lifetime_budget') is not None
+            budget = 'lifetime_budget' if by_lifetime else 'daily_budget'
+            expected[budget + '_minor'] = params.get(budget)
         if params.get('promoted_object') is not None:
             expected['promoted_object'] = params['promoted_object']
+        if params.get('targeting') is not None:
+            selected_targeting = advanced_targeting(params['targeting'])
+            if selected_targeting:
+                expected['selected_targeting'] = selected_targeting
+        if params.get('is_dynamic_creative') is True:
+            expected['is_dynamic_creative'] = True
+        if params.get('start_time') is not None:
+            from datetime import timezone
+            expected.update(start_time=aware_time(params['start_time']).astimezone(timezone.utc).isoformat(),
+                            end_time=aware_time(params['end_time']).astimezone(timezone.utc).isoformat())
     elif operation == 'CREATE_CREATIVE':
         expected.update(page_id=plan['page_id'], destination_url=params['destination_url'])
-        if params.get('video') is not None:
+        if params.get('url_tags') is not None:
+            expected['url_tags'] = params['url_tags']
+        if params.get('dynamic_media') is not None:
+            from .dynamic_creative import build
+
+            if all(params.get(key) is not None for key in ('destination_url','primary_text','headline','description','call_to_action')):
+                expected['asset_feed_sha256'] = digest(build(params))
+        elif params.get('video') is not None:
             expected.update(video_id=params['video']['video_id'], thumbnail_hash=params['video']['thumbnail_hash'])
+        elif params.get('carousel') is not None:
+            expected['carousel'] = params['carousel']
         else:
             expected['image_hash'] = params['image_hash']
     else:
-        expected.update(campaign_id=ids[0], adset_id=params['adset_id'],
+        parents = _external_parents(plan).get('CAMPAIGN', [])
+        expected.update(campaign_id=parents[0] if parents else ids[0], adset_id=params['adset_id'],
                         creative_id=params['creative']['creative_id'], configured_status='PAUSED')
     return draft, expected
 
@@ -191,7 +259,9 @@ def _draft_identity(draft):
     return digest(dict(operation=draft['operation'], account_id=draft['account_id'], api_version=draft['api_version'],
                        currency=draft['context']['currency'], timezone=draft['context']['timezone'],
                        page_id=draft['context']['page_id'], material_sha256=draft['context']['material_sha256'],
-                       parameters=draft['parameters']))
+                       parameters=draft['parameters'],
+                       **{key: draft['context'][key] for key in ('source_campaign_id', 'parents_hold_budget')
+                          if key in draft['context']}))
 
 
 def _request_preview(draft):
@@ -219,7 +289,7 @@ def _tracking_review(destination):
 def _budget_review(plan, draft):
     declared = plan['business_budget']
     currency = draft['context']['currency']
-    minor = draft['parameters']['daily_budget']
+    minor = draft['parameters'].get('daily_budget')
     cap = declared['maximum_test_spend']
     reason = None
     if declared['currency'] is not None and currency is not None and declared['currency'] != currency:
@@ -249,7 +319,7 @@ def _launch_configuration(root, plan, rows, clock):
                         key in ('context.currency','context.timezone','context.material_sha256')]
         conflicts = _goal_conflicts(plan,operation,draft['parameters'])
         for field, predecessor in dependencies.items():
-            known = ids.get(predecessor)
+            known = predecessor if type(predecessor) is str else ids.get(predecessor)
             expected = {'creative_id':known} if known is not None and field=='creative' else known
             if draft['parameters'][field] not in (None,expected):
                 conflicts.append('FIRST_LAUNCH_DEPENDENCY_CONFLICT')
@@ -264,12 +334,28 @@ def _launch_configuration(root, plan, rows, clock):
                                   timezone=context['timezone'] if operation!='CREATE_AD' else None,
                                   source_material_sha256=context['material_sha256'] if operation=='CREATE_CREATIVE' else None,
                                   parameters={key:value for key,value in draft['parameters'].items() if key not in dependencies},
-                                  depends_on={field: specs[parent][0] for field, parent in dependencies.items()} if len(specs)==4
+                                  depends_on={field: (parent if type(parent) is str else specs[parent][0])
+                                              for field, parent in dependencies.items()} if len(specs)==4
                                   else dependencies))
     identity = digest(dict(account_id=plan['account_id'],page_id=plan['page_id'],configuration=configuration))
     saved = next((row['host_attempt']['binding']['configuration_sha256'] for row in rows
                   if (row.get('host_attempt') or {}).get('binding') is not None),None)
     return dict(configuration_sha256=identity,issues=issues,changed_since_authorization=saved not in (None,identity))
+
+
+def _activation_budget(chain, context):
+    settings = context.get('selected_budget')
+    if not settings:
+        adset = next((item['readback']['object'] for item in chain
+                      if item['reservation']['operation'] == 'CREATE_ADSET'), {})
+        return dict(context, daily_budget_minor=adset.get('daily_budget_minor'))
+    owner, schedule = settings['owner'], settings['schedule']
+    operation = 'CREATE_' + owner
+    selected = next((item['readback']['object'] for item in chain
+                    if item['reservation']['operation'] == operation), {})
+    field = 'daily_budget_minor' if schedule == 'DAILY' else 'lifetime_budget_minor'
+    return dict(context, daily_budget_minor=selected.get(field) if schedule == 'DAILY' else None,
+                selected_budget=dict(settings, budget_minor=selected.get(field)))
 
 
 def _base_view(plan,state,workspace_sha):
@@ -287,11 +373,17 @@ def _view(root, plan, state, workspace_sha, clock):
     if 'creative_research' in plan:
         response['creative_research'] = plan['creative_research']
     specs = stage_specs(plan)
+    external = _external_parents(plan)
+    if external:
+        response['named_existing_parents'] = external
     if 'creative_research_batch' in plan:
         response['creative_research_batch'] = plan['creative_research_batch']
         response['batch_items'] = [
             dict(item_id=digest([state['plan_sha256'], index, operation, selection]),
                  operation=operation, file=filename, depends_on=dependencies,
+                 material_sha256=selection['asset_sha256'] if selection else None,
+                 object_id=(rows[index]['readback']['object']['id']
+                            if index < len(rows) and _ready(rows[index]) else None),
                  state=('READBACK_MATCHED' if _ready(rows[index]) else
                         'OUTCOME_UNKNOWN' if rows[index].get('host_attempt') is not None else
                         'AWAITING_VERIFIED_OBJECT') if index < len(rows) else 'NOT_SENT')
@@ -323,16 +415,40 @@ def _view(root, plan, state, workspace_sha, clock):
             response.update(readback_template=None, next_action='RECOVER_WITH_ORIGINAL_TRUSTED_HOST')
         return response
     if len(rows) == len(specs):
+        if specs[-1][0] == 'CREATE_ADSET':
+            observed = [
+                dict(operation=row['reservation']['operation'], **row['readback']['object'],
+                     readback_sha256=digest(row['readback']),
+                     basis='TRUSTED_HOST' if row.get('host_attempt') else 'OPERATOR_OBSERVATION')
+                for row in rows
+            ]
+            response.update(status='FIRST_LAUNCH_STRUCTURE_RECORDED', structure=observed,
+                            next_action='PREPARE_CREATIVE_FOR_EXISTING_PAUSED_STRUCTURE')
+            return response
         ad = rows[-1]['readback']['object']
-        adset_draft = scoped_draft(root,plan,'CREATE_ADSET','adset-draft.json')
-        context = adset_draft['context']
+        chain = _selected_rows(rows, ad['id'], external)
+        adset = next((row['readback']['object'] for row in chain if row['reservation']['operation'] == 'CREATE_ADSET'), {})
+        context_operation = 'CREATE_ADSET' if adset else 'CREATE_CREATIVE'
+        context = next(scoped_draft(root, plan, operation, filename, selection)['context']
+                       for operation, filename, _, selection in specs if operation == context_operation)
         chain_sha256 = digest(rows)
+        activation_context = dict(currency=context['currency'], timezone=context['timezone'],
+                                  declared_budget=plan['business_budget'])
+        configured = (plan.get('operator_intake') or {}).get('managed_strategy')
+        if configured and not external:
+            activation_context['selected_budget'] = dict(
+                owner='CAMPAIGN' if configured['budget_owner'] == 'CBO' else 'ADSET',
+                schedule=configured['budget_schedule'])
+        activation_context = _activation_budget(chain, activation_context)
+        if external:
+            activation_context['daily_budget_minor'] = None
+            activation_context['existing_budget_policy'] = dict(
+                owner='CAMPAIGN' if configured['budget_owner'] == 'CBO' else 'ADSET',
+                schedule=configured['budget_schedule'])
         response.update(status='FIRST_LAUNCH_OBJECT_CHAIN_RECORDED',
                         ad_id=ad['id'],
                         object_chain_sha256=chain_sha256,
-                        activation_context=dict(currency=context['currency'], timezone=context['timezone'],
-                                                declared_budget=plan['business_budget'],
-                                                daily_budget_minor=rows[1]['readback']['object']['daily_budget_minor']),
+                        activation_context=activation_context,
                         next_action='REVIEW_THIS_AD_PREVIEW_BEFORE_SEPARATE_ACTIVATION_APPROVAL',
                         preview_target=dict(ad_id=ad['id'],
                                             fallback_creative_id=ad['creative_id'],
@@ -387,6 +503,16 @@ def _host_request(root, profile, plan, rows, target, configuration_sha=None):
 
 
 def _accept_readback(latest, record, save, clock):
+    # Graph creation reads request stable control fields. Old drafts did not
+    # bind them, so retain exactly the evidence frozen in that reservation.
+    expected = latest['reservation']['expected_object']
+    optional = {'spend_cap_minor', 'start_time', 'end_time', 'url_tags', 'selected_targeting',
+                'is_dynamic_creative'} - expected.keys()
+    budget_fields = {'daily_budget_minor', 'lifetime_budget_minor'}
+    if isinstance(record.get('object'), dict) and (record['object'].keys() & budget_fields) - expected.keys():
+        fail('FIRST_LAUNCH_READBACK_BUDGET_LAYER_MISMATCH')
+    if isinstance(record.get('object'), dict) and optional & record['object'].keys():
+        record = dict(record, object={key: value for key, value in record['object'].items() if key not in optional})
     _validate_record(record,latest['reservation'])
     if aware_time(record['observed_at']) > clock():
         fail('FIRST_LAUNCH_READBACK_FUTURE')
@@ -452,9 +578,34 @@ def _target_pending(index):
     return row['pending'] if row else None
 
 
+def select_ad(view, state, ad_id):
+    if ad_id is None:
+        return view
+    if view['status'] != 'FIRST_LAUNCH_OBJECT_CHAIN_RECORDED':
+        fail('FIRST_LAUNCH_OBJECT_CHAIN_REQUIRED')
+    if ad_id == view['ad_id']:
+        return view
+    external = view.get('named_existing_parents')
+    rows = _selected_rows(state['stages'], ad_id, external)
+    identity = rows[-1]['readback']['object']
+    chain = digest(rows)
+    target = dict(view['preview_target'], ad_id=ad_id, fallback_creative_id=identity['creative_id'])
+    observation = dict(view['preview_observation_template'], object_id=ad_id, object_chain_sha256=chain)
+    scope = dict(view['separate_activation_scope'], target_ad_id=ad_id,
+                 campaign_id=identity['campaign_id'], adset_id=identity['adset_id'])
+    context = _activation_budget(rows, view['activation_context'])
+    if external:
+        context['daily_budget_minor'] = None
+    return dict(view, stages=rows, ad_id=ad_id, object_chain_sha256=chain, preview_target=target,
+                activation_context=context,
+                preview_observation_template=observation, separate_activation_scope=scope,
+                activation_attempt=state.get('batch_activation_attempts', {}).get(ad_id),
+                manual_activation_attempt=None)
+
+
 def progress(workspace, directory=None, *, reserve=False, readback=None, checkpoint=None, dispatch_stage=None,
              recover_stage=None, provider=None, activation_review=None, activation_mode='plan',
-             activation_provider=None, manual_inputs=None, manual_reserve=False, clock=utcnow):
+             activation_provider=None, manual_inputs=None, manual_reserve=False, ad_id=None, clock=utcnow):
     if activation_mode not in ('plan', 'dispatch', 'recover') or (activation_mode == 'dispatch' and activation_review is None):
         fail('FIRST_LAUNCH_ACTIVATION_ACTION_INVALID')
     if manual_reserve and manual_inputs is None:
@@ -464,6 +615,9 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
             + bool(reserve) + activation_action > 1):
         fail('FIRST_LAUNCH_PROGRESS_ACTION_CONFLICT')
     host_action = dispatch_stage is not None or recover_stage is not None
+    if ad_id is not None and (reserve or readback is not None or host_action or manual_inputs is not None
+                              or checkpoint is not None):
+        fail('FIRST_LAUNCH_BATCH_SELECTION_REQUIRES_RECORDED_AD')
     if host_action and provider is None:
         fail('FIRST_LAUNCH_TRUSTED_HOST_NOT_CONFIGURED')
     if activation_mode != 'plan' and activation_provider is None:
@@ -475,15 +629,25 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
     with workspace_journal.locked(existing_only=True):
         profile = load(workspace_journal)
         plan, plan_sha = current_plan(profile, root)
-        levels = tuple(spec[0] for spec in stage_specs(plan))
         workspace_sha = workspace_identity(profile)
         empty = dict(schema=SCHEMA, plan_sha256=plan_sha, stages=[], checkpoint=None)
+        if plan.get('local_draft_only'):
+            if any(value is not None for value in (readback,checkpoint,manual_inputs,ad_id)) or reserve or host_action or activation_action:
+                fail('FIRST_LAUNCH_HOST_CONNECTOR_DRAFT_ONLY')
+            return dict(_base_view(plan,empty,workspace_sha), status='FIRST_LAUNCH_HOST_CONNECTOR_DRAFT_ONLY',
+                        next_action='USE_ORIGINAL_HOST_CONNECTOR_FOR_APPROVED_READS')
+        levels = tuple(spec[0] for spec in stage_specs(plan))
+        external = _external_parents(plan)
+        if levels[-1] == 'CREATE_ADSET' and (activation_action or manual_inputs is not None):
+            fail('FIRST_LAUNCH_STRUCTURE_HAS_NO_AD_TO_ACTIVATE')
+        if external and manual_inputs is not None:
+            fail('FIRST_LAUNCH_EXISTING_PARENT_MANUAL_ACTIVATION_REQUIRES_SEPARATE_GUARD')
         location = root/'first-launch-progress'
         existing = location.exists() or location.is_symlink()
         if not existing and not reserve:
             if manual_inputs is not None or readback is not None or checkpoint is not None or activation_action or host_action:
                 fail('FIRST_LAUNCH_RESERVATION_REQUIRED')
-            return _view(root, plan, empty, workspace_sha, clock)
+            return select_ad(_view(root, plan, empty, workspace_sha, clock), empty, ad_id)
         journal = Journal(location, existing_only=existing, stage_snapshots=True)
         with journal.locked(wait_seconds=.5, existing_only=existing and not reserve):
             validate = lambda value: _validate_state(value, plan_sha, levels)
@@ -516,6 +680,18 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
                         index.save(dict(pending=None), _validate_target_index)
                     return result
 
+            activation_state, save_activation = state, save
+            if ad_id is not None:
+                if len(rows) != len(levels) or not _ready(rows[-1]):
+                    fail('FIRST_LAUNCH_OBJECT_CHAIN_REQUIRED')
+                _selected_rows(rows, ad_id, external)
+            if ad_id is not None and ad_id != rows[-1]['readback']['object']['id']:
+                activation_state = {'activation_attempt': state.get('batch_activation_attempts', {}).get(ad_id)}
+
+                def save_activation():
+                    state.setdefault('batch_activation_attempts', {})[ad_id] = activation_state['activation_attempt']
+                    save()
+
             if activation_mode == 'dispatch':
                 # The manual import and remote host reservation share this journal lock.
                 # An A1/A2 default declaration must be reconciled even before its first import.
@@ -526,7 +702,7 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
             if activation_mode == 'recover':
                 if state.get('manual_activation_attempt') is not None:
                     fail('FIRST_LAUNCH_ACTIVATION_MANUAL_ATTEMPT_REQUIRES_RECOVERY')
-                attempt = state.get('activation_attempt')
+                attempt = activation_state.get('activation_attempt')
                 if attempt is None:
                     fail('FIRST_LAUNCH_ACTIVATION_ATTEMPT_REQUIRED')
                 frozen = attempt.get('frozen_review')
@@ -543,12 +719,12 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
                             fail('FIRST_LAUNCH_ACTIVATION_RECOVERY_SCOPE_CHANGED')
 
                     assert_original_activation()
-                    return activation_operation(frozen, 'recover', state, save, activation_provider,
+                    return activation_operation(frozen, 'recover', activation_state, save_activation, activation_provider,
                                                 assert_original_activation, clock)
                 if activation_review is None:
                     fail('FIRST_LAUNCH_ACTIVATION_ORIGINAL_REVIEW_REQUIRED')
 
-            view = _view(root, plan, state, workspace_sha, clock)
+            view = select_ad(_view(root, plan, state, workspace_sha, clock), state, ad_id)
             if manual_inputs is not None:
                 from .first_launch_handoff import record_manual_attempt
                 registration = record_manual_attempt(view, state, manual_inputs, root / 'ad-observation.json',
@@ -562,11 +738,11 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
                 def assert_current_activation():
                     fresh_profile = load(workspace_journal)
                     refreshed, refreshed_sha = current_plan(fresh_profile,root)
-                    current = _view(root,refreshed,state,workspace_identity(fresh_profile),clock)
+                    current = select_ad(_view(root,refreshed,state,workspace_identity(fresh_profile),clock), state, ad_id)
                     if refreshed_sha != plan_sha or read_review(current, activation_review) != activation:
                         fail('FIRST_LAUNCH_ACTIVATION_REVIEW_CHANGED')
 
-                return activation_operation(activation, activation_mode, state, save, activation_provider,
+                return activation_operation(activation, activation_mode, activation_state, save_activation, activation_provider,
                                             assert_current_activation, clock)
             if reserve and view['status'] == 'FIRST_LAUNCH_STAGE_FOR_REVIEW':
                 if len(levels) > len(LEVELS) and 'batch_configuration_sha256' not in state:
@@ -630,7 +806,7 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
                         save()
 
                     dispatch_creation(provider,binding,body,rows[-1],save_target_attempt,assert_current,clock)
-            result = _view(root, plan, state, workspace_sha, clock)
+            result = select_ad(_view(root, plan, state, workspace_sha, clock), state, ad_id)
             if result['status'] == 'FIRST_LAUNCH_OUTCOME_UNKNOWN' and rows[-1].get('host_attempt') is None:
                 reserved_sha = rows[-1]['reservation']['stage_sha256']
                 configuration = _launch_configuration(root,plan,rows,clock)
@@ -645,6 +821,15 @@ def progress(workspace, directory=None, *, reserve=False, readback=None, checkpo
                         media_scope = draft['parameters'].get('media_scope_sha256')
                         if media_scope is not None:
                             result['host_approval_scope']['media_scope_sha256'] = media_scope
+                    if binding.operation == 'CREATE_AD':
+                        original_creative = rows[-1]['reservation']['expected_object']['creative_id']
+                        feed = next((row['readback']['object'].get('asset_feed_sha256') for row in rows[:-1]
+                                     if _ready(row) and row['readback']['object']['id'] == original_creative), None)
+                        if feed:
+                            result['host_approval_scope']['creative_asset_feed_sha256'] = feed
+                    source_campaign = _stage(root, plan, len(rows)-1, rows[:-1])[0]['context'].get('source_campaign_id')
+                    if source_campaign is not None:
+                        result['host_approval_scope']['source_campaign_id'] = source_campaign
             if host_action:
                 result.update(network_used=None, transport_mode='TRUSTED_HOST_MANAGED')
             return result

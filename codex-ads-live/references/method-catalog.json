@@ -1,0 +1,275 @@
+{
+  "schema": "meta-method-routing-v1",
+  "platform": "META",
+  "routes": {
+    "experiment": {
+      "display_name": "素材试验设计",
+      "intent_triggers": [
+        "素材测试",
+        "测试素材",
+        "广告实验",
+        "ab测试",
+        "a/b",
+        "split test",
+        "creative test",
+        "experiment"
+      ],
+      "core": [
+        "meta-facebook-ads",
+        "ad-creative"
+      ],
+      "optional": [
+        "r21-ab-testing"
+      ],
+      "required_inputs": [
+        "商品与优惠",
+        "候选素材与唯一待检变量",
+        "事件、样本及预算上限"
+      ],
+      "outputs": [
+        "假设、主指标、停止条件和守护指标",
+        "同商品与落地页的可比较变体"
+      ],
+      "downstream_consumers": [
+        "strategy-review",
+        "media-buyer prepare"
+      ],
+      "known_limitations": "低样本只给出方向性观察，保留并列素材。"
+    },
+    "strategy": {
+      "display_name": "Meta 策略与结构取舍",
+      "intent_triggers": [
+        "cbo",
+        "abo",
+        "广告策略",
+        "投放结构",
+        "搭建广告",
+        "预算分配",
+        "campaign structure",
+        "allocate budget"
+      ],
+      "core": [
+        "meta-facebook-ads",
+        "brand-brief"
+      ],
+      "optional": [
+        "r22-meta-ads"
+      ],
+      "required_inputs": [
+        "广告目标与站点",
+        "单位经济、可用预算、样本积累",
+        "可用素材与已核实资产"
+      ],
+      "outputs": [
+        "分组预算控制和集中预算等候选方案",
+        "选择依据、风险和实际暂停对象结构"
+      ],
+      "downstream_consumers": [
+        "strategy-review",
+        "media-buyer prepare"
+      ],
+      "known_limitations": "保留策略分支。成功编译允许准备草案，应用方法不会批准建单或启用。"
+    },
+    "creative": {
+      "display_name": "素材诊断与创意变体",
+      "intent_triggers": [
+        "创意",
+        "素材诊断",
+        "素材评估",
+        "广告素材",
+        "广告文案",
+        "creative",
+        "ad copy"
+      ],
+      "core": [
+        "ad-creative",
+        "brand-brief"
+      ],
+      "optional": [
+        "r21-ad-creative"
+      ],
+      "required_inputs": [
+        "已授权的实际素材",
+        "品牌事实、商品卖点及限制",
+        "可观察的版位或素材场景"
+      ],
+      "outputs": [
+        "原始观察、入选文案与创意方案",
+        "未观察项及下一项测试"
+      ],
+      "downstream_consumers": [
+        "creative-compare",
+        "media-buyer prepare"
+      ],
+      "known_limitations": "只处理已有素材的观察和创意文稿。本轮无视频或图像生成。"
+    },
+    "competitor": {
+      "display_name": "竞品公开观察",
+      "intent_triggers": [
+        "竞品",
+        "竞争对手",
+        "行业广告",
+        "广告资料库",
+        "competitor",
+        "ad library"
+      ],
+      "core": [
+        "brand-brief",
+        "ad-creative"
+      ],
+      "optional": [
+        "r22-competitor-intel",
+        "r22-meta-ads-library"
+      ],
+      "required_inputs": [
+        "客户市场和商品事实",
+        "获授权的公开广告导出或观测",
+        "公共主页和广告归档编号"
+      ],
+      "outputs": [
+        "观察与缺项",
+        "可自证的原创角度假设"
+      ],
+      "downstream_consumers": [
+        "public-ad-inspect",
+        "media-buyer prepare"
+      ],
+      "known_limitations": "公开信息不能证明竞品转化、广告支出或利润。"
+    },
+    "performance": {
+      "display_name": "表现诊断与归因",
+      "intent_triggers": [
+        "cpm",
+        "roas",
+        "ctr",
+        "表现诊断",
+        "归因",
+        "投放复盘",
+        "花费上升",
+        "为什么订单",
+        "performance",
+        "attribution"
+      ],
+      "core": [
+        "ecommerce-analytics"
+      ],
+      "optional": [
+        "r25-meta-performance-analysis",
+        "r21-attribution"
+      ],
+      "required_inputs": [
+        "同账户、对象、时区和归因范围",
+        "可比较的已完成日期报表",
+        "分母、事件、素材或活动缺项"
+      ],
+      "outputs": [
+        "量价分解、异常和备选解释",
+        "可执行的下一项核查"
+      ],
+      "downstream_consumers": [
+        "performance-diagnose"
+      ],
+      "known_limitations": "不混算不同归因来源。数据缺失不能推断增量或因果。"
+    },
+    "tracking": {
+      "display_name": "追踪与事件",
+      "intent_triggers": [
+        "pixel",
+        "像素",
+        "capi",
+        "utm",
+        "追踪",
+        "事件去重",
+        "自定义事件",
+        "tracking",
+        "custom event"
+      ],
+      "core": [
+        "meta-facebook-ads"
+      ],
+      "optional": [
+        "r21-conversion-tracking",
+        "r25-meta-custom-event-interpretation"
+      ],
+      "required_inputs": [
+        "实际目标、站点、同意设置",
+        "数据集和事件来源",
+        "脱敏事件样本与UTM"
+      ],
+      "outputs": [
+        "事件、ID、参数及重复核查",
+        "修复、回读与回退建议"
+      ],
+      "downstream_consumers": [
+        "tracking-audit",
+        "media-buyer prepare"
+      ],
+      "known_limitations": "应用方法只产生检查或配置草案。真实浏览器和服务端回传以授权后的证据为准。"
+    },
+    "commerce": {
+      "display_name": "Shopify 与经营核算",
+      "intent_triggers": [
+        "shopify",
+        "退款",
+        "对账",
+        "单位经济核算",
+        "经营核算",
+        "现金退款",
+        "reconcile",
+        "refund",
+        "order ledger"
+      ],
+      "core": [
+        "ecommerce-analytics"
+      ],
+      "optional": [
+        "r25-shopify-order-discipline"
+      ],
+      "required_inputs": [
+        "具名店铺和广告账户",
+        "同币种订单、退款事务、广告日消耗",
+        "报表日期和退款记账口径"
+      ],
+      "outputs": [
+        "订单净额和清算退款",
+        "实绩与需核查的差异"
+      ],
+      "downstream_consumers": [
+        "commerce-reconcile"
+      ],
+      "known_limitations": "随包为方法原则，金额由本项目 commerce-reconcile 实算。"
+    },
+    "brand": {
+      "display_name": "品牌事实与商品简报",
+      "intent_triggers": [
+        "品牌",
+        "商品简报",
+        "商品卖点",
+        "优惠方案",
+        "品牌定位",
+        "brand brief",
+        "brand positioning",
+        "product brief"
+      ],
+      "core": [
+        "brand-brief"
+      ],
+      "optional": [
+        "r22-brand-context"
+      ],
+      "required_inputs": [
+        "品牌、商品与目标市场",
+        "真实商品、交易条件、权属资料"
+      ],
+      "outputs": [
+        "事实边界、定位备选和原始证据",
+        "供广告计划引用的简报"
+      ],
+      "downstream_consumers": [
+        "business-readiness",
+        "media-buyer prepare"
+      ],
+      "known_limitations": "区分客户自述、附件事实和受众假设，未证实的主张留空。"
+    }
+  }
+}

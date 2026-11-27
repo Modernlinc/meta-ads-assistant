@@ -119,6 +119,10 @@
                 "null"
               ],
               "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            "source_campaign_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,39}$"
             }
           }
         },
@@ -155,7 +159,6 @@
             "objective",
             "buying_type",
             "special_ad_categories",
-            "is_adset_budget_sharing_enabled",
             "status"
           ],
           "properties": {
@@ -201,6 +204,36 @@
               "enum": [
                 null,
                 "PAUSED"
+              ]
+            },
+            "spend_cap": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            },
+            "daily_budget": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            },
+            "lifetime_budget": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            },
+            "bid_strategy": {
+              "enum": [
+                null,
+                "LOWEST_COST_WITHOUT_CAP"
               ]
             }
           }
@@ -327,6 +360,9 @@
                 "null"
               ],
               "pattern": "^[1-9][0-9]{0,39}$"
+            },
+            "parents_hold_budget": {
+              "const": true
             }
           }
         },
@@ -361,10 +397,8 @@
           "required": [
             "name",
             "campaign_id",
-            "daily_budget",
             "billing_event",
             "optimization_goal",
-            "bid_strategy",
             "destination_type",
             "targeting",
             "status"
@@ -458,6 +492,108 @@
                   "type": "integer",
                   "minimum": 18,
                   "maximum": 65
+                },
+                "custom_audiences": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 10,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,39}$"
+                      }
+                    }
+                  }
+                },
+                "excluded_custom_audiences": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 10,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,39}$"
+                      }
+                    }
+                  }
+                },
+                "flexible_spec": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "interests"
+                    ],
+                    "properties": {
+                      "interests": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 10,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[1-9][0-9]{0,39}$"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "publisher_platforms": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "facebook",
+                      "instagram"
+                    ]
+                  }
+                },
+                "facebook_positions": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "feed",
+                      "reels",
+                      "story"
+                    ]
+                  }
+                },
+                "instagram_positions": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "reels",
+                      "story",
+                      "stream"
+                    ]
+                  }
                 }
               }
             },
@@ -493,6 +629,34 @@
                   ]
                 }
               }
+            },
+            "start_time": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "end_time": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "lifetime_budget": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100000000
+            },
+            "is_dynamic_creative": {
+              "enum": [
+                true,
+                null
+              ]
             }
           }
         },
@@ -1287,6 +1451,87 @@
                 "null"
               ],
               "pattern": "^[a-f0-9]{64}$"
+            },
+            "url_tags": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 512
+            },
+            "carousel": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "minItems": 2,
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "image_hash",
+                  "link",
+                  "name"
+                ],
+                "properties": {
+                  "image_hash": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                  },
+                  "link": {
+                    "type": "string",
+                    "pattern": "^https://",
+                    "maxLength": 1000
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  }
+                }
+              }
+            },
+            "dynamic_media": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "required": [
+                "images",
+                "alternate_primary_texts",
+                "alternate_headlines"
+              ],
+              "properties": {
+                "images": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 5,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                  }
+                },
+                "alternate_primary_texts": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 4,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1024
+                  }
+                },
+                "alternate_headlines": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 4,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 120
+                  }
+                }
+              }
             }
           },
           "allOf": [

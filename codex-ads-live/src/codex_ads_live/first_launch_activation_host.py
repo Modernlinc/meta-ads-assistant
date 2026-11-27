@@ -29,18 +29,21 @@ class ActivationGuard:
     affected_ads: tuple[str, ...]
     currency: str
     timezone: str
-    daily_budget_minor: int
+    daily_budget_minor: int | None
     enforced_spend_cap_minor: int
     enforced_start_at: str
     enforced_stop_at: str
     spend_control_sha256: str
     observed_at: str
     valid_until: str
+    selected_budget: dict | None = None
 
     @property
     def effect(self):
         effect = asdict(self)
         del effect['observed_at'], effect['valid_until']
+        if effect['selected_budget'] is None:
+            del effect['selected_budget']
         return effect
 
     @property
@@ -87,11 +90,22 @@ def _hash(value):
 def _guard_valid(review, guard, now):
     scope = review['binding']
     if (type(guard) is not ActivationGuard or guard.review_sha256 != review['review_sha256']
-            or type(guard.daily_budget_minor) is not int
+            or guard.selected_budget != scope.get('selected_budget')
             or any(getattr(guard, key) != scope[key] for key in (
                 'preview_observation_sha256', 'account_id', 'ad_id', 'campaign_id', 'adset_id', 'creative_id',
                 'currency', 'timezone', 'daily_budget_minor'))):
         fail('FIRST_LAUNCH_ACTIVATION_LIVE_SCOPE_MISMATCH')
+    policy = guard.selected_budget
+    if policy is None:
+        if type(guard.daily_budget_minor) is not int:
+            fail('FIRST_LAUNCH_ACTIVATION_LIVE_SCOPE_MISMATCH')
+    else:
+        fields = ('owner', 'schedule', 'budget_minor')
+        object_only(policy, fields, fields)
+        if (policy['owner'] not in ('CAMPAIGN', 'ADSET') or policy['schedule'] not in ('DAILY','LIFETIME')
+                or type(policy['budget_minor']) is not int or not 0 < policy['budget_minor'] <= scope['maximum_spend_minor']
+                or guard.daily_budget_minor != (policy['budget_minor'] if policy['schedule']=='DAILY' else None)):
+            fail('FIRST_LAUNCH_ACTIVATION_LIVE_SCOPE_MISMATCH')
     if (guard.ad_status, guard.campaign_status, guard.adset_status) != ('PAUSED', 'ACTIVE', 'ACTIVE'):
         fail('FIRST_LAUNCH_ACTIVATION_PARENT_OR_AD_STATUS')
     if guard.affected_ads != (scope['ad_id'],):
@@ -151,7 +165,7 @@ def validate_activation_attempt(attempt, chain_sha256):
     if 'guard_effect' in attempt:
         effect = attempt['guard_effect']
         fields = tuple(key for key in ActivationGuard.__dataclass_fields__ if key not in ('observed_at', 'valid_until'))
-        object_only(effect, fields, fields)
+        object_only(effect, fields, tuple(field for field in fields if field != 'selected_budget'))
         if (effect['review_sha256'] != attempt['review_sha256'] or digest(effect) != attempt['effect_sha256']
                 or not aware_time(effect['enforced_start_at']) <= aware_time(attempt['reserved_at'])
                 < aware_time(effect['enforced_stop_at'])):

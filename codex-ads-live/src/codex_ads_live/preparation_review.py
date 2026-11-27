@@ -83,7 +83,7 @@ def load_preparation(path):
     if not path.is_file() or path.stat().st_size>16000:fail('PREPARATION_INPUT_FILE')
     raw=path.read_bytes()
     if len(raw)>16000:fail('PREPARATION_INPUT_TOO_LARGE')
-    return validate_preparation(strict_json(raw.decode('utf-8')))
+    return validate_preparation(strict_json(raw.decode('utf-8-sig')))
 
 
 def platform_review_plan(value,supported,now):

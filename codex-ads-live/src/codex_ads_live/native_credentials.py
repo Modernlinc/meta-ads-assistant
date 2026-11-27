@@ -32,7 +32,7 @@ def _mac_read(service, account):
 
 
 def _windows_read(target, account):
-    # Windows-only FFI, never imported/invoked by macOS fake-OS tests.
+    # Windows uses the native generic credential reader. Tests can replace the DLL boundary.
     import ctypes
     from ctypes import wintypes
     class Credential(ctypes.Structure):
@@ -54,7 +54,7 @@ def _windows_read(target, account):
             fail('NATIVE_CREDENTIAL_IDENTITY_MISMATCH')
         size = item.CredentialBlobSize
         if not 2 <= size <= 2560 or size % 2 or not item.CredentialBlob: fail('NATIVE_CREDENTIAL_SIZE')
-        try: return ctypes.string_at(item.CredentialBlob, size).decode('utf-16-le')
+        try: return ctypes.string_at(item.CredentialBlob, size).decode('utf-16-le').removesuffix('\0')
         except UnicodeError: raise InputError('NATIVE_CREDENTIAL_ENCODING') from None
     finally: library.CredFree(pointer)
 

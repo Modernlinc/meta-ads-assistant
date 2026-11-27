@@ -1,0 +1,9 @@
+{
+  "schema": "meta-access-readiness-v1",
+  "task": "ADS_REPORT",
+  "app_user_role": "ON_APP",
+  "asset_role": "UNKNOWN",
+  "grants": {
+    "ads_read": "UNKNOWN"
+  }
+}

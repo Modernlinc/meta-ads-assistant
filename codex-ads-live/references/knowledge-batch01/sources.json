@@ -1,0 +1,961 @@
+{
+  "schema": "batch01-kb-sources-v1",
+  "version": "2026-11-27.1",
+  "sources": {
+    "OFF-20261127-01": {
+      "creator_channel": "Meta for Developers",
+      "title": "Handling Duplicate Pixel and Conversions API Events",
+      "url": "https://developers.facebook.com/documentation/ads-commerce/conversions-api/deduplicate-pixel-and-server-events",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-01",
+        "publisher": "Meta for Developers",
+        "url": "https://developers.facebook.com/documentation/ads-commerce/conversions-api/deduplicate-pixel-and-server-events",
+        "title": "Handling Duplicate Pixel and Conversions API Events",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "未标全局版本的官方文档",
+        "section": [
+          "Event deduplication options > Event ID and event name (recommended)",
+          "Setting up deduplication on the browser Pixel",
+          "FBP or external ID > Approach limitations"
+        ],
+        "status": "body_verified",
+        "locator": "L13-L24、L42-L46、L72-L75",
+        "supports": [
+          "对应的浏览器Pixel eventID须与CAPI event_id匹配；浏览器事件名须与服务器event_name匹配。",
+          "文档规定同一Pixel ID下、相同事件名与事件ID的双路事件须在首个事件收到后的48小时窗口内，才能按本页说明去重。",
+          "fbp/external_id替代方式有顺序与来源限制，不能把其行为泛化为所有同名事件都去重。"
+        ],
+        "conditions": [
+          "同一次业务行为的浏览器与服务器事件",
+          "核对同一Pixel/数据集以及事件名、ID、发送时间"
+        ],
+        "limitations": [
+          "未核验任何客户的实际payload或平台去重回执。",
+          "本页不能证明合作伙伴实现已经正确，也不能仅凭接收数高就判为重复。"
+        ],
+        "skill_use": [
+          "C04",
+          "C20"
+        ],
+        "rule_candidate": "收集双路payload及平台回执后再诊断去重；缺证据时输出待核，不能自动重装Pixel。",
+        "excerpt_id": "EX-OFF-20261127-01"
+      }
+    },
+    "OFF-20261127-02": {
+      "creator_channel": "Meta for Developers",
+      "title": "Standard Parameters",
+      "url": "https://developers.facebook.com/documentation/ads-commerce/conversions-api/parameters/custom-data",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-02",
+        "publisher": "Meta for Developers",
+        "url": "https://developers.facebook.com/documentation/ads-commerce/conversions-api/parameters/custom-data",
+        "title": "Standard Parameters",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "未标全局版本的官方参数表",
+        "section": [
+          "Standard Parameters > currency",
+          "Standard Parameters > value"
+        ],
+        "status": "body_verified",
+        "locator": "L16、L73",
+        "supports": [
+          "Purchase事件要求currency；currency应是value对应的有效ISO 4217币种代码。",
+          "Purchase事件及使用价值优化的事件要求value；value是表示货币金额的数值。"
+        ],
+        "conditions": [
+          "Purchase或使用价值优化的事件",
+          "value与currency成对核对"
+        ],
+        "limitations": [
+          "参数有效不等于金额口径正确，仍须核对税、运费、折扣及退款。",
+          "参数页本身没有给出该客户应采用何种利润或净收入定义。"
+        ],
+        "skill_use": [
+          "C04",
+          "C20",
+          "C25"
+        ],
+        "rule_candidate": "检查类型、币种和金额口径；不可把不同币种的value直接相加。",
+        "excerpt_id": "EX-OFF-20261127-02"
+      }
+    },
+    "OFF-20261127-03": {
+      "creator_channel": "Meta for Developers",
+      "title": "Verifying Your Setup",
+      "url": "https://developers.facebook.com/documentation/ads-commerce/conversions-api/verifying-setup",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-03",
+        "publisher": "Meta for Developers",
+        "url": "https://developers.facebook.com/documentation/ads-commerce/conversions-api/verifying-setup",
+        "title": "Verifying Your Setup",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "未标全局版本的官方文档",
+        "section": [
+          "Verifying that events are received correctly",
+          "Monitoring event freshness",
+          "Verifying that events are deduplicated correctly",
+          "Verifying that events are matched to users with high accuracy"
+        ],
+        "status": "body_verified",
+        "locator": "L12-L16、L19-L28、L31-L36",
+        "supports": [
+          "Events Manager Overview显示的接收事件量位于去重、同意控制及其他处理之前；Connection Method说明事件发送渠道。",
+          "Event Details中的Event Deduplication用于查看去重比例、去重键使用率和双路重叠情况。",
+          "Event Freshness与Event Match Quality分别涉及发送延迟、客户信息匹配质量，不是同一个质量指标。"
+        ],
+        "conditions": [
+          "具名Pixel/数据集及对应事件类型",
+          "有权限读取相关Events Manager页面或客户导出"
+        ],
+        "limitations": [
+          "没有客户实际去重率、事件匹配率或处理回执。",
+          "本页没有确认Diagnostics页当前完整告警分类和具体修复指令。"
+        ],
+        "skill_use": [
+          "C04",
+          "C19",
+          "C20"
+        ],
+        "rule_candidate": "禁止把接收事件总量直接当成去重购买数、归因购买数或Shopify订单数。",
+        "excerpt_id": "EX-OFF-20261127-03"
+      }
+    },
+    "OFF-20261127-04": {
+      "creator_channel": "Meta for Developers",
+      "title": "Using the API - Conversions API",
+      "url": "https://developers.facebook.com/documentation/ads-commerce/conversions-api/using-the-api",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-04",
+        "publisher": "Meta for Developers",
+        "url": "https://developers.facebook.com/documentation/ads-commerce/conversions-api/using-the-api",
+        "title": "Using the API - Conversions API",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "页面未标全局版本；读取到的示例含v27.0，不据此推定客户使用版本",
+        "section": [
+          "Test Events Tool",
+          "Upload Time versus Event Transaction Time"
+        ],
+        "status": "body_verified",
+        "additional_refs": [
+          "turn410273210view0"
+        ],
+        "locator": "L102-L105、L136-L142、L166",
+        "supports": [
+          "服务器事件可在Events Manager > Data Sources > 对应Pixel > Test Events中验证；测试ID作为test_event_code发送。",
+          "test_event_code仅用于测试，正式payload需去掉该字段。",
+          "该页明确指出带test_event_code的事件不会自动丢弃，会进入Events Manager并用于定向和广告测量，因此不能把它当作天然隔离的沙盒。",
+          "event_time表示实际业务事件发生时间，而非上传时间。"
+        ],
+        "conditions": [
+          "手工CAPI实施或具备合作伙伴提供的等价测试能力",
+          "明确数据集、测试交易与测试授权"
+        ],
+        "limitations": [
+          "未向任何真实账户发送事件。",
+          "Shopify合作伙伴渠道未必允许用户直接编辑test_event_code；不能把手工API步骤机械套在渠道集成上。",
+          "本轮未核验Diagnostics专属帮助页。"
+        ],
+        "skill_use": [
+          "C04",
+          "C20"
+        ],
+        "rule_candidate": "先检查集成类型和测试方式，测试事件发送属于独立授权动作；测试成功与生产链路完整仍分别验收。",
+        "excerpt_id": "EX-OFF-20261127-04"
+      }
+    },
+    "OFF-20261127-05": {
+      "creator_channel": "Shopify Help Center",
+      "title": "Data sharing in Facebook and Instagram by Meta",
+      "url": "https://help.shopify.com/en/manual/promoting-marketing/analyze-marketing/meta-data-sharing",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-05",
+        "publisher": "Shopify Help Center",
+        "url": "https://help.shopify.com/en/manual/promoting-marketing/analyze-marketing/meta-data-sharing",
+        "title": "Data sharing in Facebook and Instagram by Meta",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "未标发布日期的帮助文档；明确说明设置可能随安装时期不同",
+        "section": [
+          "Choosing Meta's customer data-sharing level",
+          "Set up Facebook data sharing",
+          "Customer data-sharing events"
+        ],
+        "status": "body_verified",
+        "locator": "L17-L24、L30-L40、L44-L57",
+        "supports": [
+          "Standard使用浏览器Pixel；Enhanced与Maximum使用Pixel和Conversions API，Purchase可在Shopify与Facebook服务器间发送。",
+          "文档提示实际数据共享设置随安装时期可能不同。",
+          "订单价值事件按文档所述订单总价计算，包含关税、税及折扣影响；不能直接等同Shopify净销售额或利润。",
+          "该渠道有自动标准事件列表，包含Purchase。"
+        ],
+        "conditions": [
+          "Facebook and Instagram by Meta官方销售渠道",
+          "已配置并确认数据共享级别及正确Pixel"
+        ],
+        "limitations": [
+          "本页不暴露某商店实际event_id生成代码或payload。",
+          "未确认具体商店地区、安装版本、权限和实际收件情况。",
+          "页面金额描述不能直接证明某客户自定义集成的字段含义。"
+        ],
+        "skill_use": [
+          "C04",
+          "C20",
+          "C24",
+          "C25"
+        ],
+        "rule_candidate": "先识别渠道集成，再核对共享设置与事件回执；不可默认所有Shopify商店均已启用同一CAPI模式。",
+        "excerpt_id": "EX-OFF-20261127-05"
+      }
+    },
+    "OFF-20261127-06": {
+      "creator_channel": "Shopify Help Center",
+      "title": "Meta pixel",
+      "url": "https://help.shopify.com/en/manual/promoting-marketing/analyze-marketing/meta-pixel",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-06",
+        "publisher": "Shopify Help Center",
+        "url": "https://help.shopify.com/en/manual/promoting-marketing/analyze-marketing/meta-pixel",
+        "title": "Meta pixel",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "未标发布日期的帮助文档",
+        "section": [
+          "Meta pixel",
+          "Add a Meta pixel to your online store",
+          "Change or remove a Meta pixel from your online store"
+        ],
+        "status": "body_verified",
+        "locator": "L12-L17、L30-L38、L63-L76",
+        "supports": [
+          "通过Facebook and Instagram by Meta接入后，先前手工写入主题的Pixel代码可能造成重复或错误报告，文档要求处理旧代码。",
+          "代理商或其他广告应用同时接入时，应检查重复或错误数据风险。",
+          "新增Pixel后需要真实客户活动才能显示数据，空白不自动证明接入失败。"
+        ],
+        "conditions": [
+          "已有主题手工Pixel、代理商或应用安装历史",
+          "先辨认每条集成及归属"
+        ],
+        "limitations": [
+          "官方描述不是对某个客户主题代码的删除授权。",
+          "不能仅凭多个脚本或多个Pixel ID存在，就断言同一事件重复归因。"
+        ],
+        "skill_use": [
+          "C04",
+          "C20"
+        ],
+        "rule_candidate": "输出集成清单和待核重复路径；任何代码删除或重接需单独批准、备份并回查。",
+        "excerpt_id": "EX-OFF-20261127-06"
+      }
+    },
+    "OFF-20261127-07": {
+      "creator_channel": "Shopify Help Center",
+      "title": "Finance reports",
+      "url": "https://help.shopify.com/en/manual/reports-and-analytics/shopify-reports/report-types/default-reports/finances-report",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-07",
+        "publisher": "Shopify Help Center",
+        "url": "https://help.shopify.com/en/manual/reports-and-analytics/shopify-reports/report-types/default-reports/finances-report",
+        "title": "Finance reports",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "核对日所见口径；部分功能仅特定商店开放",
+        "section": [
+          "Gross profit data",
+          "Total sales by order report",
+          "Understanding your Payments finance reports"
+        ],
+        "status": "body_verified",
+        "additional_refs": [
+          "turn410273210view4"
+        ],
+        "locator": "L70-L73、L293-L317、L377-L410",
+        "supports": [
+          "净销售额为商品销售额扣折扣和销售冲回，不含运费和税；总销售额再包含税、运费和费用。",
+          "销售与退款分别记在销售日和退款处理日；退回的运费和税不一定进入商品销售冲回列。",
+          "订单含多商品时可产生多行；支付报告又按实际支付交易计量，不能用明细行数当唯一订单数。",
+          "只有记录了成本的净销售额计入该毛利口径，缺成本不能自动当零。"
+        ],
+        "conditions": [
+          "确认报表名、指标列、明细粒度、日期及渠道范围",
+          "费用等字段仅在适用商店存在"
+        ],
+        "limitations": [
+          "文档口径不是本项目贡献利润公式的全部成本项。",
+          "未读取客户订单、退款、支付或成本导出；实际对账仍需稳定ID和币种。"
+        ],
+        "skill_use": [
+          "C19",
+          "C24",
+          "C25"
+        ],
+        "rule_candidate": "订单、支付、退款、行项目分别识别；按选定日期口径对账，成本缺失输出未知。",
+        "excerpt_id": "EX-OFF-20261127-07"
+      }
+    },
+    "OFF-20261127-08": {
+      "creator_channel": "Shopify Help Center",
+      "title": "Marketing reports",
+      "url": "https://help.shopify.com/en/manual/reports-and-analytics/shopify-reports/report-types/default-reports/marketing-reports",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-08",
+        "publisher": "Shopify Help Center",
+        "url": "https://help.shopify.com/en/manual/reports-and-analytics/shopify-reports/report-types/default-reports/marketing-reports",
+        "title": "Marketing reports",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "未标发布日期的帮助文档",
+        "section": [
+          "Referrers and interactions",
+          "Interactions after an order or after 30 days",
+          "Attribution models in reports"
+        ],
+        "status": "body_verified",
+        "locator": "L61-L80",
+        "supports": [
+          "Shopify可按不同归因模型分配营销功劳；Any click可能给出多于实际订单的合计功劳。",
+          "满足销售指标与营销维度条件的报表菜单默认Last click；营销活动数据的默认模型另述为Last non-direct click，不能混为一个全站默认。",
+          "首次互动来源有30日及下单后重置逻辑，不能直接等同Meta归因窗口。"
+        ],
+        "conditions": [
+          "记录具体报表、营销维度与所选归因模型",
+          "本文主要讨论Online Store渠道订单"
+        ],
+        "limitations": [
+          "未读取某店实际所选归因模型。",
+          "渠道功劳不等于广告的因果增量；本页不能判定Meta多记或漏记。"
+        ],
+        "skill_use": [
+          "C19",
+          "C25",
+          "C27"
+        ],
+        "rule_candidate": "归因模型、窗口及渠道范围不一致时先解释口径差异，再判断追踪异常。",
+        "excerpt_id": "EX-OFF-20261127-08"
+      }
+    },
+    "OFF-20261127-09": {
+      "creator_channel": "Shopify Help Center",
+      "title": "Shopify Analytics discrepancies",
+      "url": "https://help.shopify.com/en/manual/reports-and-analytics/discrepancies",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-09",
+        "publisher": "Shopify Help Center",
+        "url": "https://help.shopify.com/en/manual/reports-and-analytics/discrepancies",
+        "title": "Shopify Analytics discrepancies",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "页面明确提及2026-09-21至2026-09-23的session测量更新推送",
+        "section": [
+          "Discrepancies between Shopify and other software",
+          "Discrepancies between sessions and impressions or views",
+          "Data disruptions in reports and analytics"
+        ],
+        "status": "body_verified",
+        "locator": "L11、L16-L27、L37-L39",
+        "supports": [
+          "跨分析平台差异可能来自会话定义、浏览器限制、同意、报告时区及其他计量机制。",
+          "曝光或视频观看量与网站sessions不是同一种计数，差距本身不能证明网站丢失访问。",
+          "页面明确提醒2026年9月session测量更新可能改变会话与CVR，不必然代表客户行为改变。",
+          "报表的数据中断或延迟标志需要在业务判断前检查。"
+        ],
+        "conditions": [
+          "对比前确认指标、定义、时区与数据处理状态",
+          "跨2026年9月更新的会话指标须注意口径变化"
+        ],
+        "limitations": [
+          "页面更新说明不是某商店已完成升级的独立回执。",
+          "不能仅以本页列出的可能原因直接诊断某客户具体故障。"
+        ],
+        "skill_use": [
+          "C18",
+          "C19",
+          "C25"
+        ],
+        "rule_candidate": "先完成可比性检查，差异存在只触发核查，不直接触发预算或追踪代码修改。",
+        "excerpt_id": "EX-OFF-20261127-09"
+      }
+    },
+    "OFF-20261127-10": {
+      "creator_channel": "Google Analytics Help",
+      "title": "Select attribution settings",
+      "url": "https://support.google.com/analytics/answer/10597962?hl=en",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-10",
+        "publisher": "Google Analytics Help",
+        "url": "https://support.google.com/analytics/answer/10597962?hl=en",
+        "title": "Select attribution settings",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "GA4帮助文档；当前属性的功能开放情况需另核",
+        "section": [
+          "Reporting attribution model",
+          "Fractional credit",
+          "Key event lookback window",
+          "Default conversion settings"
+        ],
+        "status": "body_verified",
+        "additional_refs": [
+          "turn504190199view0"
+        ],
+        "locator": "L47-L69、L85-L95",
+        "supports": [
+          "GA4事件范围的流量维度受报告归因模型影响，用户或会话范围的流量维度不按同一方式变化。",
+          "数据驱动归因可能分配小数功劳；小数关键事件不直接证明重复追踪。",
+          "GA4报告采用property时区；不同平台时区会令同一活动归入不同报告时段。",
+          "模型、回溯窗口、合格渠道与计数方法应分别记录。"
+        ],
+        "conditions": [
+          "确定GA4属性、维度作用域、所选模型和报告时区",
+          "仅解释GA4口径，不推定Meta采用相同模型"
+        ],
+        "limitations": [
+          "本轮未核GA4 refund事件实现或客户电商埋点。",
+          "部分统一转换设置按属性开放，文档存在不等于该账户可用。"
+        ],
+        "skill_use": [
+          "C04",
+          "C19",
+          "C25"
+        ],
+        "rule_candidate": "跨平台对账必须携带模型、作用域、窗口、币种与时区，不能以一个平台作为全部平台的绝对真值。",
+        "excerpt_id": "EX-OFF-20261127-10"
+      }
+    },
+    "OFF-20261127-11": {
+      "creator_channel": "Meta for Business",
+      "title": "Conversion Lift Testing for Incrementality Measurement | Meta for Business",
+      "url": "https://secure.facebook.com/business/measurement/conversion-lift",
+      "published_at": "",
+      "review_status": "search_text_only_body_unavailable",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-11",
+        "publisher": "Meta for Business",
+        "url": "https://secure.facebook.com/business/measurement/conversion-lift",
+        "title": "Conversion Lift Testing for Incrementality Measurement | Meta for Business",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "仅取得官方域名的检索文本，正文打开受限",
+        "section": [
+          "FAQ: How does Conversion Lift help to measure incrementality?",
+          "FAQ: How do I further maximize and optimize for incrementality on Meta?"
+        ],
+        "status": "search_text_only_body_unavailable",
+        "additional_refs": [
+          "turn255945917search4",
+          "turn410273210view3",
+          "turn499601265view0"
+        ],
+        "locator": "官方搜索结果FAQ文本；secure页面打开被限流，www官方路径重定向登录",
+        "supports": [],
+        "candidate_claims_from_search_text": [
+          "官方检索文本将Conversion Lift描述为随机试验组与控制组比较。",
+          "官方检索文本将incremental attribution描述为以机器学习预测广告增量影响的优化与报告设置，并提出可用Lift试验验证策略。"
+        ],
+        "conditions": [
+          "须进一步取得可访问官方正文",
+          "账户资格、目标、地区和功能开放单独核验"
+        ],
+        "limitations": [
+          "本轮不是完整正文核实，不能标为已完成官方验证。",
+          "不能据此声称打开增量归因会增加记录的转化数、证明因果增量，或所有账户均可运行Lift。"
+        ],
+        "skill_use": [
+          "C04",
+          "C11",
+          "C19",
+          "C21"
+        ],
+        "rule_candidate": "暂作术语候选；将模型估计、随机试验结果和平台标准归因分栏，不自动修改归因设置。",
+        "excerpt_id": "EX-OFF-20261127-11"
+      }
+    },
+    "OFF-20261127-12": {
+      "creator_channel": "Meta Business Help Center",
+      "title": "Meta Business Help Center doc 721422165168355（目标主题：Aggregated Event Measurement；正文标题未核）",
+      "url": "https://www.facebook.com/business/help/721422165168355",
+      "published_at": "",
+      "review_status": "login_blocked_body_unavailable",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-12",
+        "publisher": "Meta Business Help Center",
+        "url": "https://www.facebook.com/business/help/721422165168355",
+        "title": "Meta Business Help Center doc 721422165168355（目标主题：Aggregated Event Measurement；正文标题未核）",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": null,
+        "section": [],
+        "status": "login_blocked_body_unavailable",
+        "locator": "打开后为Facebook登录/临时阻止页，未取得帮助正文",
+        "supports": [],
+        "candidate_claims_from_search_text": [],
+        "conditions": [
+          "需要具名可访问的官方正文或用户提供的官方页面材料"
+        ],
+        "limitations": [
+          "不采用第三方转述来补写Meta官方结论。",
+          "本轮不能确认旧版8个优先事件、AEM标签及域名验证规则的当前完整生效范围。",
+          "不绕过登录，也不将未取得正文解释为规则仍有效。"
+        ],
+        "skill_use": [
+          "C04",
+          "C20",
+          "C30"
+        ],
+        "rule_candidate": "旧版AEM八事件配置仅保留历史来源标签；在当前官方证据与账户界面核实前，不设为客户接入阻塞项。"
+      }
+    },
+    "OFF-20261127-13": {
+      "creator_channel": "Meta for Business",
+      "title": "Meta Advantage+ Campaign Budget: Ad Spend Automation Tool",
+      "url": "https://business-auth.facebook.com/business/ads/meta-advantage-plus/budget",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-13",
+        "publisher": "Meta for Business",
+        "url": "https://business-auth.facebook.com/business/ads/meta-advantage-plus/budget",
+        "title": "Meta Advantage+ Campaign Budget: Ad Spend Automation Tool",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "官方网页，未标版本",
+        "section": [
+          "Get the most out of your campaign budget",
+          "Leverage automation and control",
+          "Setup"
+        ],
+        "status": "body_verified",
+        "locator": "L28-L29、L45-L58",
+        "supports": [
+          "Advantage+ campaign budget（原CBO）在Campaign层设置预算并在Ad Set之间动态分配。",
+          "页面说明可用Ad Set最低/最高花费限制约束预算转移；资格与实际可用参数仍需账户及版本核查。"
+        ],
+        "conditions": [
+          "所选广告目标、账户资格与当期API/界面实际可用",
+          "预算类型、出价与投递配置满足平台限制"
+        ],
+        "limitations": [
+          "产品能创建广告对象不代表已覆盖所有预算约束字段。",
+          "本页不能证明单Campaign在所有业务中优于拆分结构。"
+        ],
+        "skill_use": [
+          "C11",
+          "C21",
+          "C30"
+        ],
+        "rule_candidate": "将预算分配机制作为技术事实，将是否合并结构作为有条件的策略候选。"
+      }
+    },
+    "OFF-20261127-14": {
+      "creator_channel": "Meta for Business",
+      "title": "Ad Measurement: A/B Testing Ads on Facebook & Instagram",
+      "url": "https://ky-kg.facebook.com/business/measurement/ab-testing",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-14",
+        "publisher": "Meta for Business",
+        "url": "https://ky-kg.facebook.com/business/measurement/ab-testing",
+        "title": "Ad Measurement: A/B Testing Ads on Facebook & Instagram",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "官方网页，未标版本",
+        "section": [
+          "FAQ: Why can’t I use two campaigns or ad sets...",
+          "What qualifies as a test variable?",
+          "A/B Testing instead of Conversion Lift"
+        ],
+        "status": "body_verified",
+        "locator": "L76-L89、L103-L110",
+        "supports": [
+          "官方A/B测试将受众随机分到不重叠组并控制测试变量；普通并行Campaign/Ad Set没有这些保证。",
+          "比较不同策略的A/B测试与测量广告因果增量的Conversion Lift回答不同问题。"
+        ],
+        "conditions": [
+          "先声明比较的变量、样本分配方式、预算与结果指标",
+          "账户当前可用工具另验"
+        ],
+        "limitations": [
+          "固定预算分组有运营价值，但不能仅凭ABO标签视为随机实验。",
+          "本轮没有创建或运行任何平台实验。"
+        ],
+        "skill_use": [
+          "C06",
+          "C11",
+          "C19",
+          "C21",
+          "C30"
+        ],
+        "rule_candidate": "保留observational_comparison与randomized_ab等设计类型，不把相关变化写成因果结果。"
+      }
+    },
+    "OFF-20261127-15": {
+      "creator_channel": "Meta for Business",
+      "title": "Incrementality Measurement: Prove Real Ad Impact",
+      "url": "https://secure.facebook.com/business/measurement/incrementality",
+      "published_at": "",
+      "review_status": "body_verified",
+      "content_access": "OFFICIAL_PAGE",
+      "source_kind": "official_document",
+      "source_note_sha256": "7c75936628446682fe5fa3623c5a329260ce86cc08fba996ec752ea22dc1c41a",
+      "official_record": {
+        "id": "OFF-20261127-15",
+        "publisher": "Meta for Business",
+        "url": "https://secure.facebook.com/business/measurement/incrementality",
+        "title": "Incrementality Measurement: Prove Real Ad Impact",
+        "accessed_at": "2026-11-27",
+        "published_at": null,
+        "effective_at": null,
+        "document_version": "官方网页，未标版本",
+        "section": [
+          "Experiment to verify results",
+          "Calibrate your attribution model",
+          "Close the measurement-to-optimization loop"
+        ],
+        "status": "body_verified",
+        "locator": "L79-L91、L142-L144",
+        "supports": [
+          "Conversion Lift使用看到广告的测试组与不看广告的控制组比较结果。",
+          "Incremental attribution在本页被描述为预测并优化增量转化的设置；设置启用本身不是独立holdout实验的结果。",
+          "实验结果可以用于校准归因模型；校准应保留原始实验及口径。"
+        ],
+        "conditions": [
+          "明确当前讨论的是优化设置、归因模型还是实验",
+          "记录可用资格、分组、窗口与业务指标"
+        ],
+        "limitations": [
+          "不从平台宣传统计推导任意账户的保证提升。",
+          "未读取本产品API编译器，也未验证真实账户是否支持此设置。"
+        ],
+        "skill_use": [
+          "C04",
+          "C11",
+          "C19",
+          "C21",
+          "C25",
+          "C30"
+        ],
+        "rule_candidate": "分别记录optimization_setting、attribution_model和experiment_design。"
+      }
+    },
+    "YT-40ljbbRJm6M": {
+      "creator_channel": "Common Thread Collective",
+      "title": "Use Incrementality to Set Your 2027 Ad Budget | A $52M Ecommerce Case Study",
+      "url": "https://www.youtube.com/watch?v=40ljbbRJm6M",
+      "published_at": "2026-11-24T16:59:08Z",
+      "review_status": "EXTRACTED",
+      "content_access": "PUBLISHER_TEXT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "0d613197a7c19d98b6dc6d9b3799be7bfcadae1e249ad1216ca1f8ee6c585aba"
+    },
+    "YT-8Lipy8KEE0Q": {
+      "creator_channel": "Jandre de Beer - How to Build a Top 1% Business",
+      "title": "Meta Ads Andromeda Best Practices for 2026",
+      "url": "https://www.youtube.com/watch?v=8Lipy8KEE0Q",
+      "published_at": "2026-01-07T11:31:36Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "15e505f44e75ac0d6c0e527ded90317a916309abc44fdb466780d406e92071ac"
+    },
+    "YT-ATJcUcaAHIg": {
+      "creator_channel": "William Kast",
+      "title": "BEST Facebook Ads Campaign Structure For Fast Scaling In 2026",
+      "url": "https://www.youtube.com/watch?v=ATJcUcaAHIg",
+      "published_at": "2026-02-03T17:00:21Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "bb0b72899e277cdd26f42d089f70048d9857d943cc22943c48f2607e7a157c54"
+    },
+    "YT-BEwgfL-jCSM": {
+      "creator_channel": "Markifact",
+      "title": "Bulk Upload Meta Ads Creatives in Minutes (No Manual Uploading)",
+      "url": "https://www.youtube.com/watch?v=BEwgfL-jCSM",
+      "published_at": "2025-12-09T06:18:53Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "d6c483fbef739b06b57f464c5ad402718b032d75dd9011a692a460dccd055b8b"
+    },
+    "YT-D-jpozVTfxQ": {
+      "creator_channel": "Sam Piliero",
+      "title": "Alex Hormozi's Facebook Ads Strategy for 2026",
+      "url": "https://www.youtube.com/watch?v=D-jpozVTfxQ",
+      "published_at": "2026-06-01T19:39:49Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "379c3a1c0ce62e28ea2bdece3ed8c812127b0565d390b940ba35ee20ca3e5c1a"
+    },
+    "YT-DQw0EVlbjYE": {
+      "creator_channel": "Common Thread Collective",
+      "title": "How a CTC Client Unlocked 40% YoY Growth",
+      "url": "https://www.youtube.com/watch?v=DQw0EVlbjYE",
+      "published_at": "2025-09-16T16:59:28Z",
+      "review_status": "EXTRACTED",
+      "content_access": "PUBLISHER_TEXT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "e43603760d9e046cdedec84af79b28ead6dead176054785c57241f89f468f9fa"
+    },
+    "YT-FBkEBZBAT3o": {
+      "creator_channel": "Common Thread Collective",
+      "title": "Ecommerce Diagnostic Toolkit Overview",
+      "url": "https://www.youtube.com/watch?v=FBkEBZBAT3o",
+      "published_at": "2023-04-26T18:31:55Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "594aff921273166f8fdd879c73e8260f8fd5dd449177ab5221b8574e60b16b48"
+    },
+    "YT-OvjGs5AwzwQ": {
+      "creator_channel": "Honest Ecommerce",
+      "title": "From Zero Experience to Ecommerce Success | Johnny Person | Aug11 Co",
+      "url": "https://www.youtube.com/watch?v=OvjGs5AwzwQ",
+      "published_at": "2025-03-03T13:00:29Z",
+      "review_status": "EXTRACTED",
+      "content_access": "PUBLISHER_TEXT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "1634c230c9216059f2c8af03fee520aa5e0c357e7731ab76d6bc19fa97a28de5"
+    },
+    "YT-PVoC7H44A5w": {
+      "creator_channel": "Dara Denney",
+      "title": "How I test FB ads creatives with a small budget",
+      "url": "https://www.youtube.com/watch?v=PVoC7H44A5w",
+      "published_at": "2025-08-11T19:32:55Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "d1bfbf28f3ca10c20e2d267d117b85561e74c69bbe26ba67ea49591b5b0093b5"
+    },
+    "YT-Qfv74ZtLa80": {
+      "creator_channel": "D2C Decoded By Nikhil",
+      "title": "Meta Ads Creative Testing Mistakes Killing Your ROAS",
+      "url": "https://www.youtube.com/watch?v=Qfv74ZtLa80",
+      "published_at": "2026-02-17T14:30:00Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "7f0b6c2ffa15a82a90b1e9120316a3dc058c0d3e954e79a74027f497a2f9df2a"
+    },
+    "YT-T79aTlddlyg": {
+      "creator_channel": "Oliver Ibrahim | AI & Marketing",
+      "title": "Claude Automated My Meta Ads (Full Setup)",
+      "url": "https://www.youtube.com/watch?v=T79aTlddlyg",
+      "published_at": "2026-05-05T13:01:08Z",
+      "review_status": "REJECTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "ec9913df7ffa7f504f683e8be7e92de20e86d63f9e589b06f35288d1bf53995b"
+    },
+    "YT-XhMbeN7cH34": {
+      "creator_channel": "Recast",
+      "title": "Incrementality Testing: How to Actually Measure Marketing Effectiveness (2026)",
+      "url": "https://www.youtube.com/watch?v=XhMbeN7cH34",
+      "published_at": "2026-05-12T14:38:30Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "ddcd6313e04687f974477e7469a83f9fb3eddf62c9ab2817fa7128c9912362d9"
+    },
+    "YT-_-y0NZ30VKE": {
+      "creator_channel": "Jared Robinson",
+      "title": "Copy This Facebook Ads Strategy, It'll Blow Up Your Business (Post-Andromeda)",
+      "url": "https://www.youtube.com/watch?v=_-y0NZ30VKE",
+      "published_at": "2025-10-28T19:30:07Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "078114c5c4f8b7c5e272e01b5e80789c3aff690e02fab8e6f1225f5a5c966c08"
+    },
+    "YT-aR1yByVO3ac": {
+      "creator_channel": "Common Thread Collective",
+      "title": "Meta's New Setting Beat Our Old Campaign by 18%",
+      "url": "https://www.youtube.com/watch?v=aR1yByVO3ac",
+      "published_at": "2025-06-19T14:40:24Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "1bccc2cb1597dbadf191a461852787e90b9691f870255a18df2a289d72c98dd0"
+    },
+    "YT-cSm2NPvKLHo": {
+      "creator_channel": "Motion (Creative Analytics) ",
+      "title": "We Analyzed 5000+ Meta Ads: The 2026 Creative Benchmarks Report",
+      "url": "https://www.youtube.com/watch?v=cSm2NPvKLHo",
+      "published_at": "2026-03-09T20:06:09Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "d842e5954137e79987413e736b96f1b1bfe3267a02e23ce97142e748af705621"
+    },
+    "YT-mOdMt6SjMQw": {
+      "creator_channel": "咔咔的老吴",
+      "title": "Meta再营销广告已死？2026年Meta广告架构大变革 ｜ Meta广告 Facebook广告 FB广告 #Meta广告 #Facebook广告 #FB广告",
+      "url": "https://www.youtube.com/watch?v=mOdMt6SjMQw",
+      "published_at": "2026-03-24T03:02:00Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "e544446525b569c4d0532f665e7cda8608e26405c3fe7d9f754deb978e49c1c4"
+    },
+    "YT-nVfpE5YnMtU": {
+      "creator_channel": "TrackingFixes | Infrastructure Engineering",
+      "title": "Shopify Meta CAPI Fix: Achieving 100% Deduplication & 8.x+ Match Scores",
+      "url": "https://www.youtube.com/watch?v=nVfpE5YnMtU",
+      "published_at": "2026-01-28T22:30:21Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "c7eaadf90845ecc4c9904de6856a9312ead18c7c90d5ce4a30067c475ac24c93"
+    },
+    "YT-ngRxcBVBjHs": {
+      "creator_channel": "Gui Costa",
+      "title": "I Built an AI Media Buyer in Slack (Full Breakdown)",
+      "url": "https://www.youtube.com/watch?v=ngRxcBVBjHs",
+      "published_at": "2026-10-19T14:02:51Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "ad3f2619ebc1ff38cca565d169ce8f792593274557b6a324367751eebce3b62e"
+    },
+    "YT-o9jxZGLm3Qs": {
+      "creator_channel": "Scalability School",
+      "title": "We Tested Meta's Incremental Attribution on $200K/Month: Here's Why We Turned It Off.",
+      "url": "https://www.youtube.com/watch?v=o9jxZGLm3Qs",
+      "published_at": "2026-07-02T08:00:10Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "1157e1838bc1fff2abab4aa5d2ebe9596ff590792eebd9d80845575efd1cc408"
+    },
+    "YT-onFwSud9C2Y": {
+      "creator_channel": "Ben Heath",
+      "title": "The NEW WAY To Test Facebook Ads (Post Andromeda)",
+      "url": "https://www.youtube.com/watch?v=onFwSud9C2Y",
+      "published_at": "2026-02-10T12:01:27Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "4a70c12484296a5ee37f46bf1410c15e83cc50501f338b00c666eb2c55a38245"
+    },
+    "YT-po85BKDTG-Y": {
+      "creator_channel": "Sarah Levinger",
+      "title": "The NEW Meta Ad Creative Strategy in 2026 (Post Andromeda)",
+      "url": "https://www.youtube.com/watch?v=po85BKDTG-Y",
+      "published_at": "2026-04-23T13:01:36Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "5402cb5418acdc3aa41a7773c3cf84b937ad2916c7039fe8f2bdfafb20b12165"
+    },
+    "YT-rRaXstLeHjY": {
+      "creator_channel": "Jamie Stenton - Digital Marketing Expert",
+      "title": "How to Test Your Meta Pixel Events (Fix Broken Facebook Tracking)",
+      "url": "https://www.youtube.com/watch?v=rRaXstLeHjY",
+      "published_at": "2026-03-11T11:01:28Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "8c54f83cbdea19823e4d2bb0a8510e923a7a0d53fd060de315dc1b482d816084"
+    },
+    "YT-w1JqdrQIYkA": {
+      "creator_channel": "Mason Littlejohn",
+      "title": "$1.8B Media Buyer Breaks Down Full Meta Ads Strategy",
+      "url": "https://www.youtube.com/watch?v=w1JqdrQIYkA",
+      "published_at": "2026-03-28T16:35:25Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "a6e3597dcea775416beffa0f17b3fe2a5de9e60f370ec671adf8c8f00e69e0e0"
+    },
+    "YT-zv03UY4k5UE": {
+      "creator_channel": "MikeMakesAds",
+      "title": "How to Generate 30 Winning Ad Angles in 1 Hour (2026)",
+      "url": "https://www.youtube.com/watch?v=zv03UY4k5UE",
+      "published_at": "2026-01-14T11:01:52Z",
+      "review_status": "EXTRACTED",
+      "content_access": "VIDIQ_TRANSCRIPT",
+      "source_kind": "youtube_video",
+      "source_note_sha256": "b9030ac5ed9916ff6da4360b67eb67d99d257c3a59dfcb589d66fe12309b5436"
+    }
+  }
+}

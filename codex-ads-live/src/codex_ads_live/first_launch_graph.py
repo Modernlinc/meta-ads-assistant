@@ -193,7 +193,9 @@ def _activation_deadline(guard, permit):
 
 
 def _send_scoped_post(path, form_body, *, clock, expires_at, recheck, claim,
-                      binding_sha256, attempt_id, write_grant_sha256):
+                      binding_sha256, attempt_id, write_grant_sha256, method='POST'):
+    if method != 'POST' and (method != 'DELETE' or form_body or not re.fullmatch(r'/v27\.0/[1-9][0-9]{0,39}', path)):
+        fail('FIRST_LAUNCH_GRAPH_PROTECTED_METHOD')
     budget = min(15, (expires_at - clock()).total_seconds())
     if budget <= 0:
         fail('FIRST_LAUNCH_GRAPH_GRANT_EXPIRED')
@@ -214,21 +216,21 @@ def _send_scoped_post(path, form_body, *, clock, expires_at, recheck, claim,
                 fail('FIRST_LAUNCH_GRAPH_GRANT_EXPIRED')
             expiry = _grant_expiry(binding_sha256, attempt_id, write_grant_sha256, grant, now, active_until)
             remaining = min(deadline - monotonic(), (expiry - now).total_seconds())
-            return _post(connection, path, form_body, grant, remaining)
+            return _post(connection, path, form_body, grant, remaining, method=method)
     finally:
         connection.close()
 
 
-def _post(connection, path, form_body, grant, budget):
+def _post(connection, path, form_body, grant, budget, *, method='POST'):
     body = form_body
     if grant.appsecret_proof is not None:
-        body += '&' + urlencode({'appsecret_proof': grant.appsecret_proof})
+        body += ('&' if body else '') + urlencode({'appsecret_proof': grant.appsecret_proof})
     headers = {'Authorization': grant.authorization, 'Content-Type': FORM_CONTENT_TYPE,
                'Accept': 'application/json'}
     try:
         arm_http_deadline(connection, budget)
         connection.sock.settimeout(budget)
-        connection.request('POST', path, body=body, headers=headers)
+        connection.request(method, path, body=body, headers=headers)
     finally:
         headers.clear()
     with connection.getresponse() as response:
@@ -258,25 +260,58 @@ def _check_form(binding, form_body):
         fail('FIRST_LAUNCH_GRAPH_FORM_MISMATCH')
     operation = binding.operation
     if operation == 'CREATE_CREATIVE':
-        if set(form) != {'name', 'object_story_spec'}:
+        if not {'name', 'object_story_spec'} <= form.keys() <= {'name', 'object_story_spec', 'url_tags','asset_feed_spec'}:
             fail('FIRST_LAUNCH_GRAPH_FORM_MISMATCH')
         story = strict_json(form['object_story_spec'], max_chars=16_000)
         if type(story) is not dict or story.get('page_id') != binding.page_id:
             fail('FIRST_LAUNCH_GRAPH_CREATIVE_PAGE_MISMATCH')
         branches = set(story) - {'page_id'}
+        if 'asset_feed_spec' in form:
+            from .dynamic_creative import validate_feed
+            from .meta_write_mapping import validate_url_tags
+
+            if branches:
+                fail('FIRST_LAUNCH_GRAPH_CREATIVE_MEDIA_MISMATCH')
+            feed = validate_feed(strict_json(form['asset_feed_spec'],max_chars=20_000))
+            if 'url_tags' in form:
+                validate_url_tags(form['url_tags'],feed['link_urls'][0]['website_url'])
+            return
         if len(branches) != 1 or not branches <= {'link_data', 'video_data'}:
             fail('FIRST_LAUNCH_GRAPH_CREATIVE_MEDIA_MISMATCH')
         branch = next(iter(branches))
         data = story[branch]
-        allowed = ({'image_hash', 'link', 'message', 'name', 'description', 'call_to_action'} if branch == 'link_data'
+        allowed = ({'image_hash', 'link', 'message', 'name', 'description', 'call_to_action',
+                    'child_attachments', 'multi_share_optimized'} if branch == 'link_data'
                    else {'video_id', 'image_hash', 'message', 'title', 'link_description', 'call_to_action'})
-        if type(data) is not dict or set(data) - allowed or not {'image_hash', 'call_to_action'} <= data.keys():
+        if type(data) is not dict or set(data) - allowed or 'call_to_action' not in data:
             fail('FIRST_LAUNCH_GRAPH_CREATIVE_MEDIA_MISMATCH')
+        if 'child_attachments' in data:
+            from .meta_write_mapping import validate_carousel
+
+            if 'image_hash' in data or data.get('multi_share_optimized') is not False:
+                fail('FIRST_LAUNCH_GRAPH_CREATIVE_MEDIA_MISMATCH')
+            validate_carousel(data['child_attachments'], data.get('link'))
+        elif 'image_hash' not in data or 'multi_share_optimized' in data:
+            fail('FIRST_LAUNCH_GRAPH_CREATIVE_MEDIA_MISMATCH')
+        if 'url_tags' in form:
+            from .meta_write_mapping import validate_url_tags
+
+            cta = data.get('call_to_action') or {}
+            link = data.get('link') if branch == 'link_data' else (cta.get('value') or {}).get('link')
+            validate_url_tags(form['url_tags'], link)
         return
     allowed = set(PARAMETERS[operation])
     required = allowed - set(OPTIONAL_PARAMETERS.get(operation, ()))
     if not required <= form.keys() <= allowed or form['status'] != 'PAUSED':
         fail('FIRST_LAUNCH_GRAPH_PAUSED_FORM_REQUIRED')
+    if operation in ('CREATE_CAMPAIGN', 'CREATE_ADSET'):
+        budgets = {'daily_budget', 'lifetime_budget'} & form.keys()
+        if len(budgets) > 1 or bool(budgets) != ('bid_strategy' in form):
+            fail('FIRST_LAUNCH_GRAPH_BUDGET_FIELDS')
+        if operation == 'CREATE_CAMPAIGN' and bool(budgets) == ('is_adset_budget_sharing_enabled' in form):
+            fail('FIRST_LAUNCH_GRAPH_BUDGET_FIELDS')
+        if 'is_dynamic_creative' in form and form['is_dynamic_creative'] != 'true':
+            fail('META_DYNAMIC_ADSET_SCOPE')
 
 
 def _grant_expiry(binding_sha256, attempt_id, write_grant_sha256, grant, now, active_until):
