@@ -44,7 +44,6 @@ V1 FINAL 的六项一级能力覆盖 30 个二级能力。索引分别保留历�
 ## 下载与版本
 
 - [当前 V1 客户预览版发布页](https://github.com/Modernlinc/meta-ads-assistant/releases/tag/v1.0.0-preview) · [安装件校验值](https://github.com/Modernlinc/meta-ads-assistant/releases/download/v1.0.0-preview/SHA256SUMS.txt)
-- 历史版本仍可下载。[V1.6R2 归档](https://github.com/Modernlinc/meta-ads-assistant/releases/tag/v1.6-r2) · [V1.4.2-A3 归档](https://github.com/Modernlinc/meta-ads-assistant/releases/tag/v1.4.2-a3)
 
 已有项目升级时保留原工作区、计划、媒体请求包和历史记录。按安装说明分阶段接续，并核对对应的受管端版本。
 
